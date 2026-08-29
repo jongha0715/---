@@ -1,0 +1,1982 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>All thing</title>
+<meta name="description" content="우리 반의 급식, 시간표, 수행평가·시험, 일정을 한 눈에">
+<meta name="theme-color" content="#06090a">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="All thing">
+<meta name="mobile-web-app-capable" content="yes">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Black+Han+Sans&display=swap');
+/* ===================== All thing — style.css ===================== */
+:root{
+  --bg: #f8f0de;
+  --bg-alt: #f1e4c6;
+  --surface: #fffcf5;
+  --surface-2: #f2e6c8;
+  --surface-3: #e9d9af;
+  --border: rgba(80,64,20,.14);
+  --border-strong: rgba(80,64,20,.26);
+  --aqua: #838952;
+  --aqua-deep: #6b7143;
+  --aqua-dim: rgba(131,139,82,.16);
+  --on-accent: #fffaf0;
+  --warm: #b8752e;
+  --danger: #c0392b;
+  --danger-dim: rgba(192,57,43,.12);
+  --text: #2a2a1d;
+  --text-2: #6e6c56;
+  --text-3: #96937a;
+  --radius: 18px;
+  --radius-sm: 12px;
+  --shadow: 0 12px 28px rgba(60,50,20,.1);
+  --sidebar-w: 236px;
+  --display-font: 'Black Han Sans', -apple-system, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  --ease-smooth: cubic-bezier(.22,1,.36,1);
+}
+*,*::before,*::after{ box-sizing: border-box; }
+html,body{ height:100%; }
+body{
+  margin:0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+h1,h2,h3,p{ margin:0; }
+button, input, textarea{ font-family: inherit; color: inherit; }
+button{ cursor:pointer; }
+a{ color: var(--aqua); }
+::selection{ background: var(--aqua-dim); color: var(--text); }
+:focus-visible{ outline: 2px solid var(--aqua); outline-offset: 2px; border-radius: 6px; }
+
+.text-2{ color: var(--text-2); font-size: 13.5px; line-height:1.5; }
+.text-3{ color: var(--text-3); font-size: 13px; }
+.text-3.small{ font-size: 12px; }
+
+.ic{ width:18px; height:18px; flex:none; display:inline-block; vertical-align:-4px; }
+.ic.sm{ width:14px; height:14px; vertical-align:-2px; }
+.crown-ic{ color: var(--warm); width:15px; height:15px; vertical-align:-2px; }
+
+/* ---------- buttons & inputs ---------- */
+.btn{
+  appearance:none; border:1px solid var(--border-strong); background: var(--surface-2);
+  color: var(--text); border-radius: 12px; padding: 11px 16px; font-size: 14.5px; font-weight:600;
+  display:inline-flex; align-items:center; justify-content:center; gap:6px;
+  transition: transform .12s ease, background .15s ease, border-color .15s ease;
+}
+.btn:hover{ background: var(--surface-3); border-color: var(--border-strong); }
+.btn:active{ transform: scale(.97); }
+.btn-primary{
+  background: linear-gradient(135deg, var(--aqua) 0%, var(--aqua-deep) 100%);
+  color: var(--on-accent); border-color: transparent; box-shadow: 0 6px 16px rgba(131,139,82,.28);
+}
+.btn-primary:hover{ filter: brightness(1.06); }
+.btn-ghost{ background: transparent; }
+.btn-sm{ padding: 8px 12px; font-size: 13.5px; border-radius: 10px; }
+.btn-block{ width:100%; }
+.logout-btn{ margin-top: 4px; color: var(--text-2); }
+
+.icon-btn{
+  width:36px; height:36px; border-radius: 10px; border:1px solid transparent; background: transparent;
+  display:inline-flex; align-items:center; justify-content:center; color: var(--text-2);
+  transition: background .15s ease, color .15s ease;
+}
+.icon-btn:hover{ background: var(--surface-2); color: var(--text); }
+.icon-btn.danger:hover{ background: var(--danger-dim); color: var(--danger); }
+
+.field{ display:block; margin: 12px 0; }
+.field > span{ display:block; font-size: 12.5px; color: var(--text-2); margin-bottom: 6px; font-weight:600; }
+.field input, .field textarea{
+  width:100%; background: var(--surface-2); border:1px solid var(--border); border-radius: 12px;
+  padding: 11px 13px; font-size: 14.5px; color: var(--text); resize: vertical;
+  transition: border-color .15s ease;
+}
+.field input:focus, .field textarea:focus{ border-color: var(--aqua); }
+.field input::placeholder, .field textarea::placeholder{ color: var(--text-3); }
+.inline-input{ display:flex; gap:8px; }
+.inline-input input{ flex:1; min-width:0; }
+.checkline{ display:flex; align-items:center; gap:8px; font-size:13.5px; color: var(--text-2); margin: 14px 0; user-select:none; }
+
+/* ---------- toggle switch ---------- */
+.switch-row{ display:flex; align-items:center; justify-content:space-between; gap:14px; }
+.switch-row-title{ font-size:14px; font-weight:700; }
+.switch-row-sub{ font-size:12.5px; color: var(--text-2); margin-top:2px; }
+.switch{
+  position:relative; flex:none; width:46px; height:27px; border-radius:999px; border:none;
+  background: var(--surface-3); padding:0; cursor:pointer; transition: background .2s ease;
+}
+.switch .knob{
+  position:absolute; top:3px; left:3px; width:21px; height:21px; border-radius:50%;
+  background:#fff; box-shadow:0 1px 3px rgba(0,0,0,.3); transition: transform .2s cubic-bezier(.34,1.56,.64,1);
+}
+.switch.on{ background: var(--aqua); }
+.switch.on .knob{ transform: translateX(19px); }
+.checkline input{ width:16px; height:16px; accent-color: var(--aqua); }
+
+/* password show/hide */
+.pw-field{ position:relative; }
+.pw-field input{ padding-right: 42px; }
+.pw-toggle{
+  position:absolute; right:5px; top:50%; transform:translateY(-50%);
+  width:32px; height:32px; border-radius:8px; border:none; background:transparent; color: var(--text-3);
+  display:flex; align-items:center; justify-content:center; transition: background .15s ease, color .15s ease;
+}
+.pw-toggle:hover{ background: var(--surface-3); color: var(--text); }
+
+/* ---------- cards / layout bits ---------- */
+.card{
+  background: var(--surface); border:1px solid var(--border); border-radius: var(--radius);
+  padding: 18px; margin-bottom: 14px; box-shadow: var(--shadow);
+}
+.card h3{ font-size: 15px; font-weight:700; display:flex; align-items:center; gap:8px; margin-bottom: 4px; }
+.form-card h3{ margin-bottom: 6px; }
+.form-actions{ display:flex; justify-content:flex-end; gap:8px; margin-top: 14px; }
+
+.view-header{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom: 14px; flex-wrap: wrap; }
+.view-header h2{ font-size: 19px; font-weight:800; display:flex; align-items:center; gap:9px; font-family: var(--display-font); letter-spacing:.2px; }
+.footnote{ text-align:center; color: var(--text-3); font-size:12.5px; margin-top: 14px; }
+.tt-caption{ margin: -4px 0 14px; }
+.modal-hint{ margin-top: 14px; }
+
+.badge{
+  display:inline-flex; align-items:center; background: var(--aqua-dim); color: var(--aqua);
+  border-radius: 999px; padding: 3px 10px; font-size: 12px; font-weight:700;
+}
+.dday{
+  display:inline-flex; align-items:center; border-radius: 999px; padding: 3px 10px; font-size: 12px; font-weight:800;
+  background: var(--surface-2); color: var(--text-2);
+}
+.dday.sm{ padding: 2px 9px; font-size:11.5px; flex: none; }
+.dday.dday-soon{ background: rgba(184,117,46,.16); color: var(--warm); }
+.dday.dday-now{ background: var(--aqua-dim); color: var(--aqua); }
+.dday.dday-past{ background: var(--surface-2); color: var(--text-3); }
+
+.chip-wrap{ display:flex; flex-wrap:wrap; gap:7px; margin-top:4px; }
+.chip{
+  background: var(--surface-3); border:1px solid var(--border-strong); color: var(--text);
+  padding: 6px 12px; border-radius: 999px; font-size: 13px; font-weight:600;
+}
+.chip-select{ display:flex; flex-wrap:wrap; gap:7px; margin: 10px 0 14px; max-height: 150px; overflow-y:auto; padding: 2px; }
+.chip-btn{
+  background: var(--surface-2); border:1px solid var(--border); color: var(--text-2);
+  padding: 7px 12px; border-radius: 999px; font-size: 12.5px; font-weight:600;
+  transition: background .15s ease, color .15s ease, border-color .15s ease;
+}
+.chip-btn.active{ background: var(--aqua-dim); color: var(--aqua); border-color: var(--aqua); }
+
+.mini-list{ display:flex; flex-direction:column; gap:8px; margin-top:6px; }
+.mini-row{ display:flex; align-items:center; gap:10px; font-size: 13.5px; }
+.mini-p{ color: var(--aqua); font-weight:700; font-size:12.5px; flex:none; min-width: 46px; }
+
+.empty-state{
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px;
+  padding: 46px 20px; color: var(--text-3); text-align:center;
+}
+.empty-state .ic{ width:30px; height:30px; opacity:.5; }
+.empty-state p{ font-size: 14px; }
+
+.banner{
+  display:flex; align-items:center; gap:10px; background: var(--aqua-dim); border:1px solid rgba(131,139,82,.35);
+  color: var(--aqua-deep); padding: 12px 14px; border-radius: 14px; font-size: 13.5px; margin-bottom: 14px;
+}
+.banner .ic{ color: var(--aqua-deep); }
+.banner-link{ text-decoration: underline; cursor:pointer; }
+.install-banner{ justify-content:space-between; flex-wrap:wrap; row-gap:8px; }
+.install-banner span{ display:flex; align-items:center; gap:8px; flex:1; min-width:180px; }
+
+/* ---------- list items (meals/exams/events/notices) ---------- */
+.list{ display:flex; flex-direction:column; gap:10px; }
+.list-item{
+  display:flex; align-items:flex-start; justify-content:space-between; gap:12px;
+  background: var(--surface); border:1px solid var(--border); border-radius: var(--radius-sm); padding: 14px 16px;
+}
+.list-item.past{ opacity:.5; }
+.list-item-body{ flex:1; min-width:0; }
+.list-item-actions{ display:flex; gap:4px; flex:none; }
+.row-head{ display:flex; align-items:center; gap:8px; margin-bottom:6px; flex-wrap:wrap; }
+.row-date{ font-size:12.5px; color: var(--text-2); font-weight:700; }
+.row-title{ font-size: 15px; font-weight:700; margin-bottom: 3px; }
+.row-sub{ font-size: 13px; color: var(--text-2); }
+.notice-content{ margin-top:6px; line-height:1.55; }
+.acct-edit{ margin-top:12px; padding-top:12px; border-top:1px solid var(--border); }
+
+/* meal category groups — higher-contrast chips so dishes stand out from the card */
+.meal-group{ margin-bottom: 12px; }
+.meal-group:last-child{ margin-bottom: 0; }
+.meal-group-head{ display:flex; align-items:center; gap:8px; margin-bottom:6px; }
+.meal-group-label{
+  font-size:11px; font-weight:800; color: var(--on-accent); background: var(--aqua);
+  padding: 3px 10px; border-radius:999px; letter-spacing:.2px;
+}
+.meal-cal{ font-size:11px; color: var(--text-2); }
+
+/* ---------- home ---------- */
+.home-greeting h2{ font-size: 21px; font-weight:800; margin-bottom:3px; font-family: var(--display-font); letter-spacing:.2px; }
+.home-greeting{ margin-bottom: 16px; }
+.home-grid{ display:grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.home-card-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom: 8px; }
+.link-btn{
+  background:none; border:none; color: var(--aqua); font-size:12.5px; font-weight:700;
+  display:flex; align-items:center; gap:2px; padding: 4px 2px;
+}
+.link-btn .ic{ width:14px; height:14px; }
+
+/* ---------- profile ---------- */
+.avatar{
+  width:52px; height:52px; border-radius: 50%; background: linear-gradient(135deg, var(--aqua-dim), var(--surface-3));
+  color: var(--aqua); display:flex; align-items:center; justify-content:center; font-weight:800; font-size:20px; flex:none;
+  border: 1px solid var(--border-strong);
+}
+.avatar.sm{ width:34px; height:34px; font-size:14px; }
+.profile-row{ display:flex; align-items:center; gap:12px; margin-bottom: 16px; }
+.profile-name{ font-size:16px; font-weight:800; }
+.profile-sub{ font-size:12.5px; color: var(--text-2); display:flex; align-items:center; gap:4px; margin-top:2px; }
+
+/* ---------- timetable table ---------- */
+.tt-wrap{ overflow-x:auto; padding: 10px; }
+.tt-table{ width:100%; border-collapse: collapse; min-width: 480px; }
+.tt-table th, .tt-table td{ padding: 9px 8px; text-align:center; font-size: 12.8px; border-bottom: 1px solid var(--border); }
+.tt-table thead th{ color: var(--aqua); font-weight:800; font-size:12.5px; border-bottom: 1px solid var(--border-strong); }
+.tt-table tbody th{ color: var(--text-3); font-weight:700; width: 30px; }
+.tt-table tbody tr:last-child td, .tt-table tbody tr:last-child th{ border-bottom:none; }
+.tt-edit td{ padding:4px; }
+.tt-edit input{
+  width:100%; background: var(--surface-2); border:1px solid var(--border); border-radius:8px;
+  padding: 7px 5px; font-size:12px; text-align:center; color:var(--text);
+}
+.tt-edit-wrap{ overflow-x:auto; margin: 4px 0 14px; }
+.copy-box{ border-top:1px solid var(--border); margin-top: 14px; padding-top: 14px; }
+
+/* ---------- modal ---------- */
+.modal-overlay{
+  position: fixed; inset:0; background: rgba(3,6,7,.66); backdrop-filter: blur(3px);
+  display:flex; align-items:center; justify-content:center; z-index: 60; padding: 16px;
+  animation: overlayIn .22s ease;
+}
+.modal{
+  width:100%; max-width: 560px; max-height: 88vh; overflow-y:auto; background: var(--surface);
+  border:1px solid var(--border-strong); border-radius: 20px; box-shadow: var(--shadow);
+  animation: modalIn .32s var(--ease-smooth);
+}
+.modal-head{ display:flex; align-items:center; justify-content:space-between; padding: 16px 18px; border-bottom:1px solid var(--border); position:sticky; top:0; background:var(--surface); z-index:2; }
+.modal-head h3{ font-size:16px; font-weight:800; }
+.modal-body{ padding: 16px 18px 20px; }
+@keyframes overlayIn{ from{ opacity:0; } to{ opacity:1; } }
+@keyframes modalIn{ from{ opacity:0; transform: scale(.96) translateY(8px); } to{ opacity:1; transform: scale(1) translateY(0); } }
+
+/* ---------- app shell ---------- */
+#app{ min-height: 100vh; }
+.shell{ display:flex; min-height:100vh; }
+.sidebar{
+  width: var(--sidebar-w); flex:none; border-right: 1px solid var(--border); background: var(--bg-alt);
+  display:flex; flex-direction:column; padding: 18px 14px; position: sticky; top:0; height:100vh;
+}
+.brand{ display:flex; align-items:center; gap:10px; padding: 6px 8px 20px; }
+.brand-mark{
+  width:34px; height:34px; border-radius: 10px; background: linear-gradient(135deg, var(--aqua), var(--aqua-deep));
+  color: var(--on-accent); font-weight:900; display:flex; align-items:center; justify-content:center; font-size:16px; flex:none;
+}
+.brand-mark.sm{ width:28px; height:28px; font-size:13px; border-radius:8px; }
+.brand-word{ font-weight:800; font-size:16px; letter-spacing:.2px; font-family: var(--display-font); }
+.brand-word.sm{ font-size:14px; }
+.side-nav{ display:flex; flex-direction:column; gap:3px; flex:1; }
+.side-link{
+  display:flex; align-items:center; gap:11px; padding: 11px 12px; border-radius: 12px; border:none;
+  background:transparent; color: var(--text-2); font-size:14px; font-weight:600; text-align:left;
+  transition: background .16s ease, color .16s ease;
+}
+.side-link:hover{ background: var(--surface-2); color: var(--text); }
+.side-link.active{ background: var(--aqua-dim); color: var(--aqua); }
+.side-user{
+  display:flex; align-items:center; gap:9px; padding: 10px; border-top:1px solid var(--border); margin-top: 10px;
+}
+.side-user-info{ flex:1; min-width:0; }
+.side-user-name{ font-size:13.5px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.side-user-id{ font-size:11.5px; color: var(--text-3); }
+
+.main-col{ flex:1; min-width:0; display:flex; flex-direction:column; height:100vh; }
+.topbar{ display:none; }
+.main-scroll{ flex:1; overflow-y:auto; scroll-behavior:smooth; }
+.main-inner{ max-width: 880px; margin: 0 auto; padding: 16px 26px 60px; animation: viewEnter .34s var(--ease-smooth); }
+.bottom-nav-wrap{ display:none; position:relative; }
+@keyframes viewEnter{ from{ opacity:0; transform: translateY(7px); } to{ opacity:1; transform: translateY(0); } }
+
+/* ---------- toast ---------- */
+.toast-host{ position: fixed; left:0; right:0; bottom: 18px; display:flex; justify-content:center; z-index: 90; pointer-events:none; padding: 0 16px; }
+.toast{
+  background: var(--surface-3); border:1px solid var(--border-strong); color: var(--text);
+  padding: 11px 18px; border-radius: 999px; font-size: 13.5px; font-weight:600; box-shadow: var(--shadow);
+  animation: toastIn .22s ease;
+}
+.toast.err{ background: var(--danger-dim); color: var(--danger); border-color: rgba(192,57,43,.35); }
+@keyframes toastIn{ from{ opacity:0; transform: translateY(8px);} to{ opacity:1; transform:translateY(0);} }
+
+.boot{ min-height:100vh; display:flex; align-items:center; justify-content:center; color: var(--text-3); font-size:14px; }
+
+/* ---------- login screen ---------- */
+.login-screen{
+  min-height:100vh; display:flex; flex-direction:column; align-items:center;
+  padding: 150px 20px 40px; position:relative; overflow:hidden;
+}
+.blob{ position:absolute; border-radius:50%; filter: blur(60px); opacity:.16; pointer-events:none; }
+.blob.b1{ width:380px; height:380px; background: var(--aqua); top:-120px; left:-100px; animation: floatA 14s ease-in-out infinite; }
+.blob.b2{ width:300px; height:300px; background: var(--aqua-deep); bottom:-100px; right:-80px; animation: floatB 17s ease-in-out infinite; }
+.blob.b3{ width:220px; height:220px; background: var(--aqua); top:40%; right:10%; opacity:.1; animation: floatA 20s ease-in-out infinite reverse; }
+@keyframes floatA{ 0%,100%{ transform: translate(0,0) scale(1);} 50%{ transform: translate(30px,20px) scale(1.08);} }
+@keyframes floatB{ 0%,100%{ transform: translate(0,0) scale(1);} 50%{ transform: translate(-24px,-18px) scale(1.05);} }
+
+.hero{
+  position:fixed; left:50%; top:50%; transform:translate(-50%,-50%); text-align:center; z-index:2;
+  width:100%; max-width:640px; padding:0 20px;
+  transition: top .85s var(--ease-smooth);
+}
+.hero.compact{ top:62px; }
+.hero-title{
+  font-size: clamp(28px, 5.4vw, 42px); font-weight:800; line-height:1.25; letter-spacing:-.3px;
+  font-family: var(--display-font);
+  transition: font-size .85s var(--ease-smooth);
+}
+.hero.compact .hero-title{ font-size: 21px; }
+.hero-sub{
+  margin-top: 10px; color: var(--text-2); font-size: 14px;
+  transition: opacity .5s ease, margin-top .5s ease, max-height .5s ease;
+  max-height: 30px; opacity:1; overflow:hidden;
+}
+.hero.compact .hero-sub{ opacity:0; max-height:0; margin-top:0; }
+.morph-word{
+  display:inline-block; color: var(--text); font-weight:700; will-change: transform, color;
+}
+.morph-word.charge{ color: var(--aqua-deep); transition: color .9s ease; }
+.morph-word.shake{ animation: wordShake .4s ease-in-out 2; }
+.morph-word.pop{ animation: wordPop .5s cubic-bezier(.34,1.56,.64,1); }
+.morph-word.morphed{
+  font-weight:800;
+  color: var(--aqua-deep);
+  letter-spacing:.2px;
+  font-family: var(--display-font);
+}
+@keyframes wordShake{
+  0%,100%{ transform: translate(0,0) rotate(0); }
+  20%{ transform: translate(-3px,1px) rotate(-2deg); }
+  40%{ transform: translate(3px,-1px) rotate(2deg); }
+  60%{ transform: translate(-2px,1px) rotate(-1.5deg); }
+  80%{ transform: translate(2px,-1px) rotate(1.5deg); }
+}
+@keyframes wordPop{
+  0%{ transform: scale(.7); }
+  60%{ transform: scale(1.1); }
+  100%{ transform: scale(1); }
+}
+
+.login-card{
+  width:100%; max-width: 360px; background: var(--surface); border:1px solid var(--border);
+  border-radius: 20px; padding: 24px 22px; box-shadow: var(--shadow); position:relative; z-index:1;
+  opacity:1; transform: translateY(0); transition: opacity .55s ease .05s, transform .55s var(--ease-smooth) .05s;
+}
+.login-card.pending{ opacity:0; transform: translateY(14px); transition:none; }
+.login-error{ color: var(--danger); font-size: 13px; margin: 8px 0 0; }
+.hint{ font-size:12px; color: var(--text-3); margin-top:-4px; }
+.hint b{ color: var(--text-2); }
+
+/* confetti — lives in a fixed viewport-level layer so it never gets dragged along by the hero's own transform/position transitions */
+.confetti-root{ position:fixed; inset:0; pointer-events:none; z-index:5; overflow:visible; }
+.confetti-piece{
+  position:absolute; width: var(--size); height: var(--size); left:0; top:0; border-radius:50%;
+  animation-name: confettiBurst; animation-fill-mode: forwards; opacity:0;
+}
+.confetti-piece.bar{ border-radius:2px; height: calc(var(--size) * 2.4); }
+@keyframes confettiBurst{
+  0%{
+    transform: translate(-50%,-50%) translate(0,0) rotate(0deg) scale(.5);
+    opacity:0;
+    animation-timing-function: cubic-bezier(.17,.84,.44,1);
+  }
+  8%{ opacity:1; transform: translate(-50%,-50%) translate(0,0) rotate(0deg) scale(1); }
+  42%{
+    transform: translate(-50%,-50%) translate(var(--tx1),var(--ty1)) rotate(calc(var(--rot) * .55)) scale(1);
+    opacity:1;
+    animation-timing-function: cubic-bezier(.5,0,.85,.4);
+  }
+  80%{ opacity:1; }
+  100%{
+    transform: translate(-50%,-50%) translate(var(--tx2),var(--ty2)) rotate(var(--rot)) scale(.55);
+    opacity:0;
+  }
+}
+
+/* ===================== responsive ===================== */
+@media (max-width: 879px){
+  .sidebar{ display:none; }
+  .topbar{
+    display:flex; align-items:center; justify-content:space-between; gap:10px; padding: 12px 16px;
+    border-bottom:1px solid var(--border); background: var(--bg-alt); position: sticky; top:0; z-index: 20;
+  }
+  .topbar-avatar-btn{ background:none; border:none; padding:2px; border-radius:50%; line-height:0; flex:none; }
+  .topbar-icon-circle{
+    width:34px; height:34px; border-radius:50%; background: var(--surface-2);
+    display:flex; align-items:center; justify-content:center; color: var(--text-3);
+    transition: background .15s ease, color .15s ease;
+  }
+  .topbar-icon-circle .ic{ width:18px; height:18px; }
+  .topbar-avatar-btn.active .topbar-icon-circle{ color: var(--aqua-deep); background: var(--aqua-dim); }
+  .main-col{ height:auto; min-height:100vh; }
+  .main-scroll{ overflow-y:visible; }
+  .main-inner{ padding: 14px 16px calc(94px + env(safe-area-inset-bottom)); }
+  .bottom-nav-wrap{
+    display:block; position:fixed; left:0; right:0; bottom:0; z-index: 50; background: var(--bg-alt);
+    border-top:1px solid var(--border);
+  }
+  .bottom-nav{
+    display:flex; overflow-x:auto; scroll-behavior:smooth; -webkit-overflow-scrolling:touch;
+    scrollbar-width:none; padding: 8px 10px calc(8px + env(safe-area-inset-bottom));
+  }
+  .bottom-nav::-webkit-scrollbar{ display:none; }
+  .bn-btn{
+    flex: 0 0 auto; min-width:64px; display:flex; flex-direction:column; align-items:center; gap:3px;
+    background:none; border:none; color: var(--text-3); font-size: 10.5px; font-weight:700;
+    padding: 6px 9px; border-radius: 10px; transition: color .16s ease;
+  }
+  .bn-btn.active{ color: var(--aqua-deep); }
+  .edge-cap{
+    position:absolute; top:0; bottom:0; width:26px; pointer-events:none;
+    opacity:0; transition: opacity .2s ease;
+  }
+  .edge-cap.left{ left:0; background: linear-gradient(to right, rgba(80,64,20,.16), transparent); }
+  .edge-cap.right{ right:0; background: linear-gradient(to left, rgba(80,64,20,.16), transparent); }
+  .bottom-nav-wrap.at-start .edge-cap.left{ opacity:1; }
+  .bottom-nav-wrap.at-end .edge-cap.right{ opacity:1; }
+  .home-grid{ grid-template-columns: 1fr; }
+  .login-screen{ padding-top: 134px; }
+}
+@media (min-width: 880px){
+  .main-inner{ padding: 22px 40px 60px; }
+}
+/* Note: this splash and the view/modal fades intentionally ignore prefers-reduced-motion —
+   they're brief (a couple seconds, once per visit) rather than continuous, and disabling
+   them entirely made the whole app feel broken on some setups without actually helping
+   anyone. */
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
+<script>
+/* ===================== All thing — app.js ===================== */
+
+/* ---------- tiny utils ---------- */
+function esc(v){
+  return String(v == null ? '' : v)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+function pad2(n){ return n < 10 ? '0'+n : ''+n; }
+function todayStr(){ const d = new Date(); return d.getFullYear()+'-'+pad2(d.getMonth()+1)+'-'+pad2(d.getDate()); }
+const WEEKDAY_KO = ['일','월','화','수','목','금','토'];
+function fmtDate(s){
+  if(!s) return '';
+  const [y,m,d] = s.split('-').map(Number);
+  const dt = new Date(y, m-1, d);
+  return `${m}월 ${d}일 (${WEEKDAY_KO[dt.getDay()]})`;
+}
+function dDayInfo(s){
+  if(!s) return {label:'', cls:''};
+  const today = new Date(todayStr());
+  const [y,m,d] = s.split('-').map(Number);
+  const target = new Date(y, m-1, d);
+  const diff = Math.round((target - today) / 86400000);
+  if(diff === 0) return {label:'D-DAY', cls:'dday-now'};
+  if(diff > 0) return {label:'D-'+diff, cls: diff <= 3 ? 'dday-soon' : 'dday-normal'};
+  return {label:'종료', cls:'dday-past'};
+}
+
+const MEAL_GROUPS = [
+  { key:'breakfast', label:'조식' },
+  { key:'lunch', label:'중식' },
+  { key:'dinner', label:'석식' }
+];
+function mealGroupsHtml(it){
+  return MEAL_GROUPS.filter(g => (it[g.key]||[]).length).map(g => `
+    <div class="meal-group">
+      <div class="meal-group-head">
+        <span class="meal-group-label">${g.label}</span>
+        ${it[g.key+'Cal'] ? `<span class="meal-cal">${esc(it[g.key+'Cal'])}</span>` : ''}
+      </div>
+      <div class="chip-wrap">${it[g.key].map(x=>`<span class="chip">${esc(x)}</span>`).join('')}</div>
+    </div>
+  `).join('');
+}
+
+/* ---------- optional Firebase real-time sync ----------
+   This app works fully on its own (local save + occasional background sync) without any
+   setup below. Filling in FIREBASE_CONFIG with your own free Firebase project turns on
+   TRUE instant sync: the moment the admin changes the timetable/meals/exams/events/notices,
+   every connected classmate's screen updates immediately, no refresh needed.
+
+   How to get a config (about 5 minutes, one time):
+   1. https://console.firebase.google.com → 새 프로젝트 만들기 (무료 Spark 요금제)
+   2. 왼쪽 메뉴 Build → Realtime Database → 데이터베이스 만들기 → "테스트 모드"로 시작
+   3. 프로젝트 설정(⚙️) → 내 앱 → 웹 앱 추가(</>) → 아무 이름이나 입력
+   4. 나오는 firebaseConfig 값을 아래 FIREBASE_CONFIG에 그대로 붙여넣기
+   5. Realtime Database → 규칙(Rules) 탭에서 우리 반끼리만 쓰는 용도이니 아래처럼 설정:
+        { "rules": { ".read": true, ".write": true } }
+      (누구나 읽고 쓸 수 있다는 뜻이라 절대 민감한 정보는 넣지 마세요.)
+*/
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyABMhw8xbdRMKH9UNoIu5vBKNJN_a7Xju8",
+  authDomain: "all-thing-fbac5.firebaseapp.com",
+  databaseURL: "https://all-thing-fbac5-default-rtdb.firebaseio.com",
+  projectId: "all-thing-fbac5",
+  storageBucket: "all-thing-fbac5.firebasestorage.app",
+  messagingSenderId: "594102091201",
+  appId: "1:594102091201:web:3b3b1d6d9413da1d9f8340"
+};
+let fbDb = null;
+const firebaseReady = !!(FIREBASE_CONFIG.databaseURL && typeof firebase !== 'undefined');
+if(firebaseReady){
+  try{
+    firebase.initializeApp(FIREBASE_CONFIG);
+    fbDb = firebase.database();
+  }catch(e){ console.error('All thing: Firebase 초기화 실패', e); }
+}
+
+/* ---------- storage wrapper ----------
+   Two layers:
+   1) localStorage — always available in a normal browser tab, synchronous, guarantees
+      "my data survives a refresh/revisit on this computer" even if a shared backend
+      isn't reachable.
+   2) window.storage (when present) — best-effort shared/cross-device layer. Every write
+      goes to localStorage first (so it can never be lost), then is also pushed to
+      window.storage if available. Every read prefers window.storage's latest value
+      (for cross-device sync) but always falls back to the local copy.
+*/
+const LS_PREFIX = 'allthing:';
+function lsKey(key, shared){ return LS_PREFIX + (shared ? 'shared:' : 'own:') + key; }
+function lsGet(key, shared, fallback){
+  try{
+    const raw = localStorage.getItem(lsKey(key, shared));
+    if(raw == null) return fallback;
+    return JSON.parse(raw);
+  }catch(e){ return fallback; }
+}
+function lsSet(key, shared, value){
+  try{ localStorage.setItem(lsKey(key, shared), JSON.stringify(value)); return true; }
+  catch(e){ return false; }
+}
+const storageOK = !!(window.storage && window.storage.get && window.storage.set);
+async function sGet(key, shared, fallback){
+  if(shared && firebaseReady && fbDb){
+    try{
+      const snap = await fbDb.ref('allthing/'+key).once('value');
+      const val = snap.val();
+      if(val !== null && val !== undefined){ lsSet(key, shared, val); return val; }
+    }catch(e){ /* fall through */ }
+  }
+  if(storageOK){
+    try{
+      const r = await window.storage.get(key, shared);
+      if(r && r.value !== undefined && r.value !== null){
+        const val = JSON.parse(r.value);
+        lsSet(key, shared, val); // keep a fresh local mirror
+        return val;
+      }
+    }catch(e){ /* fall through to local copy */ }
+  }
+  return lsGet(key, shared, fallback);
+}
+async function sSet(key, value, shared){
+  lsSet(key, shared, value); // guaranteed local save, always happens first
+  if(shared && firebaseReady && fbDb){
+    try{ await fbDb.ref('allthing/'+key).set(value); }catch(e){ /* still saved locally */ }
+  }
+  if(storageOK){
+    try{ await window.storage.set(key, JSON.stringify(value), shared); return true; }
+    catch(e){ return false; }
+  }
+  return true;
+}
+async function sDel(key, shared){
+  try{ localStorage.removeItem(lsKey(key, shared)); }catch(e){}
+  if(storageOK){
+    try{ await window.storage.delete(key, shared); return true; }catch(e){ return false; }
+  }
+  return true;
+}
+// remote-only read used by the sync poller: never falls back to the local mirror, and
+// returns null (rather than a stale/default value) when the shared backend can't be reached,
+// so a failed poll never looks like "everything got deleted".
+async function sGetRemoteOnly(key, shared){
+  if(!storageOK) return null;
+  try{
+    const r = await window.storage.get(key, shared);
+    if(!r || r.value === undefined || r.value === null) return null;
+    return JSON.parse(r.value);
+  }catch(e){ return null; }
+}
+
+/* ---------- constants ---------- */
+const DAYS = ['월','화','수','목','금'];
+const PERIODS = [1,2,3,4,5,6,7];
+function emptyGrid(){
+  const g = {};
+  DAYS.forEach(d => g[d] = PERIODS.map(()=> ''));
+  return g;
+}
+function defaultUsers(){
+  const users = {};
+  for(let n = 1; n <= 24; n++){
+    const id = '208' + pad2(n);
+    users[id] = { password: id, displayName: id, studentNo: id, isAdmin: id === '20824' };
+  }
+  users['00000'] = { password: '00000', displayName: '선생님', studentNo: '', isAdmin: true };
+  return users;
+}
+
+/* ---------- section config (meals / exams / events / notices share one CRUD engine) ---------- */
+const SECTIONS = {
+  meals: {
+    label: '급식', icon: 'meal', storageKey: 'allthing-meals',
+    emptyMsg: '아직 등록된 급식 정보가 없어요.',
+    fields: [
+      { name:'date', label:'날짜', type:'date', required:true },
+      { name:'breakfast', label:'조식 (한 줄에 하나씩, 없으면 비워두세요)', type:'lines', required:false },
+      { name:'lunch', label:'중식 (한 줄에 하나씩, 없으면 비워두세요)', type:'lines', required:false },
+      { name:'dinner', label:'석식 (한 줄에 하나씩, 없으면 비워두세요)', type:'lines', required:false }
+    ],
+    blank: () => ({ date: todayStr(), breakfast: [], lunch: [], dinner: [] }),
+    validate: (data) => {
+      if(!(data.breakfast||[]).length && !(data.lunch||[]).length && !(data.dinner||[]).length){
+        return '조식, 중식, 석식 중 하나는 입력해주세요.';
+      }
+      return '';
+    },
+    rowHtml: (it) => `
+      <div class="row-head">
+        <span class="row-date">${esc(fmtDate(it.date))}</span>
+      </div>
+      ${mealGroupsHtml(it) || '<span class="text-3">메뉴 없음</span>'}
+    `
+  },
+  exams: {
+    label: '수행평가·시험', icon: 'exam', storageKey: 'allthing-exams',
+    emptyMsg: '다가오는 수행평가·시험이 없어요.',
+    fields: [
+      { name:'subject', label:'과목', type:'text', required:true, placeholder:'예: 미적분1' },
+      { name:'title', label:'평가/시험명', type:'text', required:true, placeholder:'예: 2단원 수행평가' },
+      { name:'date', label:'날짜', type:'date', required:true },
+      { name:'memo', label:'메모 (선택)', type:'text', required:false, placeholder:'예: 준비물, 범위 등' }
+    ],
+    blank: () => ({ subject:'', title:'', date: todayStr(), memo:'' }),
+    rowHtml: (it) => {
+      const dd = dDayInfo(it.date);
+      return `
+      <div class="row-head">
+        <span class="badge">${esc(it.subject)}</span>
+        <span class="dday ${dd.cls}">${dd.label}</span>
+      </div>
+      <div class="row-title">${esc(it.title)}</div>
+      <div class="row-sub">${esc(fmtDate(it.date))}${it.memo ? ' · '+esc(it.memo) : ''}</div>
+      `;
+    }
+  },
+  events: {
+    label: '일정', icon: 'event', storageKey: 'allthing-events',
+    emptyMsg: '다가오는 일정이 없어요.',
+    fields: [
+      { name:'title', label:'일정명', type:'text', required:true, placeholder:'예: 현장체험학습' },
+      { name:'date', label:'날짜', type:'date', required:true },
+      { name:'endDate', label:'종료일 (선택)', type:'date', required:false },
+      { name:'memo', label:'메모 (선택)', type:'text', required:false }
+    ],
+    blank: () => ({ title:'', date: todayStr(), endDate:'', memo:'' }),
+    rowHtml: (it) => {
+      const dd = dDayInfo(it.date);
+      const range = it.endDate ? `${esc(fmtDate(it.date))} ~ ${esc(fmtDate(it.endDate))}` : esc(fmtDate(it.date));
+      return `
+      <div class="row-head">
+        <span class="dday ${dd.cls}">${dd.label}</span>
+      </div>
+      <div class="row-title">${esc(it.title)}</div>
+      <div class="row-sub">${range}${it.memo ? ' · '+esc(it.memo) : ''}</div>
+      `;
+    }
+  },
+  notices: {
+    label: '공지', icon: 'notice', storageKey: 'allthing-notices',
+    emptyMsg: '아직 등록된 공지가 없어요.',
+    fields: [
+      { name:'title', label:'제목', type:'text', required:true, placeholder:'예: 다음 주 시간표 변경 안내' },
+      { name:'content', label:'내용', type:'textarea', required:true, placeholder:'공지 내용을 입력해요' }
+    ],
+    blank: () => ({ title:'', content:'', date: todayStr(), author: '' }),
+    rowHtml: (it) => `
+      <div class="row-head">
+        <span class="row-date">${esc(fmtDate(it.date))}</span>
+        <span class="text-3">· ${esc(it.author||'')}</span>
+      </div>
+      <div class="row-title">${esc(it.title)}</div>
+      <div class="row-sub notice-content">${esc(it.content).replace(/\n/g,'<br>')}</div>
+    `
+  }
+};
+
+/* ---------- global state ---------- */
+const state = {
+  booted: false,
+  currentUser: null,
+  view: 'home',
+  users: {},
+  timetables: {},
+  meals: [],
+  exams: [],
+  events: [],
+  notices: [],
+  editing: { section: null, id: null, data: null },
+  ttEditor: { open: false, no: null, grid: null, copyFrom: '' },
+  toast: null,
+  loginError: '',
+  splashPlayed: false,
+  canInstall: false,
+  acctEditing: null,
+  acctAdding: false
+};
+
+function me(){ return state.currentUser ? state.users[state.currentUser] : null; }
+function isAdmin(){ const u = me(); return !!(u && u.isAdmin); }
+
+function showToast(msg, type){
+  state.toast = { msg, type: type || 'ok' };
+  render();
+  clearTimeout(showToast._t);
+  showToast._t = setTimeout(() => { state.toast = null; render(); }, 2200);
+}
+
+/* ---------- icons (minimal inline SVG, stroke style) ---------- */
+const ICONS = {
+  home: '<path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h5v-6h4v6h5V9.5"/>',
+  meal: '<path d="M7 2v7a2 2 0 0 0 4 0V2"/><path d="M9 9v13"/><path d="M17 2c-1.6 0-3 1.7-3 4.5S15.4 11 17 11"/><path d="M17 11v11"/>',
+  timetable: '<rect x="3" y="4.5" width="18" height="16" rx="2.2"/><path d="M3 9.5h18"/><path d="M9 4.5v16"/><path d="M15 4.5v16"/>',
+  exam: '<rect x="5" y="3.2" width="14" height="18" rx="2"/><path d="M9 3.2h6v3H9z"/><path d="m9 13 2 2 4-4"/>',
+  event: '<rect x="3" y="5" width="18" height="16" rx="2.2"/><path d="M3 10h18"/><path d="M8 3v4"/><path d="M16 3v4"/>',
+  notice: '<path d="M3 10.5v4a1 1 0 0 0 1 1h2l5.5 4V5.5L6 9.5H4a1 1 0 0 0-1 1z"/><path d="M17 8a4.3 4.3 0 0 1 0 8.5"/>',
+  profile: '<circle cx="12" cy="8" r="4"/><path d="M4 21c1.4-4.2 5-6.3 8-6.3s6.6 2.1 8 6.3"/>',
+  logout: '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/>',
+  edit: '<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/>',
+  trash: '<path d="M3.5 6h17"/><path d="M8 6V4h8v2"/><path d="M18.5 6 17.6 20H6.4L5.5 6"/><path d="M10 10.5v6"/><path d="M14 10.5v6"/>',
+  plus: '<circle cx="12" cy="12" r="9.2"/><path d="M12 7.5v9"/><path d="M7.5 12h9"/>',
+  chevron: '<path d="M9 6l6 6-6 6"/>',
+  x: '<path d="M18 6 6 18"/><path d="M6 6l12 12"/>',
+  crown: '<path d="M3 8.5 6.8 11 12 4.5 17.2 11l3.8-2.5-1.8 10.5H4.8Z"/>',
+  key: '<circle cx="8" cy="15" r="4"/><path d="M10.5 12.5 20 3"/><path d="M17 6l3 3"/><path d="M14 9l2 2"/>',
+  hash: '<path d="M4 9h16"/><path d="M4 15h16"/><path d="M10 3 8 21"/><path d="M16 3l-2 18"/>',
+  check: '<path d="M20 6 9 17l-5-5"/>',
+  more: '<circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/>',
+  copy: '<rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/>',
+  eye: '<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/>',
+  'eye-off': '<path d="M3 3l18 18"/><path d="M10.6 5.2A10.6 10.6 0 0 1 12 5c6.4 0 10 7 10 7a17.7 17.7 0 0 1-3.2 4.2"/><path d="M6.5 6.7C3.9 8.4 2 12 2 12s3.6 7 10 7a9.6 9.6 0 0 0 4.4-1"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/>',
+  users: '<circle cx="9" cy="8" r="3.2"/><path d="M2.5 20c1-3.3 3.6-5 6.5-5s5.5 1.7 6.5 5"/><circle cx="17.2" cy="8.4" r="2.6"/><path d="M16 15.4c2.3.4 4 1.9 4.8 4.6"/>',
+  bell: '<path d="M6 9a6 6 0 0 1 12 0c0 4.2 1.5 5.8 2 6.5H4c.5-.7 2-2.3 2-6.5Z"/><path d="M9.5 18.5a2.6 2.6 0 0 0 5 0"/>'
+};
+function icon(name, cls){
+  return `<svg class="ic ${cls||''}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${ICONS[name]||''}</svg>`;
+}
+
+/* ---------- init ---------- */
+function withTimeout(promise, ms, fallback){
+  return new Promise((resolve) => {
+    let settled = false;
+    const timer = setTimeout(() => { if(!settled){ settled = true; resolve(fallback); } }, ms);
+    promise.then((v) => { if(!settled){ settled = true; clearTimeout(timer); resolve(v); } })
+           .catch(() => { if(!settled){ settled = true; clearTimeout(timer); resolve(fallback); } });
+  });
+}
+async function init(){
+  let users = null, timetables = {}, meals = [], exams = [], events = [], notices = [], session = null;
+  try{
+    const results = await withTimeout(Promise.all([
+      sGet('allthing-users', true, null),
+      sGet('allthing-timetables', true, {}),
+      sGet('allthing-meals', true, []),
+      sGet('allthing-exams', true, []),
+      sGet('allthing-events', true, []),
+      sGet('allthing-notices', true, []),
+      sGet('allthing-session', false, null)
+    ]), 4000, null);
+    if(results){
+      users = results[0]; timetables = results[1]; meals = results[2];
+      exams = results[3]; events = results[4]; notices = results[5]; session = results[6];
+    }
+  }catch(err){ console.error('All thing: 초기 데이터를 불러오는 중 문제가 있었어요.', err); }
+
+  state.users = users || defaultUsers();
+  if(!users){ sSet('allthing-users', state.users, true); }
+  state.timetables = timetables || {};
+  state.meals = meals || [];
+  state.exams = exams || [];
+  state.events = events || [];
+  state.notices = notices || [];
+
+  if(session && session.id && state.users[session.id]){
+    state.currentUser = session.id;
+    state.view = 'home';
+  }
+  state.booted = true;
+  render();
+  if(!state.currentUser) playSplash();
+  startRealtimeSync();
+}
+
+/* ---------- near-real-time sync ----------
+   If a Firebase project is configured (see FIREBASE_CONFIG above), this attaches live
+   listeners so every change is pushed to connected classmates instantly. Otherwise it
+   falls back to quietly polling the shared storage every few seconds — a static HTML
+   file with no Firebase project has no server of its own to push updates from, so this
+   polling fallback is the closest approximation without that setup.
+   Either way, it's skipped while an edit form or the timetable editor is open, so it
+   never overwrites something you're in the middle of typing.
+*/
+const SYNC_KEY_MAP = {
+  'allthing-users':'users', 'allthing-timetables':'timetables', 'allthing-meals':'meals',
+  'allthing-exams':'exams', 'allthing-events':'events', 'allthing-notices':'notices'
+};
+function applyRemoteUpdate(sKey, val){
+  if(val === null || val === undefined) return;
+  if(JSON.stringify(state[sKey]) === JSON.stringify(val)) return;
+  if(sKey === 'notices'){
+    const knownIds = new Set((state.notices || []).map(n => n.id));
+    const freshOnes = (val || []).filter(n => !knownIds.has(n.id));
+    freshOnes.forEach(n => notifyNotice(n));
+  }
+  state[sKey] = val;
+  if(state.ttEditor.open || state.editing.section) return; // don't clobber an in-progress edit
+  render();
+}
+function startRealtimeSync(){
+  if(firebaseReady && fbDb){
+    Object.keys(SYNC_KEY_MAP).forEach(key => {
+      fbDb.ref('allthing/'+key).on('value', snap => {
+        if(!state.currentUser) return;
+        const val = snap.val();
+        lsSet(key, true, val);
+        applyRemoteUpdate(SYNC_KEY_MAP[key], val);
+      });
+    });
+    return;
+  }
+  startPolling();
+}
+let pollTimer = null;
+function startPolling(){
+  if(!storageOK || pollTimer) return;
+  pollTimer = setInterval(async () => {
+    if(!state.currentUser) return;
+    if(typeof document !== 'undefined' && document.hidden) return;
+    if(state.ttEditor.open || state.editing.section) return;
+    try{
+      const results = await Promise.all(Object.keys(SYNC_KEY_MAP).map(k => sGetRemoteOnly(k, true)));
+      Object.keys(SYNC_KEY_MAP).forEach((k, i) => {
+        const val = results[i];
+        if(val === null) return;
+        lsSet(k, true, val);
+        applyRemoteUpdate(SYNC_KEY_MAP[k], val);
+      });
+    }catch(e){ /* a failed poll just tries again next tick */ }
+  }, 5000);
+}
+
+/* ---------- auth ---------- */
+async function handleLoginSubmit(){
+  const idEl = document.getElementById('loginId');
+  const pwEl = document.getElementById('loginPw');
+  const rememberEl = document.getElementById('loginRemember');
+  if(!idEl || !pwEl) return;
+  const id = idEl.value.trim();
+  const pw = pwEl.value.trim();
+  const remember = rememberEl ? rememberEl.checked : true;
+  const user = state.users[id];
+  if(!user || user.password !== pw){
+    state.loginError = '아이디 또는 비밀번호가 올바르지 않아요.';
+    render();
+    return;
+  }
+  state.loginError = '';
+  state.currentUser = id;
+  state.view = 'home';
+  if(remember){
+    await sSet('allthing-session', { id, ts: Date.now() }, false);
+  } else {
+    await sDel('allthing-session', false);
+  }
+  render();
+}
+async function handleLogout(){
+  state.currentUser = null;
+  state.view = 'home';
+  state.splashPlayed = false;
+  await sDel('allthing-session', false);
+  render();
+  playSplash();
+}
+function goto(view){
+  state.view = view;
+  state.editing = { section:null, id:null, data:null };
+  render();
+  const main = document.getElementById('mainScroll');
+  if(main) main.scrollTop = 0;
+  const navEl = document.getElementById('bottomNavScroll');
+  if(navEl){
+    const activeBtn = navEl.querySelector('.bn-btn.active');
+    if(activeBtn) activeBtn.scrollIntoView({ behavior:'smooth', inline:'center', block:'nearest' });
+  }
+}
+function togglePwVisibility(targetId, btn){
+  const inp = document.getElementById(targetId);
+  if(!inp) return;
+  const nowShowing = inp.type === 'text';
+  inp.type = nowShowing ? 'password' : 'text';
+  if(btn) btn.innerHTML = icon(nowShowing ? 'eye' : 'eye-off');
+}
+
+/* ---------- notice notifications ---------- */
+function notifyNotice(item){
+  const u = me();
+  if(!u || !u.notifyEnabled) return;
+  if(typeof Notification === 'undefined' || Notification.permission !== 'granted') return;
+  try{
+    const n = new Notification('📢 ' + (item.title || '새 공지'), {
+      body: (item.content || '').slice(0, 120),
+      icon: 'icon-192.png',
+      tag: 'allthing-notice-' + item.id
+    });
+    n.onclick = () => {
+      try{ window.focus(); }catch(e){}
+      goto('notices');
+      n.close();
+    };
+  }catch(e){ /* 알림 생성에 실패해도 앱 사용에는 지장 없게 조용히 무시 */ }
+}
+async function toggleNotifyPref(){
+  const u = me();
+  if(!u) return;
+  const turningOn = !u.notifyEnabled;
+  if(turningOn){
+    if(typeof Notification === 'undefined'){
+      showToast('이 브라우저는 알림을 지원하지 않아요.', 'err');
+      return;
+    }
+    let perm = Notification.permission;
+    if(perm === 'default'){
+      perm = await Notification.requestPermission();
+    }
+    if(perm !== 'granted'){
+      showToast('알림 권한이 차단되어 있어요. 브라우저 설정에서 허용해주세요.', 'err');
+      return;
+    }
+  }
+  u.notifyEnabled = turningOn;
+  await sSet('allthing-users', state.users, true);
+  showToast(turningOn ? '공지 알림을 켰어요.' : '공지 알림을 껐어요.');
+  render();
+}
+
+/* ---------- profile actions ---------- */
+async function saveDisplayName(){
+  const val = document.getElementById('pfName').value.trim();
+  if(!val){ showToast('표시 이름을 입력해주세요.', 'err'); return; }
+  state.users[state.currentUser].displayName = val;
+  await sSet('allthing-users', state.users, true);
+  showToast('표시 이름을 저장했어요.');
+  render();
+}
+async function changePassword(){
+  const pw1 = document.getElementById('pfPw1').value;
+  const pw2 = document.getElementById('pfPw2').value;
+  if(pw1.length < 6){ showToast('비밀번호는 6자 이상으로 입력해주세요.', 'err'); return; }
+  if(pw1 !== pw2){ showToast('새 비밀번호가 서로 달라요.', 'err'); return; }
+  state.users[state.currentUser].password = pw1;
+  await sSet('allthing-users', state.users, true);
+  showToast('비밀번호를 바꿨어요.');
+  render();
+}
+async function saveStudentNo(){
+  const val = document.getElementById('pfNo').value.trim();
+  if(!val){ showToast('학번을 입력해주세요.', 'err'); return; }
+  state.users[state.currentUser].studentNo = val;
+  await sSet('allthing-users', state.users, true);
+  showToast('학번을 저장했어요.');
+  render();
+}
+
+/* ---------- account management actions (admin only) ---------- */
+function acctEdit(id){
+  state.acctEditing = id;
+  render();
+}
+function acctCancel(){
+  state.acctEditing = null;
+  render();
+}
+async function acctResetDefault(id){
+  const u = state.users[id];
+  if(!u) return;
+  if(!confirm(`${u.displayName}(${id})의 비밀번호를 아이디와 같은 값으로 초기화할까요?`)) return;
+  u.password = id;
+  await sSet('allthing-users', state.users, true);
+  showToast('비밀번호를 초기화했어요.');
+  state.acctEditing = null;
+  render();
+}
+async function acctSave(id){
+  const idEl = document.getElementById('acctId');
+  const pwEl = document.getElementById('acctPw');
+  if(!idEl) return;
+  const newId = idEl.value.trim();
+  const newPw = pwEl ? pwEl.value : '';
+  if(!newId){ showToast('아이디를 입력해주세요.', 'err'); return; }
+  if(newPw && newPw.length < 6){ showToast('비밀번호는 6자 이상으로 입력해주세요.', 'err'); return; }
+  if(newId !== id && state.users[newId]){ showToast('이미 사용 중인 아이디예요.', 'err'); return; }
+
+  if(newId !== id){
+    const record = Object.assign({}, state.users[id]);
+    delete state.users[id];
+    state.users[newId] = record;
+    if(state.currentUser === id){
+      state.currentUser = newId;
+      const session = await sGet('allthing-session', false, null);
+      if(session) await sSet('allthing-session', { id: newId, ts: Date.now() }, false);
+    }
+  }
+  if(newPw) state.users[newId].password = newPw;
+  await sSet('allthing-users', state.users, true);
+  showToast('계정 정보를 저장했어요.');
+  state.acctEditing = null;
+  render();
+}
+function acctAddOpen(){
+  state.acctAdding = true;
+  state.acctEditing = null;
+  render();
+  const el = document.getElementById('acctAddForm');
+  if(el) el.scrollIntoView({ behavior:'smooth', block:'start' });
+}
+function acctAddCancel(){
+  state.acctAdding = false;
+  render();
+}
+async function acctAddSave(){
+  const idEl = document.getElementById('newAcctId');
+  const nameEl = document.getElementById('newAcctName');
+  const pwEl = document.getElementById('newAcctPw');
+  const adminEl = document.getElementById('newAcctAdmin');
+  if(!idEl) return;
+  const id = idEl.value.trim();
+  const name = nameEl ? nameEl.value.trim() : '';
+  const pw = pwEl ? pwEl.value.trim() : '';
+  if(!id){ showToast('아이디를 입력해주세요.', 'err'); return; }
+  if(state.users[id]){ showToast('이미 사용 중인 아이디예요.', 'err'); return; }
+  if(pw && pw.length < 6){ showToast('비밀번호는 6자 이상으로 입력해주세요.', 'err'); return; }
+  state.users[id] = {
+    password: pw || id,
+    displayName: name || id,
+    studentNo: '',
+    isAdmin: !!(adminEl && adminEl.checked)
+  };
+  await sSet('allthing-users', state.users, true);
+  showToast(`${id} 계정을 추가했어요.`);
+  state.acctAdding = false;
+  render();
+}
+async function acctDelete(id){
+  const u = state.users[id];
+  if(!u) return;
+  if(id === state.currentUser){ showToast('현재 로그인한 계정은 삭제할 수 없어요.', 'err'); return; }
+  const adminCount = Object.values(state.users).filter(x => x.isAdmin).length;
+  if(u.isAdmin && adminCount <= 1){ showToast('마지막 남은 관리자 계정은 삭제할 수 없어요.', 'err'); return; }
+  if(!confirm(`${u.displayName}(${id}) 계정을 삭제할까요? 되돌릴 수 없어요.`)) return;
+  delete state.users[id];
+  await sSet('allthing-users', state.users, true);
+  showToast('계정을 삭제했어요.');
+  if(state.acctEditing === id) state.acctEditing = null;
+  render();
+}
+
+/* ---------- generic section CRUD (meals / exams / events / notices) ---------- */
+function openAddForm(section, presetDate){
+  const blank = SECTIONS[section].blank();
+  if(presetDate) blank.date = presetDate;
+  state.editing = { section, id: null, data: blank };
+  render();
+  const el = document.getElementById('sectionForm');
+  if(el) el.scrollIntoView({ behavior:'smooth', block:'start' });
+}
+function openEditForm(section, id){
+  const item = state[section].find(x => x.id === id);
+  if(!item) return;
+  state.editing = { section, id, data: Object.assign({}, item) };
+  render();
+  const el = document.getElementById('sectionForm');
+  if(el) el.scrollIntoView({ behavior:'smooth', block:'start' });
+}
+function cancelForm(){
+  state.editing = { section:null, id:null, data:null };
+  render();
+}
+async function submitSectionForm(section){
+  const cfg = SECTIONS[section];
+  const data = {};
+  for(const f of cfg.fields){
+    const el = document.getElementById('field-'+f.name);
+    if(!el) return;
+    let val = el.value;
+    if(f.type === 'lines'){
+      val = val.split('\n').map(s=>s.trim()).filter(Boolean);
+    } else {
+      val = val.trim();
+    }
+    if(f.required && (!val || (Array.isArray(val) && val.length===0))){
+      showToast(f.label+'을(를) 입력해주세요.', 'err');
+      return;
+    }
+    data[f.name] = val;
+  }
+  if(cfg.validate){
+    const err = cfg.validate(data);
+    if(err){ showToast(err, 'err'); return; }
+  }
+  const id = state.editing.id;
+  if(id){
+    const idx = state[section].findIndex(x=>x.id===id);
+    if(idx>-1) state[section][idx] = Object.assign({}, state[section][idx], data);
+  } else {
+    const newItem = Object.assign({ id: uid() }, data);
+    if(section === 'notices'){
+      newItem.date = todayStr();
+      newItem.author = me() ? me().displayName : '';
+    }
+    state[section].push(newItem);
+    if(section === 'notices') notifyNotice(newItem);
+  }
+  state[section].sort((a,b) => (a.date||'').localeCompare(b.date||''));
+  await sSet(cfg.storageKey, state[section], true);
+  state.editing = { section:null, id:null, data:null };
+  showToast(id ? '수정했어요.' : '추가했어요.');
+  render();
+}
+async function deleteSectionItem(section, id){
+  if(!confirm('정말 삭제할까요?')) return;
+  state[section] = state[section].filter(x=>x.id!==id);
+  await sSet(SECTIONS[section].storageKey, state[section], true);
+  showToast('삭제했어요.');
+  render();
+}
+
+/* ---------- timetable admin editor ---------- */
+function openTtEditor(){
+  state.ttEditor = { open:true, no:null, grid:null, copyFrom:'' };
+  render();
+}
+function closeTtEditor(){
+  state.ttEditor = { open:false, no:null, grid:null, copyFrom:'' };
+  render();
+}
+function selectTtNo(no){
+  state.ttEditor.no = no;
+  state.ttEditor.grid = JSON.parse(JSON.stringify(state.timetables[no] || emptyGrid()));
+  render();
+}
+async function saveTtGrid(){
+  const no = state.ttEditor.no;
+  if(!no) return;
+  const grid = emptyGrid();
+  DAYS.forEach(day => {
+    PERIODS.forEach((p, i) => {
+      const el = document.getElementById('cell-'+day+'-'+i);
+      grid[day][i] = el ? el.value.trim() : '';
+    });
+  });
+  state.timetables[no] = grid;
+  await sSet('allthing-timetables', state.timetables, true);
+  showToast(no + ' 시간표를 저장했어요.');
+  render();
+}
+async function copyTtFrom(){
+  const from = document.getElementById('ttCopyFrom').value.trim();
+  const to = state.ttEditor.no;
+  if(!to){ showToast('먼저 학번을 선택해주세요.', 'err'); return; }
+  if(!from){ showToast('복사할 학번을 입력해주세요.', 'err'); return; }
+  if(!state.timetables[from]){ showToast(from + '의 시간표가 아직 없어요.', 'err'); return; }
+  state.timetables[to] = JSON.parse(JSON.stringify(state.timetables[from]));
+  await sSet('allthing-timetables', state.timetables, true);
+  state.ttEditor.grid = JSON.parse(JSON.stringify(state.timetables[to]));
+  showToast(from + '의 시간표를 ' + to + '(으)로 복사했어요.');
+  render();
+}
+function studentIdList(){
+  return Object.keys(state.users).filter(id => id !== '00000').sort();
+}
+
+/* ---------- nav config ---------- */
+const NAV = [
+  { key:'home', label:'홈', icon:'home' },
+  { key:'meals', label:'급식', icon:'meal' },
+  { key:'timetable', label:'시간표', icon:'timetable' },
+  { key:'exams', label:'수행평가·시험', icon:'exam' },
+  { key:'events', label:'일정', icon:'event' },
+  { key:'notices', label:'공지', icon:'notice' },
+  { key:'profile', label:'내 정보', icon:'profile' }
+];
+const ACCOUNTS_NAV_ITEM = { key:'accounts', label:'계정 관리', icon:'users' };
+function visibleNav(){ return isAdmin() ? NAV.concat([ACCOUNTS_NAV_ITEM]) : NAV; }
+
+/* ---------- section list/form (generic CRUD render) ---------- */
+function renderSectionList(section){
+  const cfg = SECTIONS[section];
+  let list = state[section];
+  if(section === 'notices') list = list.slice().reverse();
+  if(list.length === 0){
+    return `<div class="empty-state">${icon(cfg.icon)}<p>${cfg.emptyMsg}</p></div>`;
+  }
+  return `<div class="list">${list.map(it => `
+    <div class="list-item ${section!=='notices' && it.date < todayStr() ? 'past' : ''}">
+      <div class="list-item-body">${cfg.rowHtml(it)}</div>
+      ${isAdmin() ? `
+      <div class="list-item-actions">
+        <button class="icon-btn" data-act="openEdit" data-section="${section}" data-id="${it.id}" aria-label="수정">${icon('edit')}</button>
+        <button class="icon-btn danger" data-act="deleteItem" data-section="${section}" data-id="${it.id}" aria-label="삭제">${icon('trash')}</button>
+      </div>` : ''}
+    </div>
+  `).join('')}</div>`;
+}
+function renderSectionForm(section){
+  const cfg = SECTIONS[section];
+  const data = state.editing.data || cfg.blank();
+  const fieldsHtml = cfg.fields.map(f => {
+    const val = data[f.name];
+    if(f.type === 'lines'){
+      return `<label class="field"><span>${f.label}</span><textarea id="field-${f.name}" rows="4" placeholder="${esc(f.placeholder||'')}">${esc((val||[]).join('\n'))}</textarea></label>`;
+    }
+    if(f.type === 'textarea'){
+      return `<label class="field"><span>${f.label}</span><textarea id="field-${f.name}" rows="4" placeholder="${esc(f.placeholder||'')}">${esc(val||'')}</textarea></label>`;
+    }
+    return `<label class="field"><span>${f.label}</span><input id="field-${f.name}" type="${f.type}" value="${esc(val||'')}" placeholder="${esc(f.placeholder||'')}"></label>`;
+  }).join('');
+  return `
+  <form id="sectionForm" class="card form-card" data-form="section" data-section="${section}">
+    <h3>${state.editing.id ? cfg.label+' 수정' : cfg.label+' 추가'}</h3>
+    ${fieldsHtml}
+    <div class="form-actions">
+      <button type="button" class="btn btn-ghost" data-act="cancelForm">취소</button>
+      <button type="submit" class="btn btn-primary">저장</button>
+    </div>
+  </form>`;
+}
+function renderSectionView(section){
+  const cfg = SECTIONS[section];
+  const showMealImport = section === 'meals' && isAdmin();
+  return `
+  <div class="view-header">
+    <h2>${icon(cfg.icon)} ${cfg.label}</h2>
+    <div style="display:flex; gap:8px; flex-wrap:wrap;">
+      ${showMealImport ? `
+      <input id="mealJsonInput" type="file" accept="application/json,.json" style="display:none">
+      <button class="btn btn-ghost btn-sm" data-act="importMealsJson">${icon('copy')} 나이스 JSON 불러오기</button>
+      ` : ''}
+      ${isAdmin() ? `<button class="btn btn-primary btn-sm" data-act="openAdd" data-section="${section}">${icon('plus')} 추가</button>` : ''}
+    </div>
+  </div>
+  ${showMealImport ? `<p class="text-3 small" style="margin:-6px 0 14px;">나이스 급식식단정보 오픈API에서 내려받은 JSON 파일을 그대로 올리면 날짜별로 자동 등록돼요. 같은 날짜는 덮어써요.</p>` : ''}
+  ${state.editing.section === section ? renderSectionForm(section) : ''}
+  ${renderSectionList(section)}
+  `;
+}
+
+/* ---------- meal JSON import (NEIS 급식식단정보 오픈API export) ---------- */
+const MEAL_TYPE_MAP = { '조식':'breakfast', '중식':'lunch', '석식':'dinner', '조':'breakfast', '중':'lunch', '석':'dinner' };
+function cleanDishName(raw){
+  return String(raw || '')
+    .replace(/\(([\d.\s]+)\)\s*$/, '')
+    .replace(/\*+$/, '')
+    .trim();
+}
+async function handleMealJsonFile(file){
+  if(!file) return;
+  let rows;
+  try{
+    const text = await file.text();
+    const parsed = JSON.parse(text);
+    rows = Array.isArray(parsed) ? parsed : ((parsed && parsed.mealServiceDietInfo && parsed.mealServiceDietInfo[1] && parsed.mealServiceDietInfo[1].row) || []);
+  }catch(e){
+    showToast('JSON 파일을 읽지 못했어요. 파일 형식을 확인해주세요.', 'err');
+    return;
+  }
+  const valid = rows.filter(r => r && typeof r.MLSV_YMD === 'string' && /^\d{8}$/.test(r.MLSV_YMD));
+  if(valid.length === 0){
+    showToast('가져올 급식 데이터를 찾지 못했어요.', 'err');
+    return;
+  }
+  const existing = {};
+  state.meals.forEach(m => { existing[m.date] = m; });
+  const touchedDates = new Set();
+  valid.forEach(r => {
+    const date = r.MLSV_YMD.slice(0,4)+'-'+r.MLSV_YMD.slice(4,6)+'-'+r.MLSV_YMD.slice(6,8);
+    const key = MEAL_TYPE_MAP[(r.MMEAL_SC_NM || '').trim()];
+    const dishes = String(r.DDISH_NM || '').split('<br/>').map(cleanDishName).filter(Boolean);
+    if(!touchedDates.has(date)){
+      const prevId = existing[date] && existing[date].id;
+      existing[date] = { id: prevId || uid(), date, breakfast: [], lunch: [], dinner: [] };
+      touchedDates.add(date);
+    }
+    if(key){
+      existing[date][key] = dishes;
+      if(r.CAL_INFO) existing[date][key+'Cal'] = String(r.CAL_INFO).trim();
+    }
+  });
+  state.meals = Object.values(existing).sort((a,b) => (a.date||'').localeCompare(b.date||''));
+  await sSet(SECTIONS.meals.storageKey, state.meals, true);
+  showToast(`${touchedDates.size}일치 급식을 불러왔어요.`);
+  render();
+}
+
+/* ---------- timetable view ---------- */
+function renderTimetableTable(grid){
+  if(!grid) return '';
+  return `
+  <div class="tt-wrap card">
+    <table class="tt-table">
+      <thead><tr><th></th>${DAYS.map(d=>`<th>${d}</th>`).join('')}</tr></thead>
+      <tbody>
+        ${PERIODS.map((p,i)=>`
+        <tr><th>${p}</th>${DAYS.map(d=>`<td>${esc(grid[d][i]) || '<span class="text-3">-</span>'}</td>`).join('')}</tr>
+        `).join('')}
+      </tbody>
+    </table>
+  </div>`;
+}
+function renderTimetableView(){
+  const u = me();
+  const no = u.studentNo;
+  const grid = no ? (state.timetables[no] || null) : null;
+  return `
+  <div class="view-header">
+    <h2>${icon('timetable')} 시간표</h2>
+    ${isAdmin() ? `<button class="btn btn-primary btn-sm" data-act="ttOpen">${icon('edit')} 시간표 편집</button>` : ''}
+  </div>
+  <div class="text-2 tt-caption">${no ? '학번 '+esc(no)+' 기준' : '내 정보 탭에서 학번을 먼저 설정해주세요.'}</div>
+  ${no && grid ? renderTimetableTable(grid) : ''}
+  ${no && !grid ? `<div class="empty-state">${icon('timetable')}<p>아직 시간표가 입력되지 않았어요. 관리자에게 알려주세요.</p></div>` : ''}
+  ${!no ? `<div class="empty-state">${icon('hash')}<p>학번을 설정하면 시간표가 표시돼요.</p></div>` : ''}
+  <p class="footnote">학교 사정으로 바뀔 수 있어요 · 틀린 부분은 관리자에게 알려주세요</p>
+  ${state.ttEditor.open ? renderTtModal() : ''}
+  `;
+}
+function renderTtModal(){
+  const ids = studentIdList();
+  const grid = state.ttEditor.grid;
+  const no = state.ttEditor.no;
+  return `
+  <div class="modal-overlay" data-act="ttClose" data-backdrop="1">
+    <div class="modal">
+      <div class="modal-head">
+        <h3>시간표 편집 (관리자)</h3>
+        <button class="icon-btn" data-act="ttClose">${icon('x')}</button>
+      </div>
+      <div class="modal-body">
+        <label class="field"><span>학번</span>
+          <div class="inline-input">
+            <input id="ttSearchNo" type="text" placeholder="예: 20801" value="${esc(no||'')}">
+            <button type="button" class="btn btn-ghost btn-sm" data-act="ttSelectInput">불러오기</button>
+          </div>
+        </label>
+        <div class="chip-select">
+          ${ids.map(id => `<button class="chip-btn ${no===id?'active':''}" data-act="ttSelect" data-no="${id}">${esc(id)}${state.users[id].displayName!==id ? ' '+esc(state.users[id].displayName) : ''}</button>`).join('')}
+        </div>
+        ${grid ? `
+        <div class="tt-edit-wrap">
+          <table class="tt-table tt-edit">
+            <thead><tr><th></th>${DAYS.map(d=>`<th>${d}</th>`).join('')}</tr></thead>
+            <tbody>
+              ${PERIODS.map((p,i)=>`
+              <tr><th>${p}</th>${DAYS.map(d=>`<td><input id="cell-${d}-${i}" type="text" value="${esc(grid[d][i])}"></td>`).join('')}</tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+        <button class="btn btn-primary btn-block" data-act="ttSave">${icon('check')} ${esc(no)} 시간표 저장</button>
+        <div class="copy-box">
+          <p class="text-2">다른 학번 시간표 복사해오기</p>
+          <div class="inline-input">
+            <input id="ttCopyFrom" type="text" placeholder="복사할 학번 (예: 20801)">
+            <button type="button" class="btn btn-ghost btn-sm" data-act="ttCopy">${icon('copy')} 복사</button>
+          </div>
+          <p class="text-3 small">${esc(no)}의 기존 시간표는 지워지고 덮어써요.</p>
+        </div>
+        ` : `<p class="text-2 modal-hint">학번을 선택하면 편집할 수 있어요.</p>`}
+      </div>
+    </div>
+  </div>`;
+}
+
+/* ---------- home view ---------- */
+function homeMealSummary(){
+  const t = state.meals.find(m => m.date === todayStr());
+  const html = t ? mealGroupsHtml(t) : '';
+  if(!html) return `<p class="text-2">오늘은 급식 정보가 없어요.</p>`;
+  return html;
+}
+function homeTimetableSummary(){
+  const u = me();
+  const day = WEEKDAY_KO[new Date().getDay()];
+  if(!DAYS.includes(day)) return `<p class="text-2">오늘은 등교하지 않는 날이에요.</p>`;
+  if(!u.studentNo || !state.timetables[u.studentNo]) return `<p class="text-2">아직 시간표가 없어요.</p>`;
+  const grid = state.timetables[u.studentNo];
+  const list = PERIODS.map((p,i)=>({ p, s: grid[day][i] })).filter(x => x.s);
+  if(list.length === 0) return `<p class="text-2">오늘은 등록된 수업이 없어요.</p>`;
+  return `<div class="mini-list">${list.map(x=>`<div class="mini-row"><span class="mini-p">${x.p}교시</span><span>${esc(x.s)}</span></div>`).join('')}</div>`;
+}
+function homeUpcomingExams(){
+  const list = state.exams.filter(x => x.date >= todayStr()).slice(0,2);
+  if(list.length === 0) return `<p class="text-2">${SECTIONS.exams.emptyMsg}</p>`;
+  return `<div class="mini-list">${list.map(it => {
+    const dd = dDayInfo(it.date);
+    return `<div class="mini-row"><span class="dday sm ${dd.cls}">${dd.label}</span><span>${esc(it.subject)} · ${esc(it.title)}</span></div>`;
+  }).join('')}</div>`;
+}
+function homeUpcomingEvents(){
+  const list = state.events.filter(x => x.date >= todayStr()).slice(0,2);
+  if(list.length === 0) return `<p class="text-2">${SECTIONS.events.emptyMsg}</p>`;
+  return `<div class="mini-list">${list.map(it => {
+    const dd = dDayInfo(it.date);
+    return `<div class="mini-row"><span class="dday sm ${dd.cls}">${dd.label}</span><span>${esc(it.title)}</span></div>`;
+  }).join('')}</div>`;
+}
+function renderHome(){
+  const u = me();
+  const now = new Date();
+  const dateLabel = `${now.getFullYear()}년 ${now.getMonth()+1}월 ${now.getDate()}일 (${WEEKDAY_KO[now.getDay()]})`;
+  const showDefaultPwHint = u.password === state.currentUser;
+  return `
+  <div class="home-greeting">
+    <h2>안녕, ${esc(u.displayName)}님 👋</h2>
+    <p class="text-2">${dateLabel}</p>
+  </div>
+  ${showDefaultPwHint ? `
+  <div class="banner">
+    ${icon('key')}
+    <span>아직 처음 받은 비밀번호를 쓰고 있어요. <b class="banner-link" data-act="goto" data-view="profile">내 정보</b>에서 바꿔보세요.</span>
+  </div>` : ''}
+  ${renderInstallBanner()}
+  <div class="home-grid">
+    <div class="card home-card">
+      <div class="home-card-head"><h3>${icon('meal')} 오늘의 급식</h3><button class="link-btn" data-act="goto" data-view="meals">더보기 ${icon('chevron')}</button></div>
+      ${homeMealSummary()}
+    </div>
+    <div class="card home-card">
+      <div class="home-card-head"><h3>${icon('timetable')} 오늘의 시간표</h3><button class="link-btn" data-act="goto" data-view="timetable">더보기 ${icon('chevron')}</button></div>
+      ${homeTimetableSummary()}
+    </div>
+    <div class="card home-card">
+      <div class="home-card-head"><h3>${icon('exam')} 다가오는 수행평가·시험</h3><button class="link-btn" data-act="goto" data-view="exams">더보기 ${icon('chevron')}</button></div>
+      ${homeUpcomingExams()}
+    </div>
+    <div class="card home-card">
+      <div class="home-card-head"><h3>${icon('event')} 다가오는 일정</h3><button class="link-btn" data-act="goto" data-view="events">더보기 ${icon('chevron')}</button></div>
+      ${homeUpcomingEvents()}
+    </div>
+  </div>
+  `;
+}
+
+/* ---------- profile view ---------- */
+function renderProfileView(){
+  const u = me();
+  const initial = (u.displayName || '?').trim().charAt(0) || '?';
+  return `
+  <div class="view-header"><h2>${icon('profile')} 내 정보</h2></div>
+
+  <div class="card">
+    <h3>${icon('profile')} 프로필</h3>
+    <div class="profile-row">
+      <div class="avatar">${esc(initial)}</div>
+      <div>
+        <div class="profile-name">${esc(u.displayName)}</div>
+        <div class="profile-sub">${esc(state.currentUser)}${u.isAdmin ? ` · 관리자 ${icon('crown','crown-ic')}` : ''}</div>
+      </div>
+    </div>
+    <label class="field"><span>표시 이름</span>
+      <div class="inline-input">
+        <input id="pfName" type="text" value="${esc(u.displayName)}">
+        <button class="btn btn-primary btn-sm" data-act="saveDisplayName">저장</button>
+      </div>
+    </label>
+  </div>
+
+  <div class="card">
+    <h3>${icon('key')} 비밀번호 변경</h3>
+    <p class="text-2">처음 받은 비밀번호(아이디와 같아요)는 내가 원하는 것으로 바꿔주세요.</p>
+    <label class="field"><span>새 비밀번호 (6자 이상)</span>
+      <div class="pw-field">
+        <input id="pfPw1" type="password" autocomplete="new-password">
+        <button type="button" class="pw-toggle" data-act="togglePw" data-target="pfPw1" aria-label="비밀번호 표시">${icon('eye')}</button>
+      </div>
+    </label>
+    <label class="field"><span>새 비밀번호 확인</span>
+      <div class="pw-field">
+        <input id="pfPw2" type="password" autocomplete="new-password">
+        <button type="button" class="pw-toggle" data-act="togglePw" data-target="pfPw2" aria-label="비밀번호 표시">${icon('eye')}</button>
+      </div>
+    </label>
+    <button class="btn btn-primary btn-block" data-act="changePassword">비밀번호 변경</button>
+  </div>
+
+  <div class="card">
+    <h3>${icon('hash')} 내 학번</h3>
+    <p class="text-2">학번을 바꾸면 시간표도 그 학번 기준으로 보여요.</p>
+    <label class="field"><span>학번 (예: 20801)</span>
+      <div class="inline-input">
+        <input id="pfNo" type="text" value="${esc(u.studentNo)}">
+        <button class="btn btn-primary btn-sm" data-act="saveStudentNo">저장</button>
+      </div>
+    </label>
+  </div>
+
+  <div class="card">
+    <h3>${icon('bell')} 알림</h3>
+    <div class="switch-row">
+      <div>
+        <div class="switch-row-title">새 공지 알림</div>
+        <div class="switch-row-sub">공지가 새로 올라오면 이 기기로 알려드려요</div>
+      </div>
+      <button type="button" class="switch ${u.notifyEnabled ? 'on' : ''}" data-act="toggleNotify" role="switch" aria-checked="${u.notifyEnabled ? 'true' : 'false'}"><span class="knob"></span></button>
+    </div>
+    ${(typeof Notification !== 'undefined' && Notification.permission === 'denied') ? `<p class="text-3 small" style="margin-top:8px;">브라우저 알림 권한이 차단되어 있어요. 브라우저 설정에서 허용한 뒤 다시 켜주세요.</p>` : ''}
+  </div>
+
+  <button class="btn btn-ghost btn-block logout-btn" data-act="logout">${icon('logout')} 로그아웃</button>
+  `;
+}
+
+/* ---------- accounts management (admin only) ---------- */
+function renderAccountsView(){
+  const ids = Object.keys(state.users).sort();
+  return `
+  <div class="view-header">
+    <h2>${icon('users')} 계정 관리</h2>
+    <button class="btn btn-primary btn-sm" data-act="acctAddOpen">${icon('plus')} 아이디 추가</button>
+  </div>
+  <p class="text-2" style="margin:-6px 0 14px;">비밀번호를 잊어버린 친구는 여기서 초기화하거나 새 비밀번호를 정해줄 수 있어요. 로그인 아이디도 바꿀 수 있어요.</p>
+  ${state.acctAdding ? renderAccountAddForm() : ''}
+  <div class="list">
+    ${ids.map(id => renderAccountRow(id)).join('')}
+  </div>
+  `;
+}
+function renderAccountAddForm(){
+  return `
+  <div class="card form-card" id="acctAddForm">
+    <h3>${icon('plus')} 새 아이디 추가</h3>
+    <label class="field"><span>아이디 (로그인용)</span><input id="newAcctId" type="text" placeholder="예: 20825"></label>
+    <label class="field"><span>표시 이름 (선택 — 비워두면 아이디로 표시돼요)</span><input id="newAcctName" type="text" placeholder="예: 홍길동"></label>
+    <label class="field"><span>초기 비밀번호 (선택 — 비워두면 아이디와 같아요)</span>
+      <div class="pw-field">
+        <input id="newAcctPw" type="password" autocomplete="new-password">
+        <button type="button" class="pw-toggle" data-act="togglePw" data-target="newAcctPw" aria-label="비밀번호 표시">${icon('eye')}</button>
+      </div>
+    </label>
+    <label class="checkline"><input id="newAcctAdmin" type="checkbox"> 관리자 권한 부여</label>
+    <div class="form-actions">
+      <button type="button" class="btn btn-ghost" data-act="acctAddCancel">취소</button>
+      <button type="button" class="btn btn-primary" data-act="acctAddSave">추가</button>
+    </div>
+  </div>`;
+}
+function renderAccountRow(id){
+  const u = state.users[id];
+  if(!u) return '';
+  const editing = state.acctEditing === id;
+  return `
+  <div class="list-item">
+    <div class="list-item-body">
+      <div class="row-head">
+        <span class="row-title" style="margin:0;">${esc(u.displayName)}</span>
+        ${u.isAdmin ? icon('crown','crown-ic') : ''}
+      </div>
+      <div class="row-sub">아이디: ${esc(id)}${u.studentNo ? ' · 학번: '+esc(u.studentNo) : ''}</div>
+      ${editing ? renderAccountEditForm(id) : ''}
+    </div>
+    ${!editing ? `
+    <div class="list-item-actions">
+      <button class="icon-btn" data-act="acctEdit" data-id="${esc(id)}" aria-label="편집">${icon('edit')}</button>
+      <button class="icon-btn danger" data-act="acctDelete" data-id="${esc(id)}" aria-label="삭제">${icon('trash')}</button>
+    </div>` : ''}
+  </div>`;
+}
+function renderAccountEditForm(id){
+  return `
+  <div class="acct-edit">
+    <label class="field"><span>아이디 (로그인용)</span><input id="acctId" type="text" value="${esc(id)}"></label>
+    <label class="field"><span>새 비밀번호 (6자 이상 — 비워두면 비밀번호는 그대로 둬요)</span>
+      <div class="pw-field">
+        <input id="acctPw" type="password" placeholder="새 비밀번호" autocomplete="new-password">
+        <button type="button" class="pw-toggle" data-act="togglePw" data-target="acctPw" aria-label="비밀번호 표시">${icon('eye')}</button>
+      </div>
+    </label>
+    <div class="form-actions" style="justify-content:space-between; flex-wrap:wrap;">
+      <button type="button" class="btn btn-ghost btn-sm" data-act="acctResetDefault" data-id="${esc(id)}">${icon('key')} 비밀번호를 아이디로 초기화</button>
+      <div style="display:flex; gap:8px;">
+        <button type="button" class="btn btn-ghost btn-sm" data-act="acctCancel">취소</button>
+        <button type="button" class="btn btn-primary btn-sm" data-act="acctSave" data-id="${esc(id)}">저장</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+/* ---------- shell (sidebar / topbar / bottom nav) ---------- */
+function renderViewContent(){
+  switch(state.view){
+    case 'home': return renderHome();
+    case 'meals': return renderSectionView('meals');
+    case 'timetable': return renderTimetableView();
+    case 'exams': return renderSectionView('exams');
+    case 'events': return renderSectionView('events');
+    case 'notices': return renderSectionView('notices');
+    case 'profile': return renderProfileView();
+    case 'accounts': return isAdmin() ? renderAccountsView() : renderHome();
+    default: return renderHome();
+  }
+}
+function renderSidebar(){
+  const u = me();
+  return `
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-mark">A</div>
+      <div class="brand-word">All thing</div>
+    </div>
+    <nav class="side-nav">
+      ${visibleNav().map(n => `
+      <button class="side-link ${state.view===n.key?'active':''}" data-act="goto" data-view="${n.key}">
+        ${icon(n.icon)}<span>${n.label}</span>
+      </button>`).join('')}
+    </nav>
+    <div class="side-user">
+      <div class="avatar sm">${esc((u.displayName||'?').charAt(0))}</div>
+      <div class="side-user-info">
+        <div class="side-user-name">${esc(u.displayName)}${u.isAdmin ? ` ${icon('crown','crown-ic sm')}` : ''}</div>
+        <div class="side-user-id">${esc(state.currentUser)}</div>
+      </div>
+      <button class="icon-btn" data-act="logout" aria-label="로그아웃">${icon('logout')}</button>
+    </div>
+  </aside>`;
+}
+function renderTopbar(){
+  return `
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-mark sm">A</div>
+      <div class="brand-word sm">All thing</div>
+    </div>
+    <button class="topbar-avatar-btn ${state.view==='profile'?'active':''}" data-act="goto" data-view="profile" aria-label="내 정보">
+      <span class="topbar-icon-circle">${icon('profile')}</span>
+    </button>
+  </header>`;
+}
+function renderBottomNav(){
+  return `
+  <div class="bottom-nav-wrap">
+    <nav class="bottom-nav" id="bottomNavScroll">
+      ${visibleNav().map(n => `<button class="bn-btn ${state.view===n.key?'active':''}" data-act="goto" data-view="${n.key}">${icon(n.icon)}<span>${n.label}</span></button>`).join('')}
+    </nav>
+    <div class="edge-cap left"></div>
+    <div class="edge-cap right"></div>
+  </div>
+  `;
+}
+function renderShell(){
+  return `
+  <div class="shell">
+    ${renderSidebar()}
+    <div class="main-col">
+      ${renderTopbar()}
+      <main class="main-scroll" id="mainScroll">
+        <div class="main-inner">${renderViewContent()}</div>
+      </main>
+      ${renderBottomNav()}
+    </div>
+  </div>`;
+}
+
+/* ---------- login screen ---------- */
+function renderLogin(){
+  const already = state.splashPlayed;
+  return `
+  <div class="login-screen">
+    <div class="blob b1"></div>
+    <div class="blob b2"></div>
+    <div class="blob b3"></div>
+    <div class="hero ${already?'compact':''}" id="hero">
+      <h1 class="hero-title">우리 반의 <span class="morph-word ${already?'morphed':''}" id="morphWord">${already?'All thing':'모든 것'}</span></h1>
+      <p class="hero-sub">급식, 시간표, 수행평가부터 일정까지 — 한 눈에</p>
+    </div>
+    <form class="login-card ${already?'show':'pending'}" id="loginCard" data-form="login">
+      <label class="field"><span>아이디</span><input id="loginId" type="text" autocomplete="username" placeholder="예: 20801" required></label>
+      <label class="field"><span>비밀번호</span>
+        <div class="pw-field">
+          <input id="loginPw" type="password" autocomplete="current-password" placeholder="비밀번호" required>
+          <button type="button" class="pw-toggle" data-act="togglePw" data-target="loginPw" aria-label="비밀번호 표시">${icon('eye')}</button>
+        </div>
+      </label>
+      <p class="hint">처음 비밀번호는 <b>아이디(학번)</b>와 같아요 (예: 아이디가 20801이면 비밀번호도 20801)</p>
+      ${state.loginError ? `<p class="login-error">${esc(state.loginError)}</p>` : ''}
+      <label class="checkline"><input id="loginRemember" type="checkbox" checked> 로그인 상태 유지</label>
+      <button type="submit" class="btn btn-primary btn-block">로그인</button>
+    </form>
+  </div>`;
+}
+
+/* ---------- splash animation ---------- */
+function playSplash(){
+  if(state.currentUser) return;
+  const word = document.getElementById('morphWord');
+  const heroEl = document.getElementById('hero');
+  const card = document.getElementById('loginCard');
+  if(!word || !heroEl) return;
+
+  // 초기 상태: 흰색 '모든 것', 화면 중앙에 크게
+  word.classList.remove('morphed','shake','pop','charge');
+  word.textContent = '모든 것';
+  heroEl.classList.remove('compact');
+  if(card) card.classList.add('pending');
+
+  // 브라우저가 흰색 글자를 렌더링하도록 다음 프레임에서 애니메이션 시작
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      // 1. 아쿠아색으로 물드는 효과 시작
+      word.classList.add('charge');
+
+      // 2. 0.85초 후 텍스트 흔들림
+      setTimeout(() => word.classList.add('shake'), 850);
+
+      // 3. 1.3초 후 폭죽 효과 + 'All thing' 교체 + 팝 효과
+      setTimeout(() => {
+        burstConfetti(word);
+        word.classList.remove('shake','charge');
+        word.textContent = 'All thing';
+        word.classList.add('morphed','pop');
+      }, 1300);
+
+      // 4. 1.85초 후 (폭죽이 잠시 보인 다음) 제목이 로그인 화면 상단 자리로 축소 이동 + 로그인 카드 등장
+      setTimeout(() => {
+        heroEl.classList.add('compact');
+        if(card){ card.classList.remove('pending'); card.classList.add('show'); }
+        state.splashPlayed = true;
+      }, 1850);
+    });
+  });
+}
+function burstConfetti(targetEl){
+  const rect = targetEl.getBoundingClientRect();
+  const cx = rect.left + rect.width/2;
+  const cy = rect.top + rect.height/2;
+  const colors = ['#838952','#6B7143','#B8752E','#FFFCF5','#A9AE7C'];
+  let root = document.getElementById('confettiRoot');
+  if(!root){
+    root = document.createElement('div');
+    root.id = 'confettiRoot';
+    root.className = 'confetti-root';
+    document.body.appendChild(root);
+  }
+  const count = 34;
+  for(let i=0;i<count;i++){
+    const p = document.createElement('span');
+    const isBar = Math.random() < 0.35;
+    p.className = 'confetti-piece ' + (isBar ? 'bar' : 'dot');
+    const angle = Math.random() * Math.PI * 2;
+    const dist1 = 26 + Math.random()*42;
+    const dist2 = dist1 + 22 + Math.random()*42;
+    const tx1 = Math.cos(angle)*dist1, ty1 = Math.sin(angle)*dist1;
+    const tx2 = Math.cos(angle)*dist2*0.6, ty2 = ty1 + 40 + Math.random()*46;
+    const size = isBar ? (3+Math.random()*2.4) : (3.5+Math.random()*3.5);
+    p.style.left = cx+'px';
+    p.style.top = cy+'px';
+    p.style.setProperty('--tx1', tx1.toFixed(1)+'px');
+    p.style.setProperty('--ty1', ty1.toFixed(1)+'px');
+    p.style.setProperty('--tx2', tx2.toFixed(1)+'px');
+    p.style.setProperty('--ty2', ty2.toFixed(1)+'px');
+    p.style.setProperty('--rot', (Math.random()*540-270).toFixed(0)+'deg');
+    p.style.setProperty('--size', size.toFixed(1)+'px');
+    p.style.background = colors[Math.floor(Math.random()*colors.length)];
+    p.style.animationDuration = (620+Math.random()*420)+'ms';
+    p.style.animationDelay = (Math.random()*90)+'ms';
+    root.appendChild(p);
+  }
+  setTimeout(() => { root.innerHTML = ''; }, 1500);
+}
+
+/* ---------- master render ---------- */
+function renderToastHtml(){
+  return state.toast ? `<div class="toast-host"><div class="toast ${state.toast.type}">${esc(state.toast.msg)}</div></div>` : '';
+}
+function updateBottomNavEdges(el){
+  if(!el) return;
+  const wrap = el.parentElement;
+  if(!wrap) return;
+  const hasOverflow = el.scrollWidth > el.clientWidth + 1;
+  const atStart = el.scrollLeft <= 1;
+  const atEnd = el.scrollLeft + el.clientWidth >= el.scrollWidth - 1;
+  wrap.classList.toggle('at-start', hasOverflow && atStart);
+  wrap.classList.toggle('at-end', hasOverflow && atEnd);
+}
+function render(){
+  const app = document.getElementById('app');
+  if(!state.booted){ app.innerHTML = `<div class="boot">불러오는 중…</div>`; return; }
+  app.innerHTML = (state.currentUser ? renderShell() : renderLogin()) + renderToastHtml();
+  updateBottomNavEdges(document.getElementById('bottomNavScroll'));
+}
+
+/* ---------- event delegation (avoids relying on inline on* attributes) ---------- */
+function bindEvents(){
+  document.addEventListener('click', function(e){
+    const el = e.target.closest('[data-act]');
+    if(!el) return;
+    if(el.hasAttribute('data-backdrop') && e.target !== el) return;
+    const act = el.getAttribute('data-act');
+    switch(act){
+      case 'goto': goto(el.dataset.view); break;
+      case 'logout': handleLogout(); break;
+      case 'openAdd': openAddForm(el.dataset.section, el.dataset.date); break;
+      case 'openEdit': openEditForm(el.dataset.section, el.dataset.id); break;
+      case 'cancelForm': cancelForm(); break;
+      case 'deleteItem': deleteSectionItem(el.dataset.section, el.dataset.id); break;
+      case 'ttOpen': openTtEditor(); break;
+      case 'ttClose': closeTtEditor(); break;
+      case 'ttSelect': selectTtNo(el.dataset.no); break;
+      case 'ttSelectInput': {
+        const inp = document.getElementById('ttSearchNo');
+        if(inp) selectTtNo(inp.value.trim());
+        break;
+      }
+      case 'ttSave': saveTtGrid(); break;
+      case 'ttCopy': copyTtFrom(); break;
+      case 'importMealsJson': {
+        const inp = document.getElementById('mealJsonInput');
+        if(inp) inp.click();
+        break;
+      }
+      case 'saveDisplayName': saveDisplayName(); break;
+      case 'changePassword': changePassword(); break;
+      case 'saveStudentNo': saveStudentNo(); break;
+      case 'togglePw': togglePwVisibility(el.dataset.target, el); break;
+      case 'installApp': triggerInstall(); break;
+      case 'acctEdit': acctEdit(el.dataset.id); break;
+      case 'acctCancel': acctCancel(); break;
+      case 'acctResetDefault': acctResetDefault(el.dataset.id); break;
+      case 'acctSave': acctSave(el.dataset.id); break;
+      case 'acctAddOpen': acctAddOpen(); break;
+      case 'acctAddCancel': acctAddCancel(); break;
+      case 'acctAddSave': acctAddSave(); break;
+      case 'acctDelete': acctDelete(el.dataset.id); break;
+      case 'toggleNotify': toggleNotifyPref(); break;
+      default: break;
+    }
+  });
+  document.addEventListener('submit', function(e){
+    const form = e.target;
+    if(!form || !form.matches) return;
+    if(form.matches('[data-form="login"]')){
+      e.preventDefault();
+      handleLoginSubmit();
+    } else if(form.matches('[data-form="section"]')){
+      e.preventDefault();
+      submitSectionForm(form.dataset.section);
+    }
+  });
+  window.addEventListener('error', function(e){
+    console.error('All thing runtime error:', e && (e.error || e.message));
+  });
+  // capture phase: 'scroll' doesn't bubble, so listen on document with capture:true
+  // to catch it firing on the horizontally-scrolling bottom nav strip.
+  document.addEventListener('scroll', function(e){
+    if(e.target && e.target.id === 'bottomNavScroll') updateBottomNavEdges(e.target);
+  }, true);
+  document.addEventListener('change', function(e){
+    if(e.target && e.target.id === 'mealJsonInput'){
+      const file = e.target.files && e.target.files[0];
+      handleMealJsonFile(file);
+      e.target.value = '';
+    }
+  });
+}
+
+/* ---------- PWA: installable app + home-screen icon ---------- */
+function isIOS(){ return /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.MSStream; }
+function isStandaloneApp(){ return (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone === true; }
+if('serviceWorker' in navigator){
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').then((reg) => {
+      // if a newer sw.js is already waiting (from a previous visit), activate it now
+      if(reg.waiting) reg.waiting.postMessage('skipWaiting');
+      reg.addEventListener('updatefound', () => {
+        const nw = reg.installing;
+        if(!nw) return;
+        nw.addEventListener('statechange', () => {
+          if(nw.state === 'installed' && navigator.serviceWorker.controller){
+            nw.postMessage('skipWaiting');
+          }
+        });
+      });
+    }).catch(() => {});
+    // a new service worker just took control — reload once so the fresh files are used
+    let refreshed = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if(refreshed) return;
+      refreshed = true;
+      window.location.reload();
+    });
+  });
+}
+let deferredInstallPrompt = null;
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredInstallPrompt = e;
+  state.canInstall = true;
+  if(state.booted) render();
+});
+window.addEventListener('appinstalled', () => {
+  deferredInstallPrompt = null;
+  state.canInstall = false;
+  render();
+});
+async function triggerInstall(){
+  if(!deferredInstallPrompt) return;
+  deferredInstallPrompt.prompt();
+  await deferredInstallPrompt.userChoice;
+  deferredInstallPrompt = null;
+  state.canInstall = false;
+  render();
+}
+function renderInstallBanner(){
+  if(isStandaloneApp()) return '';
+  if(state.canInstall){
+    return `<div class="banner install-banner">${icon('plus')}<span>홈 화면에 추가하면 앱처럼 바로 열 수 있어요.</span><button class="btn btn-primary btn-sm" data-act="installApp">추가</button></div>`;
+  }
+  if(isIOS()){
+    return `<div class="banner install-banner"><span>${icon('plus')} 아이폰에서는 공유 버튼을 누르고 <b>홈 화면에 추가</b>를 선택하면 앱처럼 쓸 수 있어요.</span></div>`;
+  }
+  return '';
+}
+
+bindEvents();
+init();
+</script>
+</body>
+</html>
