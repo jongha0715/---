@@ -197,10 +197,16 @@ a{ color: var(--aqua); }
 .list-item{
   display:flex; align-items:flex-start; justify-content:space-between; gap:12px;
   background: var(--surface); border:1px solid var(--border); border-radius: var(--radius-sm); padding: 14px 16px;
+  position:relative;
 }
 .list-item.past{ opacity:.5; }
 .list-item-body{ flex:1; min-width:0; }
 .list-item-actions{ display:flex; gap:4px; flex:none; }
+.new-badge{
+  position:absolute; top:-7px; right:12px; background:#FFF3C4; color:#9A7B00;
+  font-size:10.5px; font-weight:800; letter-spacing:.3px; padding: 2px 9px; border-radius:999px;
+  border:1px solid rgba(154,123,0,.18);
+}
 .row-head{ display:flex; align-items:center; gap:8px; margin-bottom:6px; flex-wrap:wrap; }
 .row-date{ font-size:12.5px; color: var(--text-2); font-weight:700; }
 .row-title{ font-size: 15px; font-weight:700; margin-bottom: 3px; }
@@ -242,17 +248,21 @@ a{ color: var(--aqua); }
 
 /* ---------- timetable table ---------- */
 .tt-wrap{ overflow-x:auto; padding: 10px; }
-.tt-table{ width:100%; border-collapse: collapse; min-width: 480px; }
-.tt-table th, .tt-table td{ padding: 9px 8px; text-align:center; font-size: 12.8px; border-bottom: 1px solid var(--border); }
+.tt-table{ width:100%; border-collapse: collapse; table-layout: fixed; }
+.tt-table th, .tt-table td{
+  padding: 8px 4px; text-align:center; font-size: 12.8px; border-bottom: 1px solid var(--border);
+  white-space: pre-line; word-break: keep-all; line-height:1.3;
+}
 .tt-table thead th{ color: var(--aqua); font-weight:800; font-size:12.5px; border-bottom: 1px solid var(--border-strong); }
-.tt-table tbody th{ color: var(--text-3); font-weight:700; width: 30px; }
+.tt-table tbody th{ color: var(--text-3); font-weight:700; width: 22px; }
 .tt-table tbody tr:last-child td, .tt-table tbody tr:last-child th{ border-bottom:none; }
 .tt-edit td{ padding:4px; }
-.tt-edit input{
+.tt-edit textarea{
   width:100%; background: var(--surface-2); border:1px solid var(--border); border-radius:8px;
-  padding: 7px 5px; font-size:12px; text-align:center; color:var(--text);
+  padding: 7px 6px; font-size:12.5px; text-align:center; color:var(--text); resize:none;
+  line-height:1.3; font-family:inherit;
 }
-.tt-edit-wrap{ overflow-x:auto; margin: 4px 0 14px; }
+.tt-edit-wrap{ margin: 4px 0 14px; }
 .copy-box{ border-top:1px solid var(--border); margin-top: 14px; padding-top: 14px; }
 
 /* ---------- modal ---------- */
@@ -297,6 +307,12 @@ a{ color: var(--aqua); }
   100%{ color: var(--text); text-shadow: none; transform: scale(1); }
 }
 .side-nav{ display:flex; flex-direction:column; gap:3px; flex:1; }
+.nav-icon-wrap{ position:relative; display:inline-flex; }
+.nav-dot{
+  position:absolute; top:-2px; right:-2px; width:8px; height:8px; border-radius:50%;
+  background: var(--danger); border:1.5px solid var(--bg-alt);
+}
+.side-link .nav-dot{ border-color: var(--bg-alt); }
 .side-link{
   display:flex; align-items:center; gap:11px; padding: 11px 12px; border-radius: 12px; border:none;
   background:transparent; color: var(--text-2); font-size:14px; font-weight:600; text-align:left;
@@ -444,6 +460,10 @@ a{ color: var(--aqua); }
   .main-col{ height:auto; min-height:100vh; }
   .main-scroll{ overflow-y:visible; }
   .main-inner{ padding: 14px 16px calc(94px + env(safe-area-inset-bottom)); }
+  .tt-wrap{ padding: 8px 4px; }
+  .tt-table th, .tt-table td{ padding: 7px 2px; font-size: 11px; }
+  .tt-table thead th{ font-size: 10.5px; }
+  .tt-table tbody th{ width: 16px; font-size: 11px; }
   .bottom-nav-wrap{
     display:block; position:fixed; left:0; right:0; bottom:0; z-index: 50; background: var(--bg-alt);
     border-top:1px solid var(--border);
@@ -733,6 +753,7 @@ const SECTIONS = {
     ],
     blank: () => ({ title:'', content:'', date: todayStr(), author: '' }),
     rowHtml: (it) => `
+      ${isNoticeUnread(it.id) ? '<span class="new-badge">NEW</span>' : ''}
       <div class="row-head">
         <span class="row-date">${esc(fmtDate(it.date))}</span>
         <span class="text-3">· ${esc(it.author||'')}</span>
@@ -763,7 +784,8 @@ const state = {
   acctEditing: null,
   acctAdding: false,
   brandAnimPlayed: false,
-  navAnim: 'view-enter'
+  navAnim: 'view-enter',
+  noticesUnreadSnapshot: null
 };
 
 function me(){ return state.currentUser ? state.users[state.currentUser] : null; }
@@ -862,8 +884,8 @@ function notifyNewNotices(){
   saveSeenNoticeIds(seen);
 }
 function showNoticeNotification(notice){
-  const body = notice.content.length > 80 ? notice.content.slice(0,80)+'…' : notice.content;
-  const title = '📢 ' + notice.title;
+  const title = '📢 All thing';
+  const body = '새로운 공지가 등록되었습니다!';
   const fallback = () => { try{ new Notification(title, { body, icon:'icon-192.png' }); }catch(e){} };
   if(navigator.serviceWorker && navigator.serviceWorker.ready){
     navigator.serviceWorker.ready.then(reg => {
@@ -872,6 +894,27 @@ function showNoticeNotification(notice){
       } else fallback();
     }).catch(fallback);
   } else fallback();
+}
+
+/* ---------- notice read/unread tracking (drives the nav red-dot + NEW badges) ----------
+   Deliberately separate from the "seen" set above: that one seeds on every app open (so we
+   don't fire a notification burst for notices that already existed before this session).
+   This one only updates when the person actually opens the 공지 tab, so the red dot/NEW
+   badge correctly persists across app restarts until they've really looked.
+*/
+function getReadNoticeIds(){ return new Set(lsGet('read-notice-ids', false, [])); }
+function saveReadNoticeIds(set){ lsSet('read-notice-ids', false, Array.from(set)); }
+function markNoticesRead(){
+  const read = getReadNoticeIds();
+  state.notices.forEach(n => read.add(n.id));
+  saveReadNoticeIds(read);
+}
+function hasUnreadNotices(){
+  const read = getReadNoticeIds();
+  return state.notices.some(n => !read.has(n.id));
+}
+function isNoticeUnread(id){
+  return !!(state.noticesUnreadSnapshot && state.noticesUnreadSnapshot.has(id));
 }
 
 async function init(){
@@ -928,7 +971,10 @@ function applyRemoteUpdate(sKey, val){
   if(val === null || val === undefined) return;
   if(JSON.stringify(state[sKey]) === JSON.stringify(val)) return;
   state[sKey] = val;
-  if(sKey === 'notices') notifyNewNotices();
+  if(sKey === 'notices'){
+    notifyNewNotices();
+    if(state.view === 'notices') markNoticesRead(); // already looking at the tab — don't leave a stale badge
+  }
   if(state.ttEditor.open || state.editing.section) return; // don't clobber an in-progress edit
   render();
 }
@@ -1001,6 +1047,14 @@ async function handleLogout(){
 }
 function goto(view, animClass){
   state.navAnim = animClass || 'view-enter';
+  if(view === 'notices' && state.view !== 'notices'){
+    // Snapshot which notices are still unread right now, so THIS viewing still shows the NEW
+    // badge on them — then mark everything read immediately (clears the nav dot right away,
+    // and means the badge is gone by the next visit).
+    const read = getReadNoticeIds();
+    state.noticesUnreadSnapshot = new Set(state.notices.filter(n => !read.has(n.id)).map(n => n.id));
+    markNoticesRead();
+  }
   state.view = view;
   state.editing = { section:null, id:null, data:null };
   render();
@@ -1191,7 +1245,7 @@ async function submitSectionForm(section){
   }
   state[section].sort((a,b) => (a.date||'').localeCompare(b.date||''));
   await sSet(cfg.storageKey, state[section], true);
-  if(section === 'notices') seedSeenNotices(); // this device already knows about the notice it just posted
+  if(section === 'notices'){ seedSeenNotices(); markNoticesRead(); } // this device already knows about the notice it just posted
   state.editing = { section:null, id:null, data:null };
   showToast(id ? '수정했어요.' : '추가했어요.');
   render();
@@ -1229,6 +1283,7 @@ async function saveTtGrid(){
     });
   });
   state.timetables[no] = grid;
+  state.ttEditor.grid = grid;
   await sSet('allthing-timetables', state.timetables, true);
   showToast(no + ' 시간표를 저장했어요.');
   render();
@@ -1425,12 +1480,13 @@ function renderTtModal(){
           ${ids.map(id => `<button class="chip-btn ${no===id?'active':''}" data-act="ttSelect" data-no="${id}">${esc(id)}${state.users[id].displayName!==id ? ' '+esc(state.users[id].displayName) : ''}</button>`).join('')}
         </div>
         ${grid ? `
+        <p class="text-3 small" style="margin:2px 0 8px;">칸 안에서 줄바꿈(Enter)하면 과목명과 교실을 두 줄로 나눠 넣을 수 있어요.</p>
         <div class="tt-edit-wrap">
           <table class="tt-table tt-edit">
             <thead><tr><th></th>${DAYS.map(d=>`<th>${d}</th>`).join('')}</tr></thead>
             <tbody>
               ${PERIODS.map((p,i)=>`
-              <tr><th>${p}</th>${DAYS.map(d=>`<td><input id="cell-${d}-${i}" type="text" value="${esc(grid[d][i])}"></td>`).join('')}</tr>
+              <tr><th>${p}</th>${DAYS.map(d=>`<td><textarea id="cell-${d}-${i}" rows="2">${esc(grid[d][i])}</textarea></td>`).join('')}</tr>
               `).join('')}
             </tbody>
           </table>
@@ -1680,6 +1736,10 @@ function renderViewContent(){
     default: return renderHome();
   }
 }
+function navIconHtml(n){
+  const dot = n.key === 'notices' && hasUnreadNotices() ? '<span class="nav-dot"></span>' : '';
+  return `<span class="nav-icon-wrap">${icon(n.icon)}${dot}</span>`;
+}
 function renderSidebar(){
   const u = me();
   const brandAnim = !state.brandAnimPlayed ? 'brand-anim' : '';
@@ -1692,7 +1752,7 @@ function renderSidebar(){
     <nav class="side-nav">
       ${visibleNav().map(n => `
       <button class="side-link ${state.view===n.key?'active':''}" data-act="goto" data-view="${n.key}">
-        ${icon(n.icon)}<span>${n.label}</span>
+        ${navIconHtml(n)}<span>${n.label}</span>
       </button>`).join('')}
     </nav>
     <div class="side-user">
@@ -1722,7 +1782,7 @@ function renderBottomNav(){
   return `
   <div class="bottom-nav-wrap">
     <nav class="bottom-nav" id="bottomNavScroll">
-      ${visibleNav().map(n => `<button class="bn-btn ${state.view===n.key?'active':''}" data-act="goto" data-view="${n.key}">${icon(n.icon)}<span>${n.label}</span></button>`).join('')}
+      ${visibleNav().map(n => `<button class="bn-btn ${state.view===n.key?'active':''}" data-act="goto" data-view="${n.key}">${navIconHtml(n)}<span>${n.label}</span></button>`).join('')}
     </nav>
     <div class="edge-cap left"></div>
     <div class="edge-cap right"></div>
