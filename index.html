@@ -1006,10 +1006,14 @@ function goto(view, animClass){
   render();
   const main = document.getElementById('mainScroll');
   if(main) main.scrollTop = 0;
-  const navEl = document.getElementById('bottomNavScroll');
-  if(navEl){
-    const activeBtn = navEl.querySelector('.bn-btn.active');
-    if(activeBtn) activeBtn.scrollIntoView({ behavior:'smooth', inline:'center', block:'nearest' });
+  // Skip the nav bar's own auto-scroll animation during a swipe — running two independently-timed
+  // animations (this scroll + the content slide) at once is what was producing the "bounce" feel.
+  if(!animClass || animClass === 'view-enter'){
+    const navEl = document.getElementById('bottomNavScroll');
+    if(navEl){
+      const activeBtn = navEl.querySelector('.bn-btn.active');
+      if(activeBtn) activeBtn.scrollIntoView({ behavior:'smooth', inline:'center', block:'nearest' });
+    }
   }
 }
 function togglePwVisibility(targetId, btn){
@@ -2004,15 +2008,30 @@ function renderInstallBanner(){
 
 /* ---------- swipe left/right between tabs (mobile) ---------- */
 (function setupSwipeNav(){
-  let startX = 0, startY = 0, touching = false, skip = false;
+  let startX = 0, startY = 0, touching = false, skip = false, decided = false, horizontal = false;
   const THRESHOLD = 55;
+  const DIR_LOCK = 10;
   document.addEventListener('touchstart', function(e){
     if(!state.currentUser || !e.touches || !e.touches[0]) return;
     if(state.ttEditor.open || state.editing.section || document.querySelector('.modal-overlay')) { skip = true; return; }
     skip = !!e.target.closest('.tt-wrap, .tt-edit-wrap, .chip-select, .bottom-nav, .date-pills, input, textarea');
     const t = e.touches[0];
-    startX = t.clientX; startY = t.clientY; touching = true;
+    startX = t.clientX; startY = t.clientY; touching = true; decided = false; horizontal = false;
   }, { passive:true });
+  document.addEventListener('touchmove', function(e){
+    if(!touching || skip || !e.touches || !e.touches[0]) return;
+    const t = e.touches[0];
+    const dx = t.clientX - startX;
+    const dy = t.clientY - startY;
+    if(!decided && (Math.abs(dx) > DIR_LOCK || Math.abs(dy) > DIR_LOCK)){
+      decided = true;
+      horizontal = Math.abs(dx) > Math.abs(dy) * 1.6;
+    }
+    // Once we know it's a horizontal swipe, tell the browser we're handling it — this stops
+    // Samsung/Chrome's own edge-swipe-back and toolbar-hide gestures from firing at the same
+    // time as our slide animation, which is what was producing the "bounce".
+    if(horizontal && e.cancelable) e.preventDefault();
+  }, { passive:false });
   document.addEventListener('touchend', function(e){
     if(!touching) return;
     touching = false;
