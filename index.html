@@ -281,12 +281,11 @@ a{ color: var(--aqua); }
 .brand{ display:flex; align-items:center; gap:10px; padding: 6px 8px 20px; }
 .brand-btn{ background:none; border:none; cursor:pointer; text-align:left; font:inherit; }
 .brand-mark{
-  width:34px; height:34px; border-radius: 10px; background: linear-gradient(135deg, var(--aqua), var(--aqua-deep));
-  color: var(--on-accent); font-weight:900; display:flex; align-items:center; justify-content:center; font-size:16px; flex:none;
-  overflow:hidden;
+  width:44px; height:44px; display:flex; align-items:center; justify-content:center; flex:none;
+  border-radius:11px; overflow:hidden;
 }
 .brand-mark-img{ width:100%; height:100%; object-fit:cover; }
-.brand-mark.sm{ width:28px; height:28px; font-size:13px; border-radius:8px; }
+.brand-mark.sm{ width:36px; height:36px; border-radius:9px; }
 .brand-word{ font-weight:800; font-size:16px; letter-spacing:.2px; font-family: var(--display-font); }
 .brand-word.sm{ font-size:14px; }
 .brand-word.brand-anim{ animation: brandMorph 1.3s var(--ease-smooth); }
@@ -1682,7 +1681,7 @@ function renderSidebar(){
   return `
   <aside class="sidebar">
     <button class="brand brand-btn" data-act="goto" data-view="home" aria-label="홈으로">
-      <div class="brand-mark"><img src="icon-192.png" alt="" class="brand-mark-img"></div>
+      <div class="brand-mark"><img src="icon-badge.png" alt="" class="brand-mark-img"></div>
       <div class="brand-word ${brandAnim}">All thing</div>
     </button>
     <nav class="side-nav">
@@ -1706,7 +1705,7 @@ function renderTopbar(){
   return `
   <header class="topbar">
     <button class="brand brand-btn" data-act="goto" data-view="home" aria-label="홈으로">
-      <div class="brand-mark"><img src="icon-192.png" alt="" class="brand-mark-img"></div>
+      <div class="brand-mark"><img src="icon-badge.png" alt="" class="brand-mark-img"></div>
       <div class="brand-word ${brandAnim}">All thing</div>
     </button>
     <button class="topbar-avatar-btn ${state.view==='profile'?'active':''}" data-act="goto" data-view="profile" aria-label="내 정보">
