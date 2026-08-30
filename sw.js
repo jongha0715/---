@@ -6,7 +6,7 @@
 //
 // IMPORTANT: bump CACHE_NAME (v2 -> v3 -> ...) any time app.js/index.html changes, so old
 // caches get thrown away on the next visit instead of silently lingering.
-const CACHE_NAME = 'allthing-shell-v16';
+const CACHE_NAME = 'allthing-shell-v18';
 const SHELL_FILES = [
   './',
   './index.html',

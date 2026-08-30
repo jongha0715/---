@@ -5,8 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>All thing</title>
 <meta name="description" content="우리 반의 급식, 시간표, 수행평가·시험, 일정을 한 눈에">
-<meta name="theme-color" content="#f8f0de">
-<meta name="color-scheme" content="light">
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#f8f0de">
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#141416">
+<meta name="color-scheme" content="light dark">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="icon-180.png">
@@ -43,31 +44,30 @@
   --display-font: 'Black Han Sans', -apple-system, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
   --ease-smooth: cubic-bezier(.22,1,.36,1);
 }
-/* Re-assert the exact same palette under prefers-color-scheme:dark. Some browsers' "force dark
-   for websites" heuristic (Samsung Internet in particular) only backs off when a page has its
-   OWN explicit dark-mode rule — otherwise it assumes the page never considered dark mode and
-   auto-inverts it regardless of color-scheme:light. This block's presence is what matters, not
-   its content — it deliberately keeps the same light colors on purpose. */
+/* A genuinely designed dark palette — not an inversion. Giving the browser real dark-mode
+   support here also stops force-dark heuristics (Samsung Internet etc.) from kicking in on
+   their own, since they only override pages that DON'T declare their own dark theme. */
 @media (prefers-color-scheme: dark){
   :root{
-    color-scheme: light;
-    --bg: #f8f0de;
-    --bg-alt: #f1e4c6;
-    --surface: #fffcf5;
-    --surface-2: #f2e6c8;
-    --surface-3: #e9d9af;
-    --border: rgba(80,64,20,.14);
-    --border-strong: rgba(80,64,20,.26);
-    --aqua: #838952;
-    --aqua-deep: #6b7143;
-    --aqua-dim: rgba(131,139,82,.16);
-    --on-accent: #fffaf0;
-    --warm: #b8752e;
-    --danger: #c0392b;
-    --danger-dim: rgba(192,57,43,.12);
-    --text: #2a2a1d;
-    --text-2: #6e6c56;
-    --text-3: #96937a;
+    color-scheme: dark;
+    --bg: #141416;
+    --bg-alt: #1b1b1e;
+    --surface: #202023;
+    --surface-2: #29292d;
+    --surface-3: #323236;
+    --border: rgba(255,255,255,.09);
+    --border-strong: rgba(255,255,255,.18);
+    --aqua: #a8b273;
+    --aqua-deep: #838952;
+    --aqua-dim: rgba(168,178,115,.18);
+    --on-accent: #17170e;
+    --warm: #e0a355;
+    --danger: #ff6b5b;
+    --danger-dim: rgba(255,107,91,.15);
+    --text: #f2ede0;
+    --text-2: #aaa89a;
+    --text-3: #7a7869;
+    --shadow: 0 14px 32px rgba(0,0,0,.5);
   }
 }
 *,*::before,*::after{ box-sizing: border-box; }
