@@ -6,7 +6,7 @@
 //
 // IMPORTANT: bump CACHE_NAME (v2 -> v3 -> ...) any time app.js/index.html changes, so old
 // caches get thrown away on the next visit instead of silently lingering.
-const CACHE_NAME = 'allthing-shell-v2';
+const CACHE_NAME = 'allthing-shell-v3';
 const SHELL_FILES = [
   './',
   './index.html',
@@ -14,6 +14,18 @@ const SHELL_FILES = [
   './icon-192.png',
   './icon-512.png'
 ];
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((list) => {
+      for (const client of list) {
+        if ('focus' in client) return client.focus();
+      }
+      if (self.clients.openWindow) return self.clients.openWindow('./');
+    })
+  );
+});
 
 self.addEventListener('message', (event) => {
   if(event.data === 'skipWaiting') self.skipWaiting();
