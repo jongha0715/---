@@ -478,7 +478,8 @@ a{ color: var(--aqua); }
     display:flex; align-items:center; justify-content:space-between; gap:10px; padding: 12px 16px;
     border-bottom:1px solid var(--border); background: var(--bg-alt); position: sticky; top:0; z-index: 20;
   }
-  .topbar-avatar-btn{ background:none; border:none; padding:2px; border-radius:50%; line-height:0; flex:none; }
+  .topbar-actions{ display:flex; align-items:center; gap:8px; }
+  .topbar-avatar-btn, .topbar-icon-btn{ background:none; border:none; padding:2px; border-radius:50%; line-height:0; flex:none; }
   .topbar-icon-circle{
     width:34px; height:34px; border-radius:50%; background: var(--surface-2);
     display:flex; align-items:center; justify-content:center; color: var(--text-3);
@@ -498,7 +499,7 @@ a{ color: var(--aqua); }
     border-top:1px solid var(--border);
   }
   .bottom-nav{
-    display:flex; overflow-x:auto; scroll-behavior:smooth; -webkit-overflow-scrolling:touch;
+    display:flex; justify-content:space-evenly; overflow-x:auto; scroll-behavior:smooth; -webkit-overflow-scrolling:touch;
     scrollbar-width:none; padding: 8px 10px calc(8px + env(safe-area-inset-bottom));
   }
   .bottom-nav::-webkit-scrollbar{ display:none; }
@@ -522,6 +523,51 @@ a{ color: var(--aqua); }
 @media (min-width: 880px){
   .main-inner{ padding: 22px 40px 60px; }
 }
+
+/* ---------- manual layout override (rotate button) ----------
+   Lets a person force PC-style (sidebar) or mobile-style (bottom nav) layout regardless of
+   actual screen width — mainly for tablets, where the automatic width breakpoint doesn't
+   always match what actually fits comfortably. */
+html[data-layout="pc"] .sidebar{ display:flex !important; }
+html[data-layout="pc"] .topbar{ display:none !important; }
+html[data-layout="pc"] .bottom-nav-wrap{ display:none !important; }
+html[data-layout="pc"] .main-col{ height:100vh !important; }
+html[data-layout="pc"] .main-scroll{ overflow-y:auto !important; }
+html[data-layout="pc"] .main-inner{ padding: 22px 40px 60px !important; }
+html[data-layout="pc"] .tt-table th, html[data-layout="pc"] .tt-table td{ padding: 9px 8px !important; font-size: 12.8px !important; }
+html[data-layout="pc"] .tt-table thead th{ font-size: 12.5px !important; }
+html[data-layout="pc"] .tt-table tbody th{ width: 30px !important; font-size: inherit !important; }
+
+html[data-layout="mobile"] .sidebar{ display:none !important; }
+html[data-layout="mobile"] .topbar{ display:flex !important; }
+html[data-layout="mobile"] .bottom-nav-wrap{ display:block !important; }
+html[data-layout="mobile"] .main-col{ height:auto !important; min-height:100vh !important; }
+html[data-layout="mobile"] .main-scroll{ overflow-y:visible !important; }
+html[data-layout="mobile"] .main-inner{ padding: 14px 16px calc(94px + env(safe-area-inset-bottom)) !important; }
+html[data-layout="mobile"] .tt-wrap{ padding: 8px 4px !important; }
+html[data-layout="mobile"] .tt-table th, html[data-layout="mobile"] .tt-table td{ padding: 7px 2px !important; font-size: 11px !important; }
+html[data-layout="mobile"] .tt-table thead th{ font-size: 10.5px !important; }
+html[data-layout="mobile"] .tt-table tbody th{ width: 16px !important; font-size: 11px !important; }
+html[data-layout="mobile"] .topbar-actions{ display:flex !important; align-items:center; gap:8px; }
+html[data-layout="mobile"] .topbar-avatar-btn, html[data-layout="mobile"] .topbar-icon-btn{
+  background:none; border:none; padding:2px; border-radius:50%; line-height:0; flex:none;
+}
+html[data-layout="mobile"] .topbar-icon-circle{
+  width:34px; height:34px; border-radius:50%; background: var(--surface-2);
+  display:flex; align-items:center; justify-content:center; color: var(--text-3);
+}
+html[data-layout="mobile"] .topbar-icon-circle .ic{ width:18px; height:18px; }
+html[data-layout="mobile"] .bottom-nav{
+  display:flex !important; justify-content:space-evenly; overflow-x:auto; scroll-behavior:smooth;
+  -webkit-overflow-scrolling:touch; scrollbar-width:none; padding: 8px 10px calc(8px + env(safe-area-inset-bottom));
+}
+html[data-layout="mobile"] .bn-btn{
+  flex: 0 0 auto; min-width:64px; display:flex; flex-direction:column; align-items:center; gap:3px;
+  background:none; border:none; color: var(--text-3); font-size: 10.5px; font-weight:700;
+  padding: 6px 9px; border-radius: 10px;
+}
+html[data-layout="mobile"] .bn-btn.active{ color: var(--aqua-deep); }
+
 /* Note: this splash and the view/modal fades intentionally ignore prefers-reduced-motion —
    they're brief (a couple seconds, once per visit) rather than continuous, and disabling
    them entirely made the whole app feel broken on some setups without actually helping
@@ -814,6 +860,7 @@ const state = {
   acctAdding: false,
   brandAnimPlayed: false,
   navAnim: 'view-enter',
+  forceLayout: lsGet('layout-pref', false, null),
   noticesUnreadSnapshot: null
 };
 
@@ -850,7 +897,8 @@ const ICONS = {
   copy: '<rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/>',
   eye: '<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/>',
   'eye-off': '<path d="M3 3l18 18"/><path d="M10.6 5.2A10.6 10.6 0 0 1 12 5c6.4 0 10 7 10 7a17.7 17.7 0 0 1-3.2 4.2"/><path d="M6.5 6.7C3.9 8.4 2 12 2 12s3.6 7 10 7a9.6 9.6 0 0 0 4.4-1"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/>',
-  users: '<circle cx="9" cy="8" r="3.2"/><path d="M2.5 20c1-3.3 3.6-5 6.5-5s5.5 1.7 6.5 5"/><circle cx="17.2" cy="8.4" r="2.6"/><path d="M16 15.4c2.3.4 4 1.9 4.8 4.6"/>'
+  users: '<circle cx="9" cy="8" r="3.2"/><path d="M2.5 20c1-3.3 3.6-5 6.5-5s5.5 1.7 6.5 5"/><circle cx="17.2" cy="8.4" r="2.6"/><path d="M16 15.4c2.3.4 4 1.9 4.8 4.6"/>',
+  rotate: '<rect x="7" y="2.5" width="8" height="13" rx="1.6"/><path d="M18 8.5a6 6 0 1 1-2-4.6"/><path d="M18 2.5v3.5h-3.5"/>'
 };
 function icon(name, cls){
   return `<svg class="ic ${cls||''}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${ICONS[name]||''}</svg>`;
@@ -1790,6 +1838,7 @@ function renderSidebar(){
         <div class="side-user-name">${esc(u.displayName)}${u.isAdmin ? ` ${icon('crown','crown-ic sm')}` : ''}</div>
         <div class="side-user-id">${esc(state.currentUser)}</div>
       </div>
+      <button class="icon-btn" data-act="toggleLayout" aria-label="화면 방향 전환">${icon('rotate')}</button>
       <button class="icon-btn" data-act="logout" aria-label="로그아웃">${icon('logout')}</button>
     </div>
   </aside>`;
@@ -1802,9 +1851,14 @@ function renderTopbar(){
       <div class="brand-mark"><img src="icon-badge.png" alt="" class="brand-mark-img"></div>
       <div class="brand-word ${brandAnim}">All thing</div>
     </button>
-    <button class="topbar-avatar-btn ${state.view==='profile'?'active':''}" data-act="goto" data-view="profile" aria-label="내 정보">
-      <span class="topbar-icon-circle">${icon('profile')}</span>
-    </button>
+    <div class="topbar-actions">
+      <button class="topbar-icon-btn" data-act="toggleLayout" aria-label="화면 방향 전환">
+        <span class="topbar-icon-circle">${icon('rotate')}</span>
+      </button>
+      <button class="topbar-avatar-btn ${state.view==='profile'?'active':''}" data-act="goto" data-view="profile" aria-label="내 정보">
+        <span class="topbar-icon-circle">${icon('profile')}</span>
+      </button>
+    </div>
   </header>`;
 }
 function renderBottomNav(){
@@ -1953,10 +2007,25 @@ function updateBottomNavEdges(el){
   wrap.classList.toggle('at-start', hasOverflow && atStart);
   wrap.classList.toggle('at-end', hasOverflow && atEnd);
 }
+function isMobileLayoutActive(){
+  const sidebar = document.querySelector('.sidebar');
+  if(!sidebar) return true;
+  return getComputedStyle(sidebar).display === 'none';
+}
+function toggleLayout(){
+  if(!state.forceLayout){
+    state.forceLayout = isMobileLayoutActive() ? 'pc' : 'mobile';
+  } else {
+    state.forceLayout = state.forceLayout === 'pc' ? 'mobile' : 'pc';
+  }
+  lsSet('layout-pref', false, state.forceLayout);
+  render();
+}
 function render(){
   const app = document.getElementById('app');
   if(!state.booted){ app.innerHTML = `<div class="boot">불러오는 중…</div>`; return; }
   app.innerHTML = (state.currentUser ? renderShell() : renderLogin()) + renderToastHtml();
+  document.documentElement.setAttribute('data-layout', state.forceLayout || 'auto');
   updateBottomNavEdges(document.getElementById('bottomNavScroll'));
   if(state.currentUser && !state.brandAnimPlayed) state.brandAnimPlayed = true;
 }
@@ -1995,6 +2064,7 @@ function bindEvents(){
       case 'saveStudentNo': saveStudentNo(); break;
       case 'togglePw': togglePwVisibility(el.dataset.target, el); break;
       case 'toggleNotif': toggleNotif(); break;
+      case 'toggleLayout': toggleLayout(); break;
       case 'installApp': triggerInstall(); break;
       case 'acctEdit': acctEdit(el.dataset.id); break;
       case 'acctCancel': acctCancel(); break;
@@ -2102,6 +2172,7 @@ function renderInstallBanner(){
   const DIR_LOCK = 10;
   document.addEventListener('touchstart', function(e){
     if(!state.currentUser || !e.touches || !e.touches[0]) return;
+    if(!isMobileLayoutActive()) { skip = true; return; }
     if(state.ttEditor.open || state.editing.section || document.querySelector('.modal-overlay')) { skip = true; return; }
     skip = !!e.target.closest('.tt-wrap, .tt-edit-wrap, .chip-select, .bottom-nav, .date-pills, input, textarea');
     const t = e.touches[0];
