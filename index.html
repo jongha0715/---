@@ -43,6 +43,33 @@
   --display-font: 'Black Han Sans', -apple-system, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
   --ease-smooth: cubic-bezier(.22,1,.36,1);
 }
+/* Re-assert the exact same palette under prefers-color-scheme:dark. Some browsers' "force dark
+   for websites" heuristic (Samsung Internet in particular) only backs off when a page has its
+   OWN explicit dark-mode rule — otherwise it assumes the page never considered dark mode and
+   auto-inverts it regardless of color-scheme:light. This block's presence is what matters, not
+   its content — it deliberately keeps the same light colors on purpose. */
+@media (prefers-color-scheme: dark){
+  :root{
+    color-scheme: light;
+    --bg: #f8f0de;
+    --bg-alt: #f1e4c6;
+    --surface: #fffcf5;
+    --surface-2: #f2e6c8;
+    --surface-3: #e9d9af;
+    --border: rgba(80,64,20,.14);
+    --border-strong: rgba(80,64,20,.26);
+    --aqua: #838952;
+    --aqua-deep: #6b7143;
+    --aqua-dim: rgba(131,139,82,.16);
+    --on-accent: #fffaf0;
+    --warm: #b8752e;
+    --danger: #c0392b;
+    --danger-dim: rgba(192,57,43,.12);
+    --text: #2a2a1d;
+    --text-2: #6e6c56;
+    --text-3: #96937a;
+  }
+}
 *,*::before,*::after{ box-sizing: border-box; }
 html,body{ height:100%; overscroll-behavior-x: none; }
 body{ touch-action: pan-y; }
