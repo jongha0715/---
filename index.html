@@ -2617,8 +2617,8 @@ function renderInstallBanner(){
   document.addEventListener('touchstart', function(e){
     if(!state.currentUser || !e.touches || !e.touches[0]) return;
     if(!isMobileLayoutActive()) { skip = true; return; }
-    if(state.ttEditor.open || state.editing.section || document.querySelector('.modal-overlay')) { skip = true; return; }
-    skip = !!e.target.closest('.tt-wrap, .tt-edit-wrap, .chip-select, .bottom-nav, .date-pills, input, textarea');
+    if(state.ttEditor.open || state.editing.section || state.lightboxSrc || document.querySelector('.modal-overlay')) { skip = true; return; }
+    skip = !!e.target.closest('.tt-wrap, .tt-edit-wrap, .chip-select, .bottom-nav, .date-pills, .lightbox-overlay, input, textarea');
     const t = e.touches[0];
     startX = t.clientX; startY = t.clientY; touching = true; decided = false; horizontal = false;
   }, { passive:true });
