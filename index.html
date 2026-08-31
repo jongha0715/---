@@ -252,7 +252,9 @@ a{ color: var(--aqua); }
 .expand-panel{ display:grid; grid-template-rows: 0fr; transition: grid-template-rows .25s ease; }
 .expand-panel.open{ grid-template-rows: 1fr; }
 .expand-inner{ overflow:hidden; min-height:0; }
-.exam-photo{ display:block; width:100%; max-width:320px; border-radius:12px; margin-top:10px; border:1px solid var(--border); }
+.exam-photo{ display:block; width:100%; border-radius:12px; border:1px solid var(--border); }
+.exam-photo-grid{ display:grid; grid-template-columns: repeat(auto-fill, minmax(130px,1fr)); gap:8px; margin-top:10px; max-width:420px; }
+.exam-photo-grid .exam-photo{ margin-top:0; aspect-ratio:1; object-fit:cover; }
 .exam-link{
   display:inline-flex; align-items:center; gap:6px; margin-top:10px; font-size:12.5px; font-weight:600;
   color: var(--aqua-deep); word-break:break-all;
@@ -261,6 +263,21 @@ a{ color: var(--aqua); }
 .photo-preview{ margin-bottom:8px; }
 .photo-preview img{ display:block; width:100%; max-width:220px; border-radius:10px; border:1px solid var(--border); margin-bottom:6px; }
 .photo-remove{ margin:0 !important; }
+.photo-grid{ display:flex; flex-wrap:wrap; gap:8px; margin: 8px 0; }
+.photo-thumb{ position:relative; width:76px; height:76px; border-radius:10px; overflow:hidden; border:1px solid var(--border); }
+.photo-thumb img{ width:100%; height:100%; object-fit:cover; display:block; }
+.photo-thumb-remove{
+  position:absolute; top:3px; right:3px; width:20px; height:20px; border-radius:50%; border:none;
+  background: rgba(0,0,0,.55); color:#fff; display:flex; align-items:center; justify-content:center; padding:0;
+}
+.photo-thumb-remove .ic{ width:12px; height:12px; }
+.multitext-group{ display:flex; flex-direction:column; gap:8px; margin: 8px 0; }
+.multitext-row{ display:flex; gap:8px; align-items:center; }
+.multitext-row .multitext-input{
+  flex:1; background: var(--surface-2); border:1px solid var(--border); border-radius: 12px;
+  padding: 10px 12px; font-size: 13.5px; color: var(--text);
+}
+.multitext-row .multitext-input:focus{ border-color: var(--aqua); outline:none; }
 .acct-edit{ margin-top:12px; padding-top:12px; border-top:1px solid var(--border); }
 
 /* meal category groups — higher-contrast chips so dishes stand out from the card */
@@ -850,21 +867,23 @@ const SECTIONS = {
       { name:'title', label:'평가/시험명', type:'text', required:true, placeholder:'예: 2단원 수행평가' },
       { name:'date', label:'날짜', type:'date', required:true },
       { name:'endDate', label:'종료일 (선택)', type:'date', required:false },
-      { name:'session', label:'차시 (선택)', type:'text', required:false, placeholder:'예: 1차시' },
+      { name:'session', label:'차시 (선택)', type:'multitext', required:false, placeholder:'예: 1차시' },
       { name:'memo', label:'메모 (선택)', type:'text', required:false, placeholder:'예: 준비물, 범위 등' },
       { name:'link', label:'링크 (선택)', type:'text', required:false, placeholder:'예: https://...' },
-      { name:'photo', label:'사진 첨부 (선택)', type:'image', required:false }
+      { name:'photos', label:'사진 첨부 (선택, 여러 장 가능)', type:'images', required:false }
     ],
-    blank: () => ({ subject:'', title:'', date: todayStr(), endDate:'', session:'', memo:'', link:'', photo:'' }),
+    blank: () => ({ subject:'', title:'', date: todayStr(), endDate:'', session:[], memo:'', link:'', photos:[] }),
     rowHtml: (it) => {
       const dd = dDayInfo(it.date);
       const expanded = state.expandedExams.has(it.id);
-      const hasExtra = !!(it.photo || it.link);
+      const photos = it.photos || (it.photo ? [it.photo] : []);
+      const sessions = Array.isArray(it.session) ? it.session : (it.session ? [it.session] : []);
+      const hasExtra = !!(photos.length || it.link);
       const range = it.endDate ? `${esc(fmtDate(it.date))} ~ ${esc(fmtDate(it.endDate))}` : esc(fmtDate(it.date));
       return `
       <div class="row-head">
         <span class="badge">${esc(it.subject)}</span>
-        ${it.session ? `<span class="badge badge-alt">${esc(it.session)}</span>` : ''}
+        ${sessions.map(s => `<span class="badge badge-alt">${esc(s)}</span>`).join('')}
         <span class="dday ${dd.cls}">${dd.label}</span>
       </div>
       <div class="row-title">${esc(it.title)}</div>
@@ -875,7 +894,7 @@ const SECTIONS = {
       </button>
       <div class="expand-panel ${expanded?'open':''}">
         <div class="expand-inner">
-          ${it.photo ? `<img src="${esc(it.photo)}" class="exam-photo" alt="첨부 사진">` : ''}
+          ${photos.length ? `<div class="exam-photo-grid">${photos.map(p => `<img src="${esc(p)}" class="exam-photo" alt="첨부 사진">`).join('')}</div>` : ''}
           ${it.link ? `<a href="${esc(it.link)}" target="_blank" rel="noopener noreferrer" class="exam-link">${icon('copy')} ${esc(it.link)}</a>` : ''}
         </div>
       </div>` : ''}
@@ -1388,6 +1407,31 @@ function toggleExamExpand(id){
   else state.expandedExams.add(id);
   render();
 }
+function addMultiField(group, placeholder){
+  const container = document.getElementById('group-'+group);
+  if(!container) return;
+  const row = document.createElement('div');
+  row.className = 'multitext-row';
+  row.innerHTML = `<input type="text" class="multitext-input" data-group="${esc(group)}" placeholder="${esc(placeholder||'')}"><button type="button" class="icon-btn" data-act="removeMultiField" aria-label="삭제">${icon('x')}</button>`;
+  container.appendChild(row);
+  const input = row.querySelector('input');
+  if(input) input.focus();
+}
+function removeMultiField(btn){
+  const row = btn.closest('.multitext-row');
+  const container = row ? row.parentElement : null;
+  if(row) row.remove();
+  if(container && container.querySelectorAll('.multitext-row').length === 0){
+    const emptyRow = document.createElement('div');
+    emptyRow.className = 'multitext-row';
+    emptyRow.innerHTML = `<input type="text" class="multitext-input" data-group="${container.id.replace('group-','')}"><button type="button" class="icon-btn" data-act="removeMultiField" aria-label="삭제">${icon('x')}</button>`;
+    container.appendChild(emptyRow);
+  }
+}
+function removePhotoThumb(btn){
+  const thumb = btn.closest('.photo-thumb');
+  if(thumb) thumb.remove();
+}
 function resizeImageToDataUrl(file, maxDim, quality){
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -1433,6 +1477,23 @@ async function submitSectionForm(section){
       } else {
         val = existing;
       }
+    } else if(f.type === 'images'){
+      const container = document.getElementById('group-'+f.name);
+      const kept = container ? Array.from(container.querySelectorAll('.photo-thumb')).map(el => el.dataset.photo) : [];
+      const fileInput = document.getElementById('field-'+f.name);
+      let newOnes = [];
+      if(fileInput && fileInput.files && fileInput.files.length){
+        try{
+          newOnes = await Promise.all(Array.from(fileInput.files).map(file => resizeImageToDataUrl(file, 900, 0.72)));
+        }catch(e){
+          showToast('사진을 처리하지 못했어요.', 'err');
+          return;
+        }
+      }
+      val = kept.concat(newOnes);
+    } else if(f.type === 'multitext'){
+      const inputs = document.querySelectorAll('.multitext-input[data-group="'+f.name+'"]');
+      val = Array.from(inputs).map(i => i.value.trim()).filter(Boolean);
     } else {
       const el = document.getElementById('field-'+f.name);
       if(!el) return;
@@ -1578,6 +1639,30 @@ function renderSectionForm(section){
         </div>` : ''}
         <input id="field-${f.name}" type="file" accept="image/*">
       </label>`;
+    }
+    if(f.type === 'images'){
+      const photos = val || [];
+      return `<label class="field"><span>${f.label}</span></label>
+        <div class="photo-grid" id="group-${f.name}">
+          ${photos.map(p => `
+          <div class="photo-thumb" data-photo="${esc(p)}">
+            <img src="${esc(p)}" alt="첨부 사진">
+            <button type="button" class="photo-thumb-remove" data-act="removePhotoThumb" aria-label="사진 삭제">${icon('x')}</button>
+          </div>`).join('')}
+        </div>
+        <input id="field-${f.name}" type="file" accept="image/*" multiple>`;
+    }
+    if(f.type === 'multitext'){
+      const items = (val && val.length) ? val : [''];
+      return `<label class="field"><span>${f.label}</span></label>
+        <div class="multitext-group" id="group-${f.name}">
+          ${items.map(v => `
+          <div class="multitext-row">
+            <input type="text" class="multitext-input" data-group="${f.name}" value="${esc(v)}" placeholder="${esc(f.placeholder||'')}">
+            <button type="button" class="icon-btn" data-act="removeMultiField" aria-label="삭제">${icon('x')}</button>
+          </div>`).join('')}
+        </div>
+        <button type="button" class="btn btn-ghost btn-sm" data-act="addMultiField" data-group="${f.name}" data-placeholder="${esc(f.placeholder||'')}">${icon('plus')} 추가</button>`;
     }
     return `<label class="field"><span>${f.label}</span><input id="field-${f.name}" type="${f.type}" value="${esc(val||'')}" placeholder="${esc(f.placeholder||'')}"></label>`;
   }).join('');
@@ -2290,6 +2375,9 @@ function bindEvents(){
       case 'togglePw': togglePwVisibility(el.dataset.target, el); break;
       case 'toggleNotif': toggleNotif(); break;
       case 'toggleExamExpand': toggleExamExpand(el.dataset.id); break;
+      case 'addMultiField': addMultiField(el.dataset.group, el.dataset.placeholder); break;
+      case 'removeMultiField': removeMultiField(el); break;
+      case 'removePhotoThumb': removePhotoThumb(el); break;
       case 'toggleLayout': toggleLayout(); break;
       case 'installApp': triggerInstall(); break;
       case 'acctEdit': acctEdit(el.dataset.id); break;
