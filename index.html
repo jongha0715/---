@@ -1115,23 +1115,43 @@ function isNoticeUnread(id){
   return !!(state.noticesUnreadSnapshot && state.noticesUnreadSnapshot.has(id));
 }
 
+async function loadField(key, shared, fallback, ms){
+  // sGet() already falls back through Firebase -> window.storage -> localStorage on its own,
+  // but a *hung* read (typically Firebase's .once('value') waiting forever for a connection
+  // that will never come while offline) never rejects, so a per-call timeout is needed too.
+  // Racing that timeout to `undefined` — not the real fallback — is what matters: it lets us
+  // tell "genuinely no data" apart from "the read never came back", so a hung read falls
+  // through to the local mirror instead of being treated as if the data didn't exist.
+  const result = await withTimeout(sGet(key, shared, fallback), ms, undefined);
+  if(result !== undefined) return result;
+  return lsGet(key, shared, fallback);
+}
 async function init(){
-  let users = null, timetables = {}, meals = [], exams = [], events = [], notices = [], session = null;
+  let users, timetables, meals, exams, events, notices, session;
   try{
-    const results = await withTimeout(Promise.all([
-      sGet('allthing-users', true, null),
-      sGet('allthing-timetables', true, {}),
-      sGet('allthing-meals', true, []),
-      sGet('allthing-exams', true, []),
-      sGet('allthing-events', true, []),
-      sGet('allthing-notices', true, []),
-      sGet('allthing-session', false, null)
-    ]), 4000, null);
-    if(results){
-      users = results[0]; timetables = results[1]; meals = results[2];
-      exams = results[3]; events = results[4]; notices = results[5]; session = results[6];
-    }
-  }catch(err){ console.error('All thing: 초기 데이터를 불러오는 중 문제가 있었어요.', err); }
+    const results = await Promise.all([
+      loadField('allthing-users', true, null, 4000),
+      loadField('allthing-timetables', true, {}, 4000),
+      loadField('allthing-meals', true, [], 4000),
+      loadField('allthing-exams', true, [], 4000),
+      loadField('allthing-events', true, [], 4000),
+      loadField('allthing-notices', true, [], 4000),
+      loadField('allthing-session', false, null, 4000)
+    ]);
+    users = results[0]; timetables = results[1]; meals = results[2];
+    exams = results[3]; events = results[4]; notices = results[5]; session = results[6];
+  }catch(err){
+    console.error('All thing: 초기 데이터를 불러오는 중 문제가 있었어요.', err);
+    // last resort if even the above somehow throws — read straight from the local mirror
+    // rather than let a network hiccup look like everything got wiped
+    users = lsGet('allthing-users', true, null);
+    timetables = lsGet('allthing-timetables', true, {});
+    meals = lsGet('allthing-meals', true, []);
+    exams = lsGet('allthing-exams', true, []);
+    events = lsGet('allthing-events', true, []);
+    notices = lsGet('allthing-notices', true, []);
+    session = lsGet('allthing-session', false, null);
+  }
 
   state.users = users || defaultUsers();
   if(!users){ sSet('allthing-users', state.users, true); }
