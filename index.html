@@ -255,6 +255,21 @@ a{ color: var(--aqua); }
 .exam-photo{ display:block; width:100%; border-radius:12px; border:1px solid var(--border); }
 .exam-photo-grid{ display:grid; grid-template-columns: repeat(auto-fill, minmax(130px,1fr)); gap:8px; margin-top:10px; max-width:420px; }
 .exam-photo-grid .exam-photo{ margin-top:0; aspect-ratio:1; object-fit:cover; }
+.exam-photo-btn{ background:none; border:none; padding:0; cursor:zoom-in; display:block; border-radius:12px; }
+.exam-photo-btn:hover .exam-photo{ opacity:.88; }
+
+.lightbox-overlay{
+  position:fixed; inset:0; background: rgba(10,8,4,.86); z-index: 200;
+  display:flex; align-items:center; justify-content:center; padding: 40px 18px;
+  animation: fadeInLightbox .18s ease;
+}
+@keyframes fadeInLightbox{ from{ opacity:0; } to{ opacity:1; } }
+.lightbox-img{ max-width:100%; max-height:100%; border-radius:10px; box-shadow: 0 20px 50px rgba(0,0,0,.5); }
+.lightbox-close{
+  position:fixed; top: calc(16px + env(safe-area-inset-top)); right:16px; width:40px; height:40px; border-radius:50%;
+  background: rgba(255,255,255,.14); border:none; color:#fff; display:flex; align-items:center; justify-content:center; z-index:201;
+}
+.lightbox-close .ic{ width:20px; height:20px; }
 .exam-link{
   display:inline-flex; align-items:center; gap:6px; margin-top:10px; font-size:12.5px; font-weight:600;
   color: var(--aqua-deep); word-break:break-all;
@@ -894,7 +909,7 @@ const SECTIONS = {
       </button>
       <div class="expand-panel ${expanded?'open':''}">
         <div class="expand-inner">
-          ${photos.length ? `<div class="exam-photo-grid">${photos.map(p => `<img src="${esc(p)}" class="exam-photo" alt="첨부 사진">`).join('')}</div>` : ''}
+          ${photos.length ? `<div class="exam-photo-grid">${photos.map(p => `<button type="button" class="exam-photo-btn" data-act="viewPhoto" data-src="${esc(p)}"><img src="${esc(p)}" class="exam-photo" alt="첨부 사진 (누르면 크게 보기)"></button>`).join('')}</div>` : ''}
           ${it.link ? `<a href="${esc(it.link)}" target="_blank" rel="noopener noreferrer" class="exam-link">${icon('copy')} ${esc(it.link)}</a>` : ''}
         </div>
       </div>` : ''}
@@ -963,6 +978,7 @@ const state = {
   acctEditing: null,
   acctAdding: false,
   expandedExams: new Set(),
+  lightboxSrc: null,
   brandAnimPlayed: false,
   navAnim: 'view-enter',
   forceLayout: lsGet('layout-pref', false, null),
@@ -1405,6 +1421,14 @@ function cancelForm(){
 function toggleExamExpand(id){
   if(state.expandedExams.has(id)) state.expandedExams.delete(id);
   else state.expandedExams.add(id);
+  render();
+}
+function viewPhoto(src){
+  state.lightboxSrc = src;
+  render();
+}
+function closeLightbox(){
+  state.lightboxSrc = null;
   render();
 }
 function addMultiField(group, placeholder){
@@ -2330,10 +2354,18 @@ function applySidebarWidth(w){
   document.addEventListener('pointercancel', stop);
 })();
 
+function renderLightboxHtml(){
+  if(!state.lightboxSrc) return '';
+  return `
+  <div class="lightbox-overlay" data-act="closeLightbox" data-backdrop="1">
+    <button type="button" class="lightbox-close" data-act="closeLightbox" aria-label="닫기">${icon('x')}</button>
+    <img src="${esc(state.lightboxSrc)}" class="lightbox-img" alt="첨부 사진 크게 보기">
+  </div>`;
+}
 function render(){
   const app = document.getElementById('app');
   if(!state.booted){ app.innerHTML = `<div class="boot">불러오는 중…</div>`; return; }
-  app.innerHTML = (state.currentUser ? renderShell() : renderLogin()) + renderToastHtml();
+  app.innerHTML = (state.currentUser ? renderShell() : renderLogin()) + renderToastHtml() + renderLightboxHtml();
   document.documentElement.setAttribute('data-layout', state.forceLayout || 'auto');
   if(state.currentUser) applySidebarWidth(sidebarWidthPref());
   updateBottomNavEdges(document.getElementById('bottomNavScroll'));
@@ -2375,6 +2407,8 @@ function bindEvents(){
       case 'togglePw': togglePwVisibility(el.dataset.target, el); break;
       case 'toggleNotif': toggleNotif(); break;
       case 'toggleExamExpand': toggleExamExpand(el.dataset.id); break;
+      case 'viewPhoto': viewPhoto(el.dataset.src); break;
+      case 'closeLightbox': closeLightbox(); break;
       case 'addMultiField': addMultiField(el.dataset.group, el.dataset.placeholder); break;
       case 'removeMultiField': removeMultiField(el); break;
       case 'removePhotoThumb': removePhotoThumb(el); break;
