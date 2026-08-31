@@ -179,6 +179,7 @@ a{ color: var(--aqua); }
   display:inline-flex; align-items:center; background: var(--aqua-dim); color: var(--aqua);
   border-radius: 999px; padding: 3px 10px; font-size: 12px; font-weight:700;
 }
+.badge-alt{ background: var(--surface-3); color: var(--text-2); }
 .dday{
   display:inline-flex; align-items:center; border-radius: 999px; padding: 3px 10px; font-size: 12px; font-weight:800;
   background: var(--aqua-dim); color: var(--aqua-deep);
@@ -241,6 +242,25 @@ a{ color: var(--aqua); }
 .row-title{ font-size: 15px; font-weight:700; margin-bottom: 3px; }
 .row-sub{ font-size: 13px; color: var(--text-2); }
 .notice-content{ margin-top:6px; line-height:1.55; }
+
+.expand-toggle{
+  display:inline-flex; align-items:center; gap:3px; background:none; border:none; padding: 6px 0 0;
+  color: var(--aqua-deep); font-size:12.5px; font-weight:700;
+}
+.expand-toggle .ic{ width:14px; height:14px; transition: transform .2s ease; }
+.expand-toggle.open .ic{ transform: rotate(90deg); }
+.expand-panel{ display:grid; grid-template-rows: 0fr; transition: grid-template-rows .25s ease; }
+.expand-panel.open{ grid-template-rows: 1fr; }
+.expand-inner{ overflow:hidden; min-height:0; }
+.exam-photo{ display:block; width:100%; max-width:320px; border-radius:12px; margin-top:10px; border:1px solid var(--border); }
+.exam-link{
+  display:inline-flex; align-items:center; gap:6px; margin-top:10px; font-size:12.5px; font-weight:600;
+  color: var(--aqua-deep); word-break:break-all;
+}
+.exam-link .ic{ width:14px; height:14px; flex:none; }
+.photo-preview{ margin-bottom:8px; }
+.photo-preview img{ display:block; width:100%; max-width:220px; border-radius:10px; border:1px solid var(--border); margin-bottom:6px; }
+.photo-remove{ margin:0 !important; }
 .acct-edit{ margin-top:12px; padding-top:12px; border-top:1px solid var(--border); }
 
 /* meal category groups — higher-contrast chips so dishes stand out from the card */
@@ -829,18 +849,36 @@ const SECTIONS = {
       { name:'subject', label:'과목', type:'text', required:true, placeholder:'예: 미적분1' },
       { name:'title', label:'평가/시험명', type:'text', required:true, placeholder:'예: 2단원 수행평가' },
       { name:'date', label:'날짜', type:'date', required:true },
-      { name:'memo', label:'메모 (선택)', type:'text', required:false, placeholder:'예: 준비물, 범위 등' }
+      { name:'endDate', label:'종료일 (선택)', type:'date', required:false },
+      { name:'session', label:'차시 (선택)', type:'text', required:false, placeholder:'예: 1차시' },
+      { name:'memo', label:'메모 (선택)', type:'text', required:false, placeholder:'예: 준비물, 범위 등' },
+      { name:'link', label:'링크 (선택)', type:'text', required:false, placeholder:'예: https://...' },
+      { name:'photo', label:'사진 첨부 (선택)', type:'image', required:false }
     ],
-    blank: () => ({ subject:'', title:'', date: todayStr(), memo:'' }),
+    blank: () => ({ subject:'', title:'', date: todayStr(), endDate:'', session:'', memo:'', link:'', photo:'' }),
     rowHtml: (it) => {
       const dd = dDayInfo(it.date);
+      const expanded = state.expandedExams.has(it.id);
+      const hasExtra = !!(it.photo || it.link);
+      const range = it.endDate ? `${esc(fmtDate(it.date))} ~ ${esc(fmtDate(it.endDate))}` : esc(fmtDate(it.date));
       return `
       <div class="row-head">
         <span class="badge">${esc(it.subject)}</span>
+        ${it.session ? `<span class="badge badge-alt">${esc(it.session)}</span>` : ''}
         <span class="dday ${dd.cls}">${dd.label}</span>
       </div>
       <div class="row-title">${esc(it.title)}</div>
-      <div class="row-sub">${esc(fmtDate(it.date))}${it.memo ? ' · '+esc(it.memo) : ''}</div>
+      <div class="row-sub">${range}${it.memo ? ' · '+esc(it.memo) : ''}</div>
+      ${hasExtra ? `
+      <button type="button" class="expand-toggle ${expanded?'open':''}" data-act="toggleExamExpand" data-id="${esc(it.id)}">
+        ${expanded ? '접기' : '더보기'} ${icon('chevron')}
+      </button>
+      <div class="expand-panel ${expanded?'open':''}">
+        <div class="expand-inner">
+          ${it.photo ? `<img src="${esc(it.photo)}" class="exam-photo" alt="첨부 사진">` : ''}
+          ${it.link ? `<a href="${esc(it.link)}" target="_blank" rel="noopener noreferrer" class="exam-link">${icon('copy')} ${esc(it.link)}</a>` : ''}
+        </div>
+      </div>` : ''}
       `;
     }
   },
@@ -905,6 +943,7 @@ const state = {
   canInstall: false,
   acctEditing: null,
   acctAdding: false,
+  expandedExams: new Set(),
   brandAnimPlayed: false,
   navAnim: 'view-enter',
   forceLayout: lsGet('layout-pref', false, null),
@@ -1251,13 +1290,22 @@ async function acctResetDefault(id){
 }
 async function acctSave(id){
   const idEl = document.getElementById('acctId');
+  const nameEl = document.getElementById('acctName');
   const pwEl = document.getElementById('acctPw');
+  const adminEl = document.getElementById('acctIsAdmin');
   if(!idEl) return;
   const newId = idEl.value.trim();
+  const newName = nameEl ? nameEl.value.trim() : '';
   const newPw = pwEl ? pwEl.value : '';
+  const newIsAdmin = adminEl ? adminEl.checked : !!state.users[id].isAdmin;
   if(!newId){ showToast('아이디를 입력해주세요.', 'err'); return; }
+  if(!newName){ showToast('표시 이름을 입력해주세요.', 'err'); return; }
   if(newPw && newPw.length < 6){ showToast('비밀번호는 6자 이상으로 입력해주세요.', 'err'); return; }
   if(newId !== id && state.users[newId]){ showToast('이미 사용 중인 아이디예요.', 'err'); return; }
+  if(id === state.currentUser && !newIsAdmin){
+    showToast('현재 로그인한 계정의 관리자 권한은 스스로 해제할 수 없어요.', 'err');
+    return;
+  }
 
   if(newId !== id){
     const record = Object.assign({}, state.users[id]);
@@ -1269,6 +1317,8 @@ async function acctSave(id){
       if(session) await sSet('allthing-session', { id: newId, ts: Date.now() }, false);
     }
   }
+  state.users[newId].displayName = newName;
+  state.users[newId].isAdmin = newIsAdmin;
   if(newPw) state.users[newId].password = newPw;
   await sSet('allthing-users', state.users, true);
   showToast('계정 정보를 저장했어요.');
@@ -1333,17 +1383,65 @@ function cancelForm(){
   state.editing = { section:null, id:null, data:null };
   render();
 }
+function toggleExamExpand(id){
+  if(state.expandedExams.has(id)) state.expandedExams.delete(id);
+  else state.expandedExams.add(id);
+  render();
+}
+function resizeImageToDataUrl(file, maxDim, quality){
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        let w = img.width, h = img.height;
+        if(w > maxDim || h > maxDim){
+          if(w > h){ h = Math.round(h * maxDim / w); w = maxDim; }
+          else { w = Math.round(w * maxDim / h); h = maxDim; }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.onerror = () => reject(new Error('image load failed'));
+      img.src = e.target.result;
+    };
+    reader.onerror = () => reject(new Error('file read failed'));
+    reader.readAsDataURL(file);
+  });
+}
 async function submitSectionForm(section){
   const cfg = SECTIONS[section];
   const data = {};
   for(const f of cfg.fields){
-    const el = document.getElementById('field-'+f.name);
-    if(!el) return;
-    let val = el.value;
-    if(f.type === 'lines'){
-      val = val.split('\n').map(s=>s.trim()).filter(Boolean);
+    let val;
+    if(f.type === 'image'){
+      const fileInput = document.getElementById('field-'+f.name);
+      const removeEl = document.getElementById('field-'+f.name+'-remove');
+      const existing = (state.editing.data && state.editing.data[f.name]) || '';
+      if(removeEl && removeEl.checked){
+        val = '';
+      } else if(fileInput && fileInput.files && fileInput.files[0]){
+        try{
+          val = await resizeImageToDataUrl(fileInput.files[0], 900, 0.72);
+        }catch(e){
+          showToast('사진을 처리하지 못했어요.', 'err');
+          return;
+        }
+      } else {
+        val = existing;
+      }
     } else {
-      val = val.trim();
+      const el = document.getElementById('field-'+f.name);
+      if(!el) return;
+      val = el.value;
+      if(f.type === 'lines'){
+        val = val.split('\n').map(s=>s.trim()).filter(Boolean);
+      } else {
+        val = val.trim();
+      }
     }
     if(f.required && (!val || (Array.isArray(val) && val.length===0))){
       showToast(f.label+'을(를) 입력해주세요.', 'err');
@@ -1470,6 +1568,16 @@ function renderSectionForm(section){
     }
     if(f.type === 'textarea'){
       return `<label class="field"><span>${f.label}</span><textarea id="field-${f.name}" rows="4" placeholder="${esc(f.placeholder||'')}">${esc(val||'')}</textarea></label>`;
+    }
+    if(f.type === 'image'){
+      return `<label class="field"><span>${f.label}</span>
+        ${val ? `
+        <div class="photo-preview">
+          <img src="${esc(val)}" alt="첨부 사진 미리보기">
+          <label class="checkline photo-remove"><input type="checkbox" id="field-${f.name}-remove"> 사진 제거</label>
+        </div>` : ''}
+        <input id="field-${f.name}" type="file" accept="image/*">
+      </label>`;
     }
     return `<label class="field"><span>${f.label}</span><input id="field-${f.name}" type="${f.type}" value="${esc(val||'')}" placeholder="${esc(f.placeholder||'')}"></label>`;
   }).join('');
@@ -1827,8 +1935,10 @@ function renderAccountRow(id){
   </div>`;
 }
 function renderAccountEditForm(id){
+  const u = state.users[id];
   return `
   <div class="acct-edit">
+    <label class="field"><span>표시 이름</span><input id="acctName" type="text" value="${esc(u.displayName)}"></label>
     <label class="field"><span>아이디 (로그인용)</span><input id="acctId" type="text" value="${esc(id)}"></label>
     <label class="field"><span>새 비밀번호 (6자 이상 — 비워두면 비밀번호는 그대로 둬요)</span>
       <div class="pw-field">
@@ -1836,6 +1946,7 @@ function renderAccountEditForm(id){
         <button type="button" class="pw-toggle" data-act="togglePw" data-target="acctPw" aria-label="비밀번호 표시">${icon('eye')}</button>
       </div>
     </label>
+    <label class="checkline"><input type="checkbox" id="acctIsAdmin" ${u.isAdmin?'checked':''}> 관리자 권한 부여</label>
     <div class="form-actions" style="justify-content:space-between; flex-wrap:wrap;">
       <button type="button" class="btn btn-ghost btn-sm" data-act="acctResetDefault" data-id="${esc(id)}">${icon('key')} 비밀번호를 아이디로 초기화</button>
       <div style="display:flex; gap:8px;">
@@ -2178,6 +2289,7 @@ function bindEvents(){
       case 'saveStudentNo': saveStudentNo(); break;
       case 'togglePw': togglePwVisibility(el.dataset.target, el); break;
       case 'toggleNotif': toggleNotif(); break;
+      case 'toggleExamExpand': toggleExamExpand(el.dataset.id); break;
       case 'toggleLayout': toggleLayout(); break;
       case 'installApp': triggerInstall(); break;
       case 'acctEdit': acctEdit(el.dataset.id); break;
