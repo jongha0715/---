@@ -2676,6 +2676,37 @@ function renderInstallBanner(){
   }, { passive:true });
 })();
 
+/* ---------- press back again to exit ----------
+   On mobile, the browser/OS back button normally leaves the app on the very first press,
+   which is easy to hit by accident. This pushes a harmless extra history entry so the first
+   back press is caught (shown as a toast) instead of leaving; pressing back again within a
+   couple seconds lets it through so the app actually closes.
+*/
+(function setupBackToExit(){
+  const EXIT_WINDOW = 2000;
+  let lastBackAt = 0;
+  let programmaticBack = false;
+  function armGuard(){
+    try{ history.pushState({ allthingGuard: true }, '', location.href); }catch(e){}
+  }
+  window.addEventListener('popstate', function(){
+    if(programmaticBack){ programmaticBack = false; return; } // our own history.back() below — let it proceed
+    const now = Date.now();
+    if(lastBackAt && now - lastBackAt < EXIT_WINDOW){
+      // second press within the window — go back one more step to actually leave, since the
+      // guard entry we pushed points at the same page and wouldn't exit on its own
+      lastBackAt = 0;
+      programmaticBack = true;
+      history.back();
+      return;
+    }
+    lastBackAt = now;
+    showToast('뒤로 가기를 한 번 더 누르면 앱이 종료돼요.');
+    armGuard();
+  });
+  armGuard();
+})();
+
 bindEvents();
 init();
 </script>
