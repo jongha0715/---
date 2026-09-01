@@ -206,6 +206,11 @@ a{ color: var(--aqua); }
 .mini-row{ display:flex; align-items:center; gap:10px; font-size: 13.5px; }
 .mini-p{ color: var(--aqua); font-weight:700; font-size:12.5px; flex:none; min-width: 46px; }
 
+.section-divider{
+  display:flex; align-items:center; gap:10px; margin: 22px 2px 12px; font-size:12.5px; font-weight:800;
+  color: var(--text-3); letter-spacing:.2px;
+}
+.section-divider::after{ content:''; flex:1; height:1px; background: var(--border); }
 .empty-state{
   display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px;
   padding: 46px 20px; color: var(--text-3); text-align:center;
@@ -853,7 +858,7 @@ function defaultUsers(){
 const SECTIONS = {
   meals: {
     label: '급식', icon: 'meal', storageKey: 'allthing-meals',
-    emptyMsg: '아직 등록된 급식 정보가 없어요.',
+    emptyMsg: '아직 등록된 급식 정보가 없어요.', pastLabel: '지난 급식',
     fields: [
       { name:'date', label:'날짜', type:'date', required:true },
       { name:'breakfast', label:'조식 (한 줄에 하나씩, 없으면 비워두세요)', type:'lines', required:false },
@@ -876,7 +881,7 @@ const SECTIONS = {
   },
   exams: {
     label: '수행평가·시험', icon: 'exam', storageKey: 'allthing-exams',
-    emptyMsg: '다가오는 수행평가·시험이 없어요.',
+    emptyMsg: '다가오는 수행평가·시험이 없어요.', pastLabel: '지난 수행평가·시험',
     fields: [
       { name:'subject', label:'과목', type:'text', required:true, placeholder:'예: 미적분1' },
       { name:'title', label:'평가/시험명', type:'text', required:true, placeholder:'예: 2단원 수행평가' },
@@ -918,7 +923,7 @@ const SECTIONS = {
   },
   events: {
     label: '일정', icon: 'event', storageKey: 'allthing-events',
-    emptyMsg: '다가오는 일정이 없어요.',
+    emptyMsg: '다가오는 일정이 없어요.', pastLabel: '지난 일정',
     fields: [
       { name:'title', label:'일정명', type:'text', required:true, placeholder:'예: 현장체험학습' },
       { name:'date', label:'날짜', type:'date', required:true },
@@ -1741,6 +1746,11 @@ const ACCOUNTS_NAV_ITEM = { key:'accounts', label:'계정 관리', icon:'users' 
 function visibleNav(){ return isAdmin() ? NAV.concat([ACCOUNTS_NAV_ITEM]) : NAV; }
 
 /* ---------- section list/form (generic CRUD render) ---------- */
+function isPastItem(section, it){
+  if(section === 'notices') return false;
+  const cutoff = it.endDate || it.date || '';
+  return cutoff < todayStr();
+}
 function renderSectionList(section){
   const cfg = SECTIONS[section];
   let list = state[section];
@@ -1748,8 +1758,8 @@ function renderSectionList(section){
   if(list.length === 0){
     return `<div class="empty-state">${icon(cfg.icon)}<p>${cfg.emptyMsg}</p></div>`;
   }
-  return `<div class="list">${list.map(it => `
-    <div class="list-item ${section!=='notices' && it.date < todayStr() ? 'past' : ''}">
+  const renderItem = (it) => `
+    <div class="list-item ${isPastItem(section, it) ? 'past' : ''}">
       <div class="list-item-body">${cfg.rowHtml(it)}</div>
       ${isAdmin() ? `
       <div class="list-item-actions">
@@ -1757,7 +1767,19 @@ function renderSectionList(section){
         <button class="icon-btn danger" data-act="deleteItem" data-section="${section}" data-id="${it.id}" aria-label="삭제">${icon('trash')}</button>
       </div>` : ''}
     </div>
-  `).join('')}</div>`;
+  `;
+  if(!cfg.pastLabel){
+    return `<div class="list">${list.map(renderItem).join('')}</div>`;
+  }
+  const upcoming = list.filter(it => !isPastItem(section, it));
+  const past = list.filter(it => isPastItem(section, it))
+    .slice().sort((a,b) => (b.endDate||b.date||'').localeCompare(a.endDate||a.date||''));
+  return `
+    ${upcoming.length ? `<div class="list">${upcoming.map(renderItem).join('')}</div>` : `<div class="empty-state">${icon(cfg.icon)}<p>${cfg.emptyMsg}</p></div>`}
+    ${past.length ? `
+    <div class="section-divider">${esc(cfg.pastLabel)}</div>
+    <div class="list">${past.map(renderItem).join('')}</div>` : ''}
+  `;
 }
 function renderSectionForm(section){
   const cfg = SECTIONS[section];
@@ -2705,6 +2727,14 @@ function renderInstallBanner(){
     armGuard();
   });
   armGuard();
+  // Some mobile browsers don't fully register a pushState call made this early (right at
+  // script load, before the page has "settled" or seen any user interaction) — the very
+  // first back press then skips straight past it. Re-arming on load and on the first touch
+  // makes sure the guard is in place by the time a real back press can happen.
+  window.addEventListener('load', armGuard);
+  window.addEventListener('pageshow', armGuard);
+  document.addEventListener('touchstart', armGuard, { once:true, capture:true });
+  document.addEventListener('click', armGuard, { once:true, capture:true });
 })();
 
 bindEvents();
