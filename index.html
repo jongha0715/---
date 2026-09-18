@@ -1976,7 +1976,7 @@ function renderTimetableTable(grid){
       <thead><tr><th></th>${DAYS.map(d=>`<th>${d}</th>`).join('')}</tr></thead>
       <tbody>
         ${PERIODS.map((p,i)=>`
-        <tr><th>${p}</th>${DAYS.map(d=>`<td>${esc(grid[d][i]) || '<span class="text-3">-</span>'}</td>`).join('')}</tr>
+        <tr><th>${p}</th>${DAYS.map(d=>`<td>${esc((grid[d]||[])[i] || '') || '<span class="text-3">-</span>'}</td>`).join('')}</tr>
         `).join('')}
       </tbody>
     </table>
@@ -2027,7 +2027,7 @@ function renderTtModal(){
             <thead><tr><th></th>${DAYS.map(d=>`<th>${d}</th>`).join('')}</tr></thead>
             <tbody>
               ${PERIODS.map((p,i)=>`
-              <tr><th>${p}</th>${DAYS.map(d=>`<td><textarea id="cell-${d}-${i}" rows="2">${esc(grid[d][i])}</textarea></td>`).join('')}</tr>
+              <tr><th>${p}</th>${DAYS.map(d=>`<td><textarea id="cell-${d}-${i}" rows="2">${esc((grid[d]||[])[i] || '')}</textarea></td>`).join('')}</tr>
               `).join('')}
             </tbody>
           </table>
@@ -2041,10 +2041,72 @@ function renderTtModal(){
           </div>
           <p class="text-3 small">${esc(no)}의 기존 시간표는 지워지고 덮어써요.</p>
         </div>
+        <div class="copy-box">
+          <p class="text-2">과목 줄임말 한 번에 펼치기</p>
+          <button type="button" class="btn btn-ghost btn-sm" data-act="ttExpandAbbrev">${icon('check')} 모든 학번에 적용</button>
+          <p class="text-3 small">지시과 → 지구과학시스템 처럼, 등록된 모든 시간표의 줄임말을 정식 과목명으로 바꿔요. 괄호 안 반 표시는 그대로 둬요.</p>
+        </div>
         ` : `<p class="text-2 modal-hint">학번을 선택하면 편집할 수 있어요.</p>`}
       </div>
     </div>
   </div>`;
+}
+
+/* ---------- subject abbreviation expansion ----------
+   Matching is exact on the trimmed subject line, so running this twice is harmless: an
+   already-expanded name no longer matches any key. Lines like "(2-7)" are left untouched.
+*/
+const SUBJECT_ABBREV = {
+  '지시과': '지구과학시스템',
+  '물질': '물질과 에너지',
+  '역학': '역학과 에너지',
+  '인수': '인공지능 수학',
+  '인공': '인공지능 기초',
+  '융과탐': '융합과학탐구',
+  '법사': '법과 사회',
+  '윤사': '윤리와 사상',
+  '사문탐': '사회문제 탐구',
+  '동역': '동아시아 역사 기행',
+  '일회': '일본어 회화'
+};
+function expandSubjectCell(cell){
+  if(!cell) return cell;
+  return cell.split('\n').map(line => {
+    const trimmed = line.trim();
+    if(SUBJECT_ABBREV[trimmed]) return SUBJECT_ABBREV[trimmed];
+    // also handle the abbreviation sitting on the same line as the class, e.g. "지시과(2-7)"
+    for(const key of Object.keys(SUBJECT_ABBREV)){
+      if(trimmed.startsWith(key)){
+        const rest = trimmed.slice(key.length);
+        if(rest.startsWith('(')) return SUBJECT_ABBREV[key] + rest;
+      }
+    }
+    return line;
+  }).join('\n');
+}
+async function expandAllTimetableAbbrevs(){
+  let changed = 0;
+  const next = {};
+  Object.keys(state.timetables).forEach(no => {
+    const grid = state.timetables[no] || {};
+    const newGrid = {};
+    Object.keys(grid).forEach(day => {
+      newGrid[day] = (grid[day] || []).map(cell => {
+        const out = expandSubjectCell(cell);
+        if(out !== cell) changed++;
+        return out;
+      });
+    });
+    next[no] = newGrid;
+  });
+  if(changed === 0){ showToast('바꿀 줄임말이 없어요.'); return; }
+  state.timetables = next;
+  if(state.ttEditor.open && state.ttEditor.no){
+    state.ttEditor.grid = state.timetables[state.ttEditor.no] || state.ttEditor.grid;
+  }
+  await sSet('allthing-timetables', state.timetables, true);
+  showToast(changed + '개 칸의 줄임말을 펼쳤어요.');
+  render();
 }
 
 /* ---------- home view ---------- */
@@ -2060,7 +2122,7 @@ function homeTimetableSummary(){
   if(!DAYS.includes(day)) return `<p class="text-2">오늘은 등교하지 않는 날이에요.</p>`;
   if(!u.studentNo || !state.timetables[u.studentNo]) return `<p class="text-2">아직 시간표가 없어요.</p>`;
   const grid = state.timetables[u.studentNo];
-  const list = PERIODS.map((p,i)=>({ p, s: grid[day][i] })).filter(x => x.s);
+  const list = PERIODS.map((p,i)=>({ p, s: (grid[day]||[])[i] || '' })).filter(x => x.s);
   if(list.length === 0) return `<p class="text-2">오늘은 등록된 수업이 없어요.</p>`;
   return `<div class="mini-list">${list.map(x=>`<div class="mini-row"><span class="mini-p">${x.p}교시</span><span>${esc(x.s)}</span></div>`).join('')}</div>`;
 }
@@ -2595,6 +2657,7 @@ function bindEvents(){
         break;
       }
       case 'ttSave': saveTtGrid(); break;
+      case 'ttExpandAbbrev': expandAllTimetableAbbrevs(); break;
       case 'ttCopy': copyTtFrom(); break;
       case 'importMealsJson': {
         const inp = document.getElementById('mealJsonInput');
