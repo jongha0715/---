@@ -1606,22 +1606,44 @@ function removePhotoThumb(btn){
   const thumb = btn.closest('.photo-thumb');
   if(thumb) thumb.remove();
 }
+/* Photos of handouts/worksheets need enough resolution to actually read the text, so this
+   aims high (1800px, quality .88) and only steps down if the result would be too heavy to
+   sync. The cap matters because photos are stored as base64 inside the shared data blob —
+   letting one photo balloon would slow every device's sync and can overflow local storage. */
+const PHOTO_MAX_DIM = 1800;
+const PHOTO_QUALITY = 0.88;
+const PHOTO_BUDGET_BYTES = 900 * 1024; // per photo, measured on the encoded data URL
 function resizeImageToDataUrl(file, maxDim, quality){
+  maxDim = maxDim || PHOTO_MAX_DIM;
+  quality = quality || PHOTO_QUALITY;
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = (e) => {
       const img = new Image();
       img.onload = () => {
-        let w = img.width, h = img.height;
-        if(w > maxDim || h > maxDim){
-          if(w > h){ h = Math.round(h * maxDim / w); w = maxDim; }
-          else { w = Math.round(w * maxDim / h); h = maxDim; }
+        function encode(dim, q){
+          let w = img.width, h = img.height;
+          if(w > dim || h > dim){
+            if(w > h){ h = Math.round(h * dim / w); w = dim; }
+            else { w = Math.round(w * dim / h); h = dim; }
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = w; canvas.height = h;
+          const ctx = canvas.getContext('2d');
+          // better downscaling than the browser default — noticeably sharper text
+          ctx.imageSmoothingEnabled = true;
+          if('imageSmoothingQuality' in ctx) ctx.imageSmoothingQuality = 'high';
+          ctx.drawImage(img, 0, 0, w, h);
+          return canvas.toDataURL('image/jpeg', q);
         }
-        const canvas = document.createElement('canvas');
-        canvas.width = w; canvas.height = h;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0, w, h);
-        resolve(canvas.toDataURL('image/jpeg', quality));
+        // start at full requested quality, back off only as far as needed to fit the budget
+        const attempts = [[maxDim, quality], [maxDim, 0.8], [1400, 0.8], [1200, 0.75], [900, 0.72]];
+        let out = null;
+        for(const [d, q] of attempts){
+          out = encode(d, q);
+          if(out.length <= PHOTO_BUDGET_BYTES) break;
+        }
+        resolve(out);
       };
       img.onerror = () => reject(new Error('image load failed'));
       img.src = e.target.result;
@@ -1643,7 +1665,7 @@ async function submitSectionForm(section){
         val = '';
       } else if(fileInput && fileInput.files && fileInput.files[0]){
         try{
-          val = await resizeImageToDataUrl(fileInput.files[0], 900, 0.72);
+          val = await resizeImageToDataUrl(fileInput.files[0]);
         }catch(e){
           showToast('사진을 처리하지 못했어요.', 'err');
           return;
@@ -1658,7 +1680,7 @@ async function submitSectionForm(section){
       let newOnes = [];
       if(fileInput && fileInput.files && fileInput.files.length){
         try{
-          newOnes = await Promise.all(Array.from(fileInput.files).map(file => resizeImageToDataUrl(file, 900, 0.72)));
+          newOnes = await Promise.all(Array.from(fileInput.files).map(file => resizeImageToDataUrl(file)));
         }catch(e){
           showToast('사진을 처리하지 못했어요.', 'err');
           return;
@@ -1783,13 +1805,10 @@ function isPastItem(section, it){
   const cutoff = it.endDate || it.date || '';
   return cutoff < todayStr();
 }
-function renderSectionList(section, overrideList){
+function renderSectionList(section, overrideList, mode){
   const cfg = SECTIONS[section];
   let list = overrideList || state[section];
   if(section === 'notices') list = list.slice().reverse();
-  if(list.length === 0){
-    return `<div class="empty-state">${icon(cfg.icon)}<p>${cfg.emptyMsg}</p></div>`;
-  }
   const renderItem = (it) => `
     <div class="list-item ${isPastItem(section, it) ? 'past' : ''}">
       <div class="list-item-body">${cfg.rowHtml(it)}</div>
@@ -1800,6 +1819,21 @@ function renderSectionList(section, overrideList){
       </div>` : ''}
     </div>
   `;
+  // 'upcoming' / 'past' let a caller render the two groups in separate places (the exams
+  // split view puts every past item below both columns instead of inside each one)
+  if(mode === 'upcoming' || mode === 'past'){
+    const subset = list.filter(it => mode === 'past' ? isPastItem(section, it) : !isPastItem(section, it));
+    if(mode === 'past'){
+      subset.sort((a,b) => (b.endDate||b.date||'').localeCompare(a.endDate||a.date||''));
+      return subset.length ? `<div class="list">${subset.map(renderItem).join('')}</div>` : '';
+    }
+    return subset.length
+      ? `<div class="list">${subset.map(renderItem).join('')}</div>`
+      : `<div class="empty-state">${icon(cfg.icon)}<p>${cfg.emptyMsg}</p></div>`;
+  }
+  if(list.length === 0){
+    return `<div class="empty-state">${icon(cfg.icon)}<p>${cfg.emptyMsg}</p></div>`;
+  }
   if(!cfg.pastLabel){
     return `<div class="list">${list.map(renderItem).join('')}</div>`;
   }
@@ -1819,17 +1853,26 @@ function renderExamsSplit(){
   const all = state.exams;
   const perf = all.filter(it => (it.kind || 'perf') === 'perf');
   const exam = all.filter(it => it.kind === 'exam');
+  const pastPerf = renderSectionList('exams', perf, 'past');
+  const pastExam = renderSectionList('exams', exam, 'past');
+  const hasPast = !!(pastPerf || pastExam);
   return `
   <div class="split-cols">
     <section class="split-col">
       <h3 class="split-col-head">${icon('exam')} 수행평가</h3>
-      ${renderSectionList('exams', perf)}
+      ${renderSectionList('exams', perf, 'upcoming')}
     </section>
     <section class="split-col">
       <h3 class="split-col-head">${icon('exam')} 시험</h3>
-      ${renderSectionList('exams', exam)}
+      ${renderSectionList('exams', exam, 'upcoming')}
     </section>
-  </div>`;
+  </div>
+  ${hasPast ? `
+  <div class="section-divider">${esc(SECTIONS.exams.pastLabel)}</div>
+  <div class="split-cols">
+    <section class="split-col">${pastPerf}</section>
+    <section class="split-col">${pastExam}</section>
+  </div>` : ''}`;
 }
 function renderSectionForm(section){
   const cfg = SECTIONS[section];
@@ -2057,7 +2100,9 @@ function renderTtModal(){
    already-expanded name no longer matches any key. Lines like "(2-7)" are left untouched.
 */
 const SUBJECT_ABBREV = {
-  '지시과': '지구과학시스템',
+  '지시과': '지구시스템과학',
+  '지구과학시스템': '지구시스템과학', // corrects timetables already expanded with the old wording
+  '한지탐': '한국지리 탐구',
   '물질': '물질과 에너지',
   '역학': '역학과 에너지',
   '인수': '인공지능 수학',
