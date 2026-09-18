@@ -206,6 +206,31 @@ a{ color: var(--aqua); }
 .mini-row{ display:flex; align-items:center; gap:10px; font-size: 13.5px; }
 .mini-p{ color: var(--aqua); font-weight:700; font-size:12.5px; flex:none; min-width: 46px; }
 
+.split-cols{ display:grid; grid-template-columns: 1fr 1fr; gap: 22px; align-items:start; }
+.split-col{ min-width:0; }
+.split-col-head{
+  display:flex; align-items:center; gap:7px; font-size:14.5px; font-weight:800; margin: 0 0 12px;
+  padding-bottom:10px; border-bottom:2px solid var(--aqua-dim); color: var(--text);
+}
+.split-col-head .ic{ width:17px; height:17px; color: var(--aqua); }
+/* stack the two columns whenever the mobile/bottom-nav layout is in play (narrow screens,
+   portrait tablets, or a manually forced mobile layout) */
+@media (max-width: 879px){ .split-cols{ grid-template-columns: 1fr; gap: 10px; } }
+html[data-layout="mobile"] .split-cols{ grid-template-columns: 1fr !important; gap: 10px !important; }
+html[data-layout="pc"] .split-cols{ grid-template-columns: 1fr 1fr !important; gap: 22px !important; }
+
+.seg-select{ display:flex; gap:8px; }
+.seg-option{ flex:1; position:relative; }
+.seg-option input{ position:absolute; opacity:0; pointer-events:none; }
+.seg-option span{
+  display:flex; align-items:center; justify-content:center; padding: 11px 10px; border-radius: 12px;
+  background: var(--surface-2); border:1px solid var(--border); font-size:13.5px; font-weight:700;
+  color: var(--text-2); transition: background .15s ease, color .15s ease, border-color .15s ease;
+}
+.seg-option.active span, .seg-option input:checked + span{
+  background: var(--aqua); border-color: var(--aqua); color: var(--on-accent);
+}
+
 .section-divider{
   display:flex; align-items:center; gap:10px; margin: 22px 2px 12px; font-size:12.5px; font-weight:800;
   color: var(--text-3); letter-spacing:.2px;
@@ -883,6 +908,10 @@ const SECTIONS = {
     label: '수행평가·시험', icon: 'exam', storageKey: 'allthing-exams',
     emptyMsg: '다가오는 수행평가·시험이 없어요.', pastLabel: '지난 수행평가·시험',
     fields: [
+      { name:'kind', label:'종류', type:'select', required:true, options:[
+        { value:'perf', label:'수행평가' },
+        { value:'exam', label:'시험' }
+      ] },
       { name:'subject', label:'과목', type:'text', required:true, placeholder:'예: 미적분1' },
       { name:'title', label:'평가/시험명', type:'text', required:true, placeholder:'예: 2단원 수행평가' },
       { name:'date', label:'날짜', type:'date', required:true },
@@ -892,7 +921,7 @@ const SECTIONS = {
       { name:'link', label:'링크 (선택)', type:'text', required:false, placeholder:'예: https://...' },
       { name:'photos', label:'사진 첨부 (선택, 여러 장 가능)', type:'images', required:false }
     ],
-    blank: () => ({ subject:'', title:'', date: todayStr(), endDate:'', session:[], memo:'', link:'', photos:[] }),
+    blank: () => ({ kind:'perf', subject:'', title:'', date: todayStr(), endDate:'', session:[], memo:'', link:'', photos:[] }),
     rowHtml: (it) => {
       const dd = dDayInfo(it.date);
       const expanded = state.expandedExams.has(it.id);
@@ -1636,6 +1665,9 @@ async function submitSectionForm(section){
         }
       }
       val = kept.concat(newOnes);
+    } else if(f.type === 'select'){
+      const checked = document.querySelector('input[name="field-'+f.name+'"]:checked');
+      val = checked ? checked.value : ((f.options && f.options[0]) ? f.options[0].value : '');
     } else if(f.type === 'multitext'){
       const inputs = document.querySelectorAll('.multitext-input[data-group="'+f.name+'"]');
       val = Array.from(inputs).map(i => i.value.trim()).filter(Boolean);
@@ -1751,9 +1783,9 @@ function isPastItem(section, it){
   const cutoff = it.endDate || it.date || '';
   return cutoff < todayStr();
 }
-function renderSectionList(section){
+function renderSectionList(section, overrideList){
   const cfg = SECTIONS[section];
-  let list = state[section];
+  let list = overrideList || state[section];
   if(section === 'notices') list = list.slice().reverse();
   if(list.length === 0){
     return `<div class="empty-state">${icon(cfg.icon)}<p>${cfg.emptyMsg}</p></div>`;
@@ -1781,6 +1813,24 @@ function renderSectionList(section){
     <div class="list">${past.map(renderItem).join('')}</div>` : ''}
   `;
 }
+function renderExamsSplit(){
+  // items saved before the 수행평가/시험 distinction existed have no `kind` — treat those
+  // as 수행평가 so nothing silently disappears from the view
+  const all = state.exams;
+  const perf = all.filter(it => (it.kind || 'perf') === 'perf');
+  const exam = all.filter(it => it.kind === 'exam');
+  return `
+  <div class="split-cols">
+    <section class="split-col">
+      <h3 class="split-col-head">${icon('exam')} 수행평가</h3>
+      ${renderSectionList('exams', perf)}
+    </section>
+    <section class="split-col">
+      <h3 class="split-col-head">${icon('exam')} 시험</h3>
+      ${renderSectionList('exams', exam)}
+    </section>
+  </div>`;
+}
 function renderSectionForm(section){
   const cfg = SECTIONS[section];
   const data = state.editing.data || cfg.blank();
@@ -1788,6 +1838,18 @@ function renderSectionForm(section){
     const val = data[f.name];
     if(f.type === 'lines'){
       return `<label class="field"><span>${f.label}</span><textarea id="field-${f.name}" rows="4" placeholder="${esc(f.placeholder||'')}">${esc((val||[]).join('\n'))}</textarea></label>`;
+    }
+    if(f.type === 'select'){
+      const cur = val || (f.options && f.options[0] ? f.options[0].value : '');
+      return `<label class="field"><span>${f.label}</span>
+        <div class="seg-select">
+          ${(f.options||[]).map(o => `
+          <label class="seg-option ${cur===o.value?'active':''}">
+            <input type="radio" name="field-${f.name}" value="${esc(o.value)}" ${cur===o.value?'checked':''}>
+            <span>${esc(o.label)}</span>
+          </label>`).join('')}
+        </div>
+      </label>`;
     }
     if(f.type === 'textarea'){
       return `<label class="field"><span>${f.label}</span><textarea id="field-${f.name}" rows="4" placeholder="${esc(f.placeholder||'')}">${esc(val||'')}</textarea></label>`;
@@ -1854,7 +1916,7 @@ function renderSectionView(section){
   </div>
   ${showMealImport ? `<p class="text-3 small" style="margin:-6px 0 14px;">나이스 급식식단정보 오픈API에서 내려받은 JSON 파일을 그대로 올리면 날짜별로 자동 등록돼요. 같은 날짜는 덮어써요.</p>` : ''}
   ${state.editing.section === section ? renderSectionForm(section) : ''}
-  ${renderSectionList(section)}
+  ${section === 'exams' ? renderExamsSplit() : renderSectionList(section)}
   `;
 }
 
