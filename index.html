@@ -870,10 +870,11 @@ function emptyGrid(){
   return g;
 }
 function defaultUsers(){
+  const names = ['건희','경록','동유','제하','현교','희택','민서','서우','예준','치현','진호','영빈','경민','동희','상결','하면','명한','제준','현준','서훈','지호','진원','정환','종하'];
   const users = {};
   for(let n = 1; n <= 24; n++){
     const id = '208' + pad2(n);
-    users[id] = { password: id, displayName: id, studentNo: id, isAdmin: id === '20824' };
+    users[id] = { password: id, displayName: names[n-1], studentNo: id, isAdmin: id === '20824' };
   }
   users['00000'] = { password: '00000', displayName: '선생님', studentNo: '', isAdmin: true };
   return users;
