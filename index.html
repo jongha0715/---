@@ -1200,6 +1200,14 @@ async function init(){
   if(session && session.id && state.users[session.id]){
     state.currentUser = session.id;
     state.view = 'home';
+    // launched via a home-screen-icon shortcut (long-press → 급식/시간표/수행평가·시험)
+    try{
+      const requested = new URLSearchParams(location.search).get('view');
+      const validShortcutViews = ['meals', 'timetable', 'exams'];
+      if(requested && validShortcutViews.includes(requested)){
+        state.view = requested;
+      }
+    }catch(e){}
   }
   state.booted = true;
   render();
@@ -1282,6 +1290,15 @@ async function handleLoginSubmit(){
   state.loginError = '';
   state.currentUser = id;
   state.view = 'home';
+  // launched via a home-screen-icon shortcut but wasn't logged in yet — land on the
+  // requested tab once login succeeds instead of just going to home
+  try{
+    const requested = new URLSearchParams(location.search).get('view');
+    const validShortcutViews = ['meals', 'timetable', 'exams'];
+    if(requested && validShortcutViews.includes(requested)){
+      state.view = requested;
+    }
+  }catch(e){}
   state.brandAnimPlayed = false;
   if(remember){
     await sSet('allthing-session', { id, ts: Date.now() }, false);
