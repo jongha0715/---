@@ -186,6 +186,7 @@ a{ color: var(--aqua); }
 }
 .dday.sm{ padding: 2px 9px; font-size:11.5px; flex: none; }
 .dday.dday-soon{ background: rgba(184,117,46,.16); color: var(--warm); }
+.dday.dday-progress{ background: rgba(184,117,46,.16); color: var(--warm); }
 .dday.dday-now{ background: var(--aqua); color: var(--on-accent); }
 .dday.dday-past{ background: var(--surface-2); color: var(--text-3); }
 
@@ -726,12 +727,20 @@ function fmtDate(s){
   const dt = new Date(y, m-1, d);
   return `${m}월 ${d}일 (${WEEKDAY_KO[dt.getDay()]})`;
 }
-function dDayInfo(s){
+function dDayInfo(s, endS){
   if(!s) return {label:'', cls:''};
   const today = new Date(todayStr());
   const [y,m,d] = s.split('-').map(Number);
   const target = new Date(y, m-1, d);
   const diff = Math.round((target - today) / 86400000);
+  if(endS && endS > s){
+    const [ey,em,ed] = endS.split('-').map(Number);
+    const end = new Date(ey, em-1, ed);
+    if(today >= target && today <= end){
+      const remain = Math.round((end - today) / 86400000);
+      return {label: remain === 0 ? '오늘 종료' : '진행중', cls:'dday-progress'};
+    }
+  }
   if(diff === 0) return {label:'D-DAY', cls:'dday-now'};
   if(diff > 0) return {label:'D-'+diff, cls: diff <= 3 ? 'dday-soon' : 'dday-normal'};
   return {label:'종료', cls:'dday-past'};
@@ -924,7 +933,7 @@ const SECTIONS = {
     ],
     blank: () => ({ kind:'perf', subject:'', title:'', date: todayStr(), endDate:'', session:[], memo:'', link:'', photos:[] }),
     rowHtml: (it) => {
-      const dd = dDayInfo(it.date);
+      const dd = dDayInfo(it.date, it.endDate);
       const expanded = state.expandedExams.has(it.id);
       const photos = it.photos || (it.photo ? [it.photo] : []);
       const sessions = Array.isArray(it.session) ? it.session : (it.session ? [it.session] : []);
@@ -962,7 +971,7 @@ const SECTIONS = {
     ],
     blank: () => ({ title:'', date: todayStr(), endDate:'', memo:'' }),
     rowHtml: (it) => {
-      const dd = dDayInfo(it.date);
+      const dd = dDayInfo(it.date, it.endDate);
       const range = it.endDate ? `${esc(fmtDate(it.date))} ~ ${esc(fmtDate(it.endDate))}` : esc(fmtDate(it.date));
       return `
       <div class="row-head">
@@ -2216,18 +2225,18 @@ function homeTimetableSummary(){
   return `<div class="mini-list">${list.map(x=>`<div class="mini-row"><span class="mini-p">${x.p}교시</span><span>${esc(x.s)}</span></div>`).join('')}</div>`;
 }
 function homeUpcomingExams(){
-  const list = state.exams.filter(x => x.date >= todayStr()).slice(0,2);
+  const list = state.exams.filter(x => (x.endDate || x.date) >= todayStr()).slice(0,2);
   if(list.length === 0) return `<p class="text-2">${SECTIONS.exams.emptyMsg}</p>`;
   return `<div class="mini-list">${list.map(it => {
-    const dd = dDayInfo(it.date);
+    const dd = dDayInfo(it.date, it.endDate);
     return `<div class="mini-row"><span class="dday sm ${dd.cls}">${dd.label}</span><span>${esc(it.subject)} · ${esc(it.title)}</span></div>`;
   }).join('')}</div>`;
 }
 function homeUpcomingEvents(){
-  const list = state.events.filter(x => x.date >= todayStr()).slice(0,2);
+  const list = state.events.filter(x => (x.endDate || x.date) >= todayStr()).slice(0,2);
   if(list.length === 0) return `<p class="text-2">${SECTIONS.events.emptyMsg}</p>`;
   return `<div class="mini-list">${list.map(it => {
-    const dd = dDayInfo(it.date);
+    const dd = dDayInfo(it.date, it.endDate);
     return `<div class="mini-row"><span class="dday sm ${dd.cls}">${dd.label}</span><span>${esc(it.title)}</span></div>`;
   }).join('')}</div>`;
 }
