@@ -301,6 +301,20 @@ html[data-layout="pc"] .split-cols{ grid-template-columns: 1fr 1fr !important; g
   background: rgba(255,255,255,.14); border:none; color:#fff; display:flex; align-items:center; justify-content:center; z-index:201;
 }
 .lightbox-close .ic{ width:20px; height:20px; }
+.lightbox-counter{
+  position:fixed; top: calc(16px + env(safe-area-inset-top)); left:50%; transform:translateX(-50%);
+  background: rgba(255,255,255,.14); color:#fff; font-size:12.5px; font-weight:700;
+  padding: 7px 14px; border-radius:999px; z-index:201;
+}
+.lightbox-nav-btn{
+  position:fixed; top:50%; transform: translateY(-50%); width:42px; height:42px; border-radius:50%;
+  background: rgba(255,255,255,.14); border:none; color:#fff; display:flex; align-items:center; justify-content:center;
+  z-index:201;
+}
+.lightbox-nav-btn .ic{ width:20px; height:20px; }
+.lightbox-nav-btn.left{ left:12px; }
+.lightbox-nav-btn.left .ic{ transform: rotate(180deg); }
+.lightbox-nav-btn.right{ right:12px; }
 .exam-link{
   display:inline-flex; align-items:center; gap:6px; margin-top:10px; font-size:12.5px; font-weight:600;
   color: var(--aqua-deep); word-break:break-all;
@@ -889,19 +903,56 @@ async function saveSectionItem(section, id, data){
   const cfg = SECTIONS[section];
   const fresh = await freshSharedValue(cfg.storageKey, []);
   const list = (Array.isArray(fresh) ? fresh : []).slice();
+  const finalId = id || uid();
   if(id){
     const idx = list.findIndex(x => x.id === id);
     if(idx > -1) list[idx] = Object.assign({}, list[idx], data);
     else list.push(Object.assign({ id }, data)); // item vanished from the fresh copy — keep the edit instead of silently dropping it
   } else {
-    const newItem = Object.assign({ id: uid() }, data);
+    const newItem = Object.assign({ id: finalId }, data);
     if(section === 'notices'){ newItem.date = todayStr(); newItem.author = me() ? me().displayName : ''; }
     list.push(newItem);
   }
   list.sort((a,b) => (a.date||'').localeCompare(b.date||''));
   state[section] = list;
   await sSet(cfg.storageKey, list, true);
-  return list;
+  return { list, id: finalId };
+}
+/* ---------- exam photos: stored OUTSIDE the live-synced exams list ----------
+   Photos used to live inline in the 'allthing-exams' blob, which is kept updated on every
+   connected device via a live Firebase listener. Since that listener re-downloads the WHOLE
+   blob on any change, embedding several ~1MB photos in it meant every single edit by anyone
+   re-transmitted every photo to every connected device — this is almost certainly what burned
+   through the Firebase free-tier bandwidth. Photos now live in their own key, fetched only
+   when someone actually opens them, never pushed automatically to everyone.
+*/
+async function savePhotosForItem(itemId, photos){
+  const key = 'allthing-exam-photos';
+  const fresh = await freshSharedValue(key, {});
+  const map = (fresh && typeof fresh === 'object') ? Object.assign({}, fresh) : {};
+  if(photos && photos.length) map[itemId] = photos;
+  else delete map[itemId];
+  await sSet(key, map, true);
+  state.examPhotosCache = state.examPhotosCache || {};
+  state.examPhotosCache[itemId] = photos || [];
+}
+async function loadPhotosForItem(itemId){
+  state.examPhotosCache = state.examPhotosCache || {};
+  if(state.examPhotosCache[itemId]) return state.examPhotosCache[itemId];
+  const fresh = await freshSharedValue('allthing-exam-photos', {});
+  const photos = (fresh && fresh[itemId]) ? fresh[itemId] : [];
+  state.examPhotosCache[itemId] = photos;
+  return photos;
+}
+async function deletePhotosForItem(itemId){
+  const key = 'allthing-exam-photos';
+  const fresh = await freshSharedValue(key, {});
+  const map = (fresh && typeof fresh === 'object') ? Object.assign({}, fresh) : {};
+  if(map[itemId]){
+    delete map[itemId];
+    await sSet(key, map, true);
+  }
+  if(state.examPhotosCache) delete state.examPhotosCache[itemId];
 }
 async function deleteSectionItemSafe(section, id){
   const cfg = SECTIONS[section];
@@ -909,6 +960,7 @@ async function deleteSectionItemSafe(section, id){
   const list = (Array.isArray(fresh) ? fresh : []).filter(x => x.id !== id);
   state[section] = list;
   await sSet(cfg.storageKey, list, true);
+  if(section === 'exams'){ await deletePhotosForItem(id); }
 }
 async function mutateSharedUsers(mutateFn){
   const fresh = await freshSharedValue('allthing-users', null);
@@ -985,16 +1037,18 @@ const SECTIONS = {
       { name:'endDate', label:'종료일 (선택)', type:'date', required:false },
       { name:'session', label:'차시 (선택)', type:'multitext', required:false, placeholder:'예: 1차시' },
       { name:'memo', label:'메모 (선택)', type:'text', required:false, placeholder:'예: 준비물, 범위 등' },
-      { name:'link', label:'링크 (선택)', type:'text', required:false, placeholder:'예: https://...' },
-      { name:'photos', label:'사진 첨부 (선택, 여러 장 가능)', type:'images', required:false }
+      { name:'link', label:'링크 (선택, 여러 개 가능)', type:'multitext', required:false, placeholder:'예: https://...' },
+      { name:'photos', label:'사진 첨부 (선택, 여러 장 가능)', type:'images', external:true, countField:'photoCount', required:false }
     ],
-    blank: () => ({ kind:'perf', subject:'', title:'', date: todayStr(), endDate:'', session:[], memo:'', link:'', photos:[] }),
+    blank: () => ({ kind:'perf', subject:'', title:'', date: todayStr(), endDate:'', session:[], memo:'', link:[], photoCount:0 }),
     rowHtml: (it) => {
       const dd = dDayInfo(it.date, it.endDate);
       const expanded = state.expandedExams.has(it.id);
-      const photos = it.photos || (it.photo ? [it.photo] : []);
+      const photoCount = it.photoCount || (it.photos ? it.photos.length : (it.photo ? 1 : 0));
+      const cachedPhotos = (state.examPhotosCache && state.examPhotosCache[it.id]) || null;
+      const linkArr = Array.isArray(it.link) ? it.link : (it.link ? [it.link] : []);
       const sessions = Array.isArray(it.session) ? it.session : (it.session ? [it.session] : []);
-      const hasExtra = !!(photos.length || it.link);
+      const hasExtra = !!(photoCount || linkArr.length);
       const range = it.endDate ? `${esc(fmtDate(it.date))} ~ ${esc(fmtDate(it.endDate))}` : esc(fmtDate(it.date));
       return `
       <div class="row-head">
@@ -1010,8 +1064,10 @@ const SECTIONS = {
       </button>
       <div class="expand-panel ${expanded?'open':''}">
         <div class="expand-inner">
-          ${photos.length ? `<div class="exam-photo-grid">${photos.map(p => `<button type="button" class="exam-photo-btn" data-act="viewPhoto" data-src="${esc(p)}"><img src="${esc(p)}" class="exam-photo" alt="첨부 사진 (누르면 크게 보기)"></button>`).join('')}</div>` : ''}
-          ${it.link ? `<a href="${esc(it.link)}" target="_blank" rel="noopener noreferrer" class="exam-link">${icon('copy')} ${esc(it.link)}</a>` : ''}
+          ${photoCount ? (cachedPhotos
+            ? `<div class="exam-photo-grid">${cachedPhotos.map((p,i) => `<button type="button" class="exam-photo-btn" data-act="viewPhoto" data-exam-id="${esc(it.id)}" data-index="${i}"><img src="${esc(p)}" class="exam-photo" alt="첨부 사진 (누르면 크게 보기)"></button>`).join('')}</div>`
+            : `<p class="text-3 small">사진 불러오는 중…</p>`) : ''}
+          ${linkArr.map(l => `<a href="${esc(l)}" target="_blank" rel="noopener noreferrer" class="exam-link">${icon('copy')} ${esc(l)}</a>`).join('')}
         </div>
       </div>` : ''}
       `;
@@ -1080,6 +1136,9 @@ const state = {
   acctAdding: false,
   expandedExams: new Set(),
   lightboxSrc: null,
+  lightboxPhotos: null,
+  lightboxIndex: 0,
+  examPhotosCache: {},
   brandAnimPlayed: false,
   navAnim: 'view-enter',
   forceLayout: lsGet('layout-pref', false, null),
@@ -1561,30 +1620,62 @@ function openAddForm(section, presetDate){
   const el = document.getElementById('sectionForm');
   if(el) el.scrollIntoView({ behavior:'smooth', block:'start' });
 }
-function openEditForm(section, id){
+async function openEditForm(section, id){
   const item = state[section].find(x => x.id === id);
   if(!item) return;
-  state.editing = { section, id, data: Object.assign({}, item) };
+  const data = Object.assign({}, item);
+  state.editing = { section, id, data };
   render();
   const el = document.getElementById('sectionForm');
   if(el) el.scrollIntoView({ behavior:'smooth', block:'start' });
+  if(section === 'exams' && (item.photoCount || 0) > 0){
+    const photos = await loadPhotosForItem(id);
+    if(state.editing.section === section && state.editing.id === id){ // still editing this same item
+      state.editing.data.photos = photos;
+      render();
+    }
+  }
 }
 function cancelForm(){
   state.editing = { section:null, id:null, data:null };
   render();
 }
-function toggleExamExpand(id){
-  if(state.expandedExams.has(id)) state.expandedExams.delete(id);
-  else state.expandedExams.add(id);
-  render();
+async function toggleExamExpand(id){
+  if(state.expandedExams.has(id)){
+    state.expandedExams.delete(id);
+    render();
+    return;
+  }
+  state.expandedExams.add(id);
+  render(); // show the expanded shell right away (with a loading line for photos, if any)
+  const item = state.exams.find(x => x.id === id);
+  const photoCount = item ? (item.photoCount || 0) : 0;
+  if(photoCount > 0 && !(state.examPhotosCache && state.examPhotosCache[id])){
+    await loadPhotosForItem(id);
+    if(state.expandedExams.has(id)) render(); // only re-render if still expanded
+  }
 }
-function viewPhoto(src){
-  state.lightboxSrc = src;
+function viewPhoto(photos, index){
+  state.lightboxPhotos = photos;
+  state.lightboxIndex = index;
+  state.lightboxSrc = photos[index];
+  render();
+  setupLightboxZoom();
+}
+function navigateLightbox(dir){
+  if(!state.lightboxPhotos || state.lightboxPhotos.length < 2) return;
+  let idx = state.lightboxIndex + dir;
+  if(idx < 0) idx = state.lightboxPhotos.length - 1;
+  if(idx >= state.lightboxPhotos.length) idx = 0;
+  state.lightboxIndex = idx;
+  state.lightboxSrc = state.lightboxPhotos[idx];
   render();
   setupLightboxZoom();
 }
 function closeLightbox(){
   state.lightboxSrc = null;
+  state.lightboxPhotos = null;
+  state.lightboxIndex = 0;
   render();
 }
 function setupLightboxZoom(){
@@ -1597,6 +1688,7 @@ function setupLightboxZoom(){
   const pointers = new Map();
   let pinchStartDist = 0, pinchStartScale = 1;
   let panStart = null;
+  let swipeStart = null; // one-finger drag while NOT zoomed — used to move to the next/prev photo
   let didInteract = false;
 
   function applyTransform(){
@@ -1646,6 +1738,8 @@ function setupLightboxZoom(){
       panStart = null;
     } else if(pointers.size === 1 && scale > 1){
       panStart = { x: e.clientX, y: e.clientY, tx, ty };
+    } else if(pointers.size === 1){
+      swipeStart = { x: e.clientX, y: e.clientY };
     }
   });
   overlay.addEventListener('pointermove', function(e){
@@ -1669,9 +1763,17 @@ function setupLightboxZoom(){
     }
   });
   function endPointer(e){
+    if(swipeStart && scale <= 1 && pointers.size === 1){
+      const dx = e.clientX - swipeStart.x;
+      const dy = e.clientY - swipeStart.y;
+      if(Math.abs(dx) > 55 && Math.abs(dx) > Math.abs(dy) * 1.6){
+        didInteract = true;
+        navigateLightbox(dx < 0 ? 1 : -1); // swipe left = next photo, matching the rest of the app
+      }
+    }
     pointers.delete(e.pointerId);
     if(pointers.size < 2) pinchStartDist = 0;
-    if(pointers.size === 0){ panStart = null; settle(); }
+    if(pointers.size === 0){ panStart = null; swipeStart = null; settle(); }
   }
   overlay.addEventListener('pointerup', endPointer);
   overlay.addEventListener('pointercancel', endPointer);
@@ -1756,6 +1858,7 @@ function resizeImageToDataUrl(file, maxDim, quality){
 async function submitSectionForm(section){
   const cfg = SECTIONS[section];
   const data = {};
+  const pendingExternal = {};
   for(const f of cfg.fields){
     let val;
     if(f.type === 'image'){
@@ -1788,6 +1891,15 @@ async function submitSectionForm(section){
         }
       }
       val = kept.concat(newOnes);
+      if(f.external){
+        pendingExternal[f.name] = val;
+        data[f.countField || (f.name+'Count')] = val.length; // lightweight marker kept in the synced record
+        if(f.required && val.length === 0){
+          showToast(f.label+'을(를) 입력해주세요.', 'err');
+          return;
+        }
+        continue; // the actual bytes are kept out of `data` entirely — never goes into the live-synced record
+      }
     } else if(f.type === 'select'){
       const checked = document.querySelector('input[name="field-'+f.name+'"]:checked');
       val = checked ? checked.value : ((f.options && f.options[0]) ? f.options[0].value : '');
@@ -1815,7 +1927,10 @@ async function submitSectionForm(section){
     if(err){ showToast(err, 'err'); return; }
   }
   const id = state.editing.id;
-  await saveSectionItem(section, id, data);
+  const saved = await saveSectionItem(section, id, data);
+  for(const fieldName of Object.keys(pendingExternal)){
+    if(fieldName === 'photos') await savePhotosForItem(saved.id, pendingExternal[fieldName]);
+  }
   if(section === 'notices'){ seedSeenNotices(); markNoticesRead(); } // this device already knows about the notice it just posted
   state.editing = { section:null, id:null, data:null };
   showToast(id ? '수정했어요.' : '추가했어요.');
@@ -2780,9 +2895,15 @@ function applySidebarWidth(w){
 
 function renderLightboxHtml(){
   if(!state.lightboxSrc) return '';
+  const multi = state.lightboxPhotos && state.lightboxPhotos.length > 1;
   return `
   <div class="lightbox-overlay" data-act="closeLightbox" data-backdrop="1">
     <button type="button" class="lightbox-close" data-act="closeLightbox" aria-label="닫기">${icon('x')}</button>
+    ${multi ? `
+    <div class="lightbox-counter">${state.lightboxIndex + 1} / ${state.lightboxPhotos.length}</div>
+    <button type="button" class="lightbox-nav-btn left" data-act="lightboxPrev" aria-label="이전 사진">${icon('chevron')}</button>
+    <button type="button" class="lightbox-nav-btn right" data-act="lightboxNext" aria-label="다음 사진">${icon('chevron')}</button>
+    ` : ''}
     <img src="${esc(state.lightboxSrc)}" class="lightbox-img" alt="첨부 사진 크게 보기">
   </div>`;
 }
@@ -2833,7 +2954,15 @@ function bindEvents(){
       case 'togglePw': togglePwVisibility(el.dataset.target, el); break;
       case 'toggleNotif': toggleNotif(); break;
       case 'toggleExamExpand': toggleExamExpand(el.dataset.id); break;
-      case 'viewPhoto': viewPhoto(el.dataset.src); break;
+      case 'viewPhoto': {
+        const examId = el.dataset.examId;
+        const idx = parseInt(el.dataset.index, 10) || 0;
+        const photos = (state.examPhotosCache && state.examPhotosCache[examId]) || [];
+        if(photos.length) viewPhoto(photos, idx);
+        break;
+      }
+      case 'lightboxPrev': navigateLightbox(-1); break;
+      case 'lightboxNext': navigateLightbox(1); break;
       case 'closeLightbox': closeLightbox(); break;
       case 'addMultiField': addMultiField(el.dataset.group, el.dataset.placeholder); break;
       case 'removeMultiField': removeMultiField(el); break;
