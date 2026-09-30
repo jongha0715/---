@@ -1064,9 +1064,13 @@ const SECTIONS = {
       </button>
       <div class="expand-panel ${expanded?'open':''}">
         <div class="expand-inner">
-          ${photoCount ? (cachedPhotos
-            ? `<div class="exam-photo-grid">${cachedPhotos.map((p,i) => `<button type="button" class="exam-photo-btn" data-act="viewPhoto" data-exam-id="${esc(it.id)}" data-index="${i}"><img src="${esc(p)}" class="exam-photo" alt="첨부 사진 (누르면 크게 보기)"></button>`).join('')}</div>`
-            : `<p class="text-3 small">사진 불러오는 중…</p>`) : ''}
+          ${photoCount ? (
+            (state.examPhotoLoadFailed && state.examPhotoLoadFailed[it.id])
+              ? `<p class="text-3 small">사진을 불러오지 못했어요. <button type="button" class="link-btn" data-act="retryExamPhotos" data-id="${esc(it.id)}">다시 시도</button></p>`
+              : (cachedPhotos
+                ? `<div class="exam-photo-grid">${cachedPhotos.map((p,i) => `<button type="button" class="exam-photo-btn" data-act="viewPhoto" data-exam-id="${esc(it.id)}" data-index="${i}"><img src="${esc(p)}" class="exam-photo" alt="첨부 사진 (누르면 크게 보기)"></button>`).join('')}</div>`
+                : `<p class="text-3 small">사진 불러오는 중…</p>`)
+          ) : ''}
           ${linkArr.map(l => `<a href="${esc(l)}" target="_blank" rel="noopener noreferrer" class="exam-link">${icon('copy')} ${esc(l)}</a>`).join('')}
         </div>
       </div>` : ''}
@@ -1139,6 +1143,7 @@ const state = {
   lightboxPhotos: null,
   lightboxIndex: 0,
   examPhotosCache: {},
+  examPhotoLoadFailed: {},
   brandAnimPlayed: false,
   navAnim: 'view-enter',
   forceLayout: lsGet('layout-pref', false, null),
@@ -1648,12 +1653,25 @@ async function toggleExamExpand(id){
   }
   state.expandedExams.add(id);
   render(); // show the expanded shell right away (with a loading line for photos, if any)
+  await loadExamPhotosSafely(id);
+}
+async function loadExamPhotosSafely(id){
   const item = state.exams.find(x => x.id === id);
   const photoCount = item ? (item.photoCount || 0) : 0;
-  if(photoCount > 0 && !(state.examPhotosCache && state.examPhotosCache[id])){
-    await loadPhotosForItem(id);
-    if(state.expandedExams.has(id)) render(); // only re-render if still expanded
+  if(photoCount === 0 || (state.examPhotosCache && state.examPhotosCache[id])) return;
+  state.examPhotoLoadFailed = state.examPhotoLoadFailed || {};
+  delete state.examPhotoLoadFailed[id];
+  try{
+    await loadPhotosForItem(id); // loadPhotosForItem itself always resolves within a few seconds, even offline — this catch is a belt-and-suspenders guard against anything unexpected leaving the UI stuck on "불러오는 중"
+  }catch(e){
+    state.examPhotoLoadFailed[id] = true;
   }
+  if(state.expandedExams.has(id)) render(); // only re-render if still expanded
+}
+function retryExamPhotos(id){
+  if(state.examPhotoLoadFailed) delete state.examPhotoLoadFailed[id];
+  if(state.examPhotosCache) delete state.examPhotosCache[id];
+  loadExamPhotosSafely(id);
 }
 function viewPhoto(photos, index){
   state.lightboxPhotos = photos;
@@ -2954,6 +2972,7 @@ function bindEvents(){
       case 'togglePw': togglePwVisibility(el.dataset.target, el); break;
       case 'toggleNotif': toggleNotif(); break;
       case 'toggleExamExpand': toggleExamExpand(el.dataset.id); break;
+      case 'retryExamPhotos': retryExamPhotos(el.dataset.id); break;
       case 'viewPhoto': {
         const examId = el.dataset.examId;
         const idx = parseInt(el.dataset.index, 10) || 0;
