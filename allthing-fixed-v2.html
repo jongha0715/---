@@ -1,0 +1,3276 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>All thing</title>
+<meta name="description" content="우리 반의 급식, 시간표, 수행평가·시험, 일정을 한 눈에">
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#f8f0de">
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#141416">
+<meta name="color-scheme" content="light dark">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="All thing">
+<meta name="mobile-web-app-capable" content="yes">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Black+Han+Sans&display=swap');
+/* ===================== All thing — style.css ===================== */
+:root{
+  color-scheme: light;
+  --bg: #f8f0de;
+  --bg-alt: #f1e4c6;
+  --surface: #fffcf5;
+  --surface-2: #f2e6c8;
+  --surface-3: #e9d9af;
+  --border: rgba(80,64,20,.14);
+  --border-strong: rgba(80,64,20,.26);
+  --aqua: #838952;
+  --aqua-deep: #6b7143;
+  --aqua-dim: rgba(131,139,82,.16);
+  --on-accent: #fffaf0;
+  --warm: #b8752e;
+  --danger: #c0392b;
+  --danger-dim: rgba(192,57,43,.12);
+  --text: #2a2a1d;
+  --text-2: #6e6c56;
+  --text-3: #96937a;
+  --radius: 18px;
+  --radius-sm: 12px;
+  --shadow: 0 12px 28px rgba(60,50,20,.1);
+  --sidebar-w: 236px;
+  --display-font: 'Black Han Sans', -apple-system, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  --ease-smooth: cubic-bezier(.22,1,.36,1);
+}
+/* A genuinely designed dark palette — not an inversion. Giving the browser real dark-mode
+   support here also stops force-dark heuristics (Samsung Internet etc.) from kicking in on
+   their own, since they only override pages that DON'T declare their own dark theme. */
+@media (prefers-color-scheme: dark){
+  :root{
+    color-scheme: dark;
+    --bg: #141416;
+    --bg-alt: #1b1b1e;
+    --surface: #202023;
+    --surface-2: #29292d;
+    --surface-3: #323236;
+    --border: rgba(255,255,255,.09);
+    --border-strong: rgba(255,255,255,.18);
+    --aqua: #a8b273;
+    --aqua-deep: #838952;
+    --aqua-dim: rgba(168,178,115,.18);
+    --on-accent: #17170e;
+    --warm: #e0a355;
+    --danger: #ff6b5b;
+    --danger-dim: rgba(255,107,91,.15);
+    --text: #f2ede0;
+    --text-2: #aaa89a;
+    --text-3: #7a7869;
+    --shadow: 0 14px 32px rgba(0,0,0,.5);
+  }
+}
+*,*::before,*::after{ box-sizing: border-box; }
+html,body{ height:100%; overscroll-behavior-x: none; }
+body{ touch-action: pan-y; }
+body{
+  margin:0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+h1,h2,h3,p{ margin:0; }
+button, input, textarea{ font-family: inherit; color: inherit; }
+button{ cursor:pointer; }
+a{ color: var(--aqua); }
+::selection{ background: var(--aqua-dim); color: var(--text); }
+:focus-visible{ outline: 2px solid var(--aqua); outline-offset: 2px; border-radius: 6px; }
+
+.text-2{ color: var(--text-2); font-size: 13.5px; line-height:1.5; }
+.text-3{ color: var(--text-3); font-size: 13px; }
+.text-3.small{ font-size: 12px; }
+
+.ic{ width:18px; height:18px; flex:none; display:inline-block; vertical-align:-4px; }
+.ic.sm{ width:14px; height:14px; vertical-align:-2px; }
+.crown-ic{ color: var(--warm); width:15px; height:15px; vertical-align:-2px; }
+
+/* ---------- buttons & inputs ---------- */
+.btn{
+  appearance:none; border:1px solid var(--border-strong); background: var(--surface-2);
+  color: var(--text); border-radius: 12px; padding: 11px 16px; font-size: 14.5px; font-weight:600;
+  display:inline-flex; align-items:center; justify-content:center; gap:6px;
+  transition: transform .12s ease, background .15s ease, border-color .15s ease;
+}
+.btn:hover{ background: var(--surface-3); border-color: var(--border-strong); }
+.btn:active{ transform: scale(.97); }
+.btn-primary{
+  background: linear-gradient(135deg, var(--aqua) 0%, var(--aqua-deep) 100%);
+  color: var(--on-accent); border-color: transparent; box-shadow: 0 6px 16px rgba(131,139,82,.28);
+}
+.btn-primary:hover{ filter: brightness(1.06); }
+.btn-ghost{ background: transparent; }
+.btn-sm{ padding: 8px 12px; font-size: 13.5px; border-radius: 10px; }
+.btn-block{ width:100%; }
+.logout-btn{ margin-top: 4px; color: var(--text-2); }
+
+.icon-btn{
+  width:36px; height:36px; border-radius: 10px; border:1px solid transparent; background: transparent;
+  display:inline-flex; align-items:center; justify-content:center; color: var(--text-2);
+  transition: background .15s ease, color .15s ease;
+}
+.icon-btn:hover{ background: var(--surface-2); color: var(--text); }
+.icon-btn.danger:hover{ background: var(--danger-dim); color: var(--danger); }
+
+.field{ display:block; margin: 12px 0; }
+.field > span{ display:block; font-size: 12.5px; color: var(--text-2); margin-bottom: 6px; font-weight:600; }
+.field input, .field textarea{
+  width:100%; background: var(--surface-2); border:1px solid var(--border); border-radius: 12px;
+  padding: 11px 13px; font-size: 14.5px; color: var(--text); resize: vertical;
+  transition: border-color .15s ease;
+}
+.field input:focus, .field textarea:focus{ border-color: var(--aqua); }
+.field input::placeholder, .field textarea::placeholder{ color: var(--text-3); }
+.inline-input{ display:flex; gap:8px; }
+.inline-input input{ flex:1; min-width:0; }
+.checkline{ display:flex; align-items:center; gap:8px; font-size:13.5px; color: var(--text-2); margin: 14px 0; user-select:none; }
+.checkline input{ width:16px; height:16px; accent-color: var(--aqua); }
+
+.toggle-row{ display:flex; align-items:center; justify-content:space-between; gap:14px; }
+.toggle-row-title{ font-weight:700; font-size:13.5px; margin-bottom:2px; }
+.switch{
+  width:46px; height:26px; border-radius:999px; background: var(--surface-3); border:1px solid var(--border);
+  position:relative; flex:none; transition: background .2s ease, border-color .2s ease; padding:0;
+}
+.switch.on{ background: var(--aqua); border-color: var(--aqua); }
+.switch-knob{
+  position:absolute; top:2px; left:2px; width:20px; height:20px; border-radius:50%; background:#fff;
+  box-shadow:0 1px 3px rgba(0,0,0,.25); transition: transform .2s ease;
+}
+.switch.on .switch-knob{ transform: translateX(20px); }
+
+/* password show/hide */
+.pw-field{ position:relative; }
+.pw-field input{ padding-right: 42px; }
+.pw-toggle{
+  position:absolute; right:5px; top:50%; transform:translateY(-50%);
+  width:32px; height:32px; border-radius:8px; border:none; background:transparent; color: var(--text-3);
+  display:flex; align-items:center; justify-content:center; transition: background .15s ease, color .15s ease;
+}
+.pw-toggle:hover{ background: var(--surface-3); color: var(--text); }
+
+/* ---------- cards / layout bits ---------- */
+.card{
+  background: var(--surface); border:1px solid var(--border); border-radius: var(--radius);
+  padding: 18px; margin-bottom: 14px; box-shadow: var(--shadow);
+}
+.card h3{ font-size: 15px; font-weight:700; display:flex; align-items:center; gap:8px; margin-bottom: 4px; }
+.form-card h3{ margin-bottom: 6px; }
+.form-actions{ display:flex; justify-content:flex-end; gap:8px; margin-top: 14px; }
+
+.view-header{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom: 14px; flex-wrap: wrap; }
+.view-header h2{ font-size: 19px; font-weight:800; display:flex; align-items:center; gap:9px; font-family: var(--display-font); letter-spacing:.2px; }
+.footnote{ text-align:center; color: var(--text-3); font-size:12.5px; margin-top: 14px; }
+.tt-caption{ margin: -4px 0 14px; }
+.modal-hint{ margin-top: 14px; }
+
+.badge{
+  display:inline-flex; align-items:center; background: var(--aqua-dim); color: var(--aqua);
+  border-radius: 999px; padding: 3px 10px; font-size: 12px; font-weight:700;
+}
+.badge-alt{ background: var(--surface-3); color: var(--text-2); }
+.dday{
+  display:inline-flex; align-items:center; border-radius: 999px; padding: 3px 10px; font-size: 12px; font-weight:800;
+  background: var(--aqua-dim); color: var(--aqua-deep);
+}
+.dday.sm{ padding: 2px 9px; font-size:11.5px; flex: none; }
+.dday.dday-soon{ background: rgba(184,117,46,.16); color: var(--warm); }
+.dday.dday-progress{ background: rgba(184,117,46,.16); color: var(--warm); }
+.dday.dday-now{ background: var(--aqua); color: var(--on-accent); }
+.dday.dday-past{ background: var(--surface-2); color: var(--text-3); }
+
+.chip-wrap{ display:flex; flex-wrap:wrap; gap:7px; margin-top:4px; }
+.chip{
+  background: var(--surface-3); border:1px solid var(--border-strong); color: var(--text);
+  padding: 6px 12px; border-radius: 999px; font-size: 13px; font-weight:600;
+}
+.chip-select{ display:flex; flex-wrap:wrap; gap:7px; margin: 10px 0 14px; max-height: 150px; overflow-y:auto; padding: 2px; }
+.chip-btn{
+  background: var(--surface-2); border:1px solid var(--border); color: var(--text-2);
+  padding: 7px 12px; border-radius: 999px; font-size: 12.5px; font-weight:600;
+  transition: background .15s ease, color .15s ease, border-color .15s ease;
+}
+.chip-btn.active{ background: var(--aqua-dim); color: var(--aqua); border-color: var(--aqua); }
+
+.mini-list{ display:flex; flex-direction:column; gap:8px; margin-top:6px; }
+.mini-row{ display:flex; align-items:center; gap:10px; font-size: 13.5px; }
+.mini-p{ color: var(--aqua); font-weight:700; font-size:12.5px; flex:none; min-width: 46px; }
+
+.split-cols{ display:grid; grid-template-columns: 1fr 1fr; gap: 22px; align-items:start; }
+.split-col{ min-width:0; }
+.split-col-head{
+  display:flex; align-items:center; gap:7px; font-size:14.5px; font-weight:800; margin: 0 0 12px;
+  padding-bottom:10px; border-bottom:2px solid var(--aqua-dim); color: var(--text);
+}
+.split-col-head .ic{ width:17px; height:17px; color: var(--aqua); }
+/* stack the two columns whenever the mobile/bottom-nav layout is in play (narrow screens,
+   portrait tablets, or a manually forced mobile layout) */
+@media (max-width: 879px){ .split-cols{ grid-template-columns: 1fr; gap: 10px; } }
+html[data-layout="mobile"] .split-cols{ grid-template-columns: 1fr !important; gap: 10px !important; }
+html[data-layout="pc"] .split-cols{ grid-template-columns: 1fr 1fr !important; gap: 22px !important; }
+
+.seg-select{ display:flex; gap:8px; }
+.seg-option{ flex:1; position:relative; }
+.seg-option input{ position:absolute; opacity:0; pointer-events:none; }
+.seg-option span{
+  display:flex; align-items:center; justify-content:center; padding: 11px 10px; border-radius: 12px;
+  background: var(--surface-2); border:1px solid var(--border); font-size:13.5px; font-weight:700;
+  color: var(--text-2); transition: background .15s ease, color .15s ease, border-color .15s ease;
+}
+.seg-option.active span, .seg-option input:checked + span{
+  background: var(--aqua); border-color: var(--aqua); color: var(--on-accent);
+}
+
+.section-divider{
+  display:flex; align-items:center; gap:10px; margin: 22px 2px 12px; font-size:12.5px; font-weight:800;
+  color: var(--text-3); letter-spacing:.2px;
+}
+.section-divider::after{ content:''; flex:1; height:1px; background: var(--border); }
+.empty-state{
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px;
+  padding: 46px 20px; color: var(--text-3); text-align:center;
+}
+.empty-state .ic{ width:30px; height:30px; opacity:.5; }
+.empty-state p{ font-size: 14px; }
+
+.banner{
+  display:flex; align-items:center; gap:10px; background: var(--aqua-dim); border:1px solid rgba(131,139,82,.35);
+  color: var(--aqua-deep); padding: 12px 14px; border-radius: 14px; font-size: 13.5px; margin-bottom: 14px;
+}
+.banner .ic{ color: var(--aqua-deep); }
+.banner-link{ text-decoration: underline; cursor:pointer; }
+.install-banner{ justify-content:space-between; flex-wrap:wrap; row-gap:8px; }
+.install-banner span{ display:flex; align-items:center; gap:8px; flex:1; min-width:180px; }
+
+/* ---------- list items (meals/exams/events/notices) ---------- */
+.list{ display:flex; flex-direction:column; gap:10px; }
+.list-item{
+  display:flex; align-items:flex-start; justify-content:space-between; gap:12px;
+  background: var(--surface); border:1px solid var(--border); border-radius: var(--radius-sm); padding: 14px 16px;
+  position:relative;
+}
+.list-item.past{ opacity:.5; }
+.list-item-body{ flex:1; min-width:0; }
+.list-item-actions{ display:flex; gap:4px; flex:none; }
+.new-badge{
+  position:absolute; top:-7px; right:12px; background:#FFF3C4; color:#9A7B00;
+  font-size:10.5px; font-weight:800; letter-spacing:.3px; padding: 2px 9px; border-radius:999px;
+  border:1px solid rgba(154,123,0,.18);
+}
+.row-head{ display:flex; align-items:center; gap:8px; margin-bottom:6px; flex-wrap:wrap; }
+.row-date{ font-size:12.5px; color: var(--text-2); font-weight:700; }
+.row-title{ font-size: 15px; font-weight:700; margin-bottom: 3px; }
+.row-sub{ font-size: 13px; color: var(--text-2); }
+.notice-content{ margin-top:6px; line-height:1.55; }
+
+.expand-toggle{
+  display:inline-flex; align-items:center; gap:3px; background:none; border:none; padding: 6px 0 0;
+  color: var(--aqua-deep); font-size:12.5px; font-weight:700;
+}
+.expand-toggle .ic{ width:14px; height:14px; transition: transform .2s ease; }
+.expand-toggle.open .ic{ transform: rotate(90deg); }
+.expand-panel{ display:grid; grid-template-rows: 0fr; transition: grid-template-rows .25s ease; }
+.expand-panel.open{ grid-template-rows: 1fr; }
+.expand-inner{ overflow:hidden; min-height:0; }
+.exam-photo{ display:block; width:100%; border-radius:12px; border:1px solid var(--border); }
+.exam-photo-grid{ display:grid; grid-template-columns: repeat(auto-fill, minmax(130px,1fr)); gap:8px; margin-top:10px; max-width:420px; }
+.exam-photo-grid .exam-photo{ margin-top:0; aspect-ratio:1; object-fit:cover; }
+.exam-photo-btn{ background:none; border:none; padding:0; cursor:zoom-in; display:block; border-radius:12px; }
+.exam-photo-btn:hover .exam-photo{ opacity:.88; }
+
+.lightbox-overlay{
+  position:fixed; inset:0; background: rgba(10,8,4,.86); z-index: 200;
+  display:flex; align-items:center; justify-content:center; padding: 40px 18px;
+  animation: fadeInLightbox .18s ease;
+}
+@keyframes fadeInLightbox{ from{ opacity:0; } to{ opacity:1; } }
+.lightbox-img{ max-width:100%; max-height:100%; border-radius:10px; box-shadow: 0 20px 50px rgba(0,0,0,.5); will-change: transform; touch-action: none; }
+.lightbox-close{
+  position:fixed; top: calc(16px + env(safe-area-inset-top)); right:16px; width:40px; height:40px; border-radius:50%;
+  background: rgba(255,255,255,.14); border:none; color:#fff; display:flex; align-items:center; justify-content:center; z-index:201;
+}
+.lightbox-close .ic{ width:20px; height:20px; }
+.exam-link{
+  display:inline-flex; align-items:center; gap:6px; margin-top:10px; font-size:12.5px; font-weight:600;
+  color: var(--aqua-deep); word-break:break-all;
+}
+.exam-link .ic{ width:14px; height:14px; flex:none; }
+.photo-preview{ margin-bottom:8px; }
+.photo-preview img{ display:block; width:100%; max-width:220px; border-radius:10px; border:1px solid var(--border); margin-bottom:6px; }
+.photo-remove{ margin:0 !important; }
+.photo-grid{ display:flex; flex-wrap:wrap; gap:8px; margin: 8px 0; }
+.photo-thumb{ position:relative; width:76px; height:76px; border-radius:10px; overflow:hidden; border:1px solid var(--border); }
+.photo-thumb img{ width:100%; height:100%; object-fit:cover; display:block; }
+.photo-thumb-remove{
+  position:absolute; top:3px; right:3px; width:20px; height:20px; border-radius:50%; border:none;
+  background: rgba(0,0,0,.55); color:#fff; display:flex; align-items:center; justify-content:center; padding:0;
+}
+.photo-thumb-remove .ic{ width:12px; height:12px; }
+.multitext-group{ display:flex; flex-direction:column; gap:8px; margin: 8px 0; }
+.multitext-row{ display:flex; gap:8px; align-items:center; }
+.multitext-row .multitext-input{
+  flex:1; background: var(--surface-2); border:1px solid var(--border); border-radius: 12px;
+  padding: 10px 12px; font-size: 13.5px; color: var(--text);
+}
+.multitext-row .multitext-input:focus{ border-color: var(--aqua); outline:none; }
+.acct-edit{ margin-top:12px; padding-top:12px; border-top:1px solid var(--border); }
+
+/* meal category groups — higher-contrast chips so dishes stand out from the card */
+.meal-group{ margin-bottom: 12px; }
+.meal-group:last-child{ margin-bottom: 0; }
+.meal-group-head{ display:flex; align-items:center; gap:8px; margin-bottom:6px; }
+.meal-group-label{
+  font-size:11px; font-weight:800; color: var(--on-accent); background: var(--aqua);
+  padding: 3px 10px; border-radius:999px; letter-spacing:.2px;
+}
+.meal-cal{ font-size:11px; color: var(--text-2); }
+
+/* ---------- home ---------- */
+.home-greeting h2{ font-size: 21px; font-weight:800; margin-bottom:3px; font-family: var(--display-font); letter-spacing:.2px; }
+.home-greeting{ margin-bottom: 16px; }
+.home-grid{ display:grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.home-card-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom: 8px; }
+.link-btn{
+  background:none; border:none; color: var(--aqua); font-size:12.5px; font-weight:700;
+  display:flex; align-items:center; gap:2px; padding: 4px 2px;
+}
+.link-btn .ic{ width:14px; height:14px; }
+
+/* ---------- profile ---------- */
+.avatar{
+  width:52px; height:52px; border-radius: 50%; background: linear-gradient(135deg, var(--aqua-dim), var(--surface-3));
+  color: var(--aqua); display:flex; align-items:center; justify-content:center; font-weight:800; font-size:20px; flex:none;
+  border: 1px solid var(--border-strong);
+}
+.avatar.sm{ width:34px; height:34px; font-size:14px; }
+.profile-row{ display:flex; align-items:center; gap:12px; margin-bottom: 16px; }
+.profile-name{ font-size:16px; font-weight:800; }
+.profile-sub{ font-size:12.5px; color: var(--text-2); display:flex; align-items:center; gap:4px; margin-top:2px; }
+
+/* ---------- timetable table ---------- */
+.tt-wrap{ overflow-x:auto; padding: 10px; }
+.tt-table{ width:100%; border-collapse: collapse; table-layout: fixed; }
+.tt-table th, .tt-table td{
+  padding: 8px 4px; text-align:center; font-size: 12.8px; border-bottom: 1px solid var(--border);
+  white-space: pre-line; word-break: keep-all; line-height:1.3;
+}
+.tt-table thead th{ color: var(--aqua); font-weight:800; font-size:12.5px; border-bottom: 1px solid var(--border-strong); }
+.tt-table tbody th{ color: var(--text-3); font-weight:700; width: 22px; }
+.tt-table tbody tr:last-child td, .tt-table tbody tr:last-child th{ border-bottom:none; }
+.tt-edit td{ padding:4px; }
+.tt-edit textarea{
+  width:100%; background: var(--surface-2); border:1px solid var(--border); border-radius:8px;
+  padding: 7px 6px; font-size:12.5px; text-align:center; color:var(--text); resize:none;
+  line-height:1.3; font-family:inherit;
+}
+.tt-edit-wrap{ margin: 4px 0 14px; }
+.copy-box{ border-top:1px solid var(--border); margin-top: 14px; padding-top: 14px; }
+
+/* ---------- modal ---------- */
+.modal-overlay{
+  position: fixed; inset:0; background: rgba(3,6,7,.66); backdrop-filter: blur(3px);
+  display:flex; align-items:center; justify-content:center; z-index: 60; padding: 16px;
+  animation: overlayIn .22s ease;
+}
+.modal{
+  width:100%; max-width: 560px; max-height: 88vh; overflow-y:auto; background: var(--surface);
+  border:1px solid var(--border-strong); border-radius: 20px; box-shadow: var(--shadow);
+  animation: modalIn .32s var(--ease-smooth);
+}
+.modal-head{ display:flex; align-items:center; justify-content:space-between; padding: 16px 18px; border-bottom:1px solid var(--border); position:sticky; top:0; background:var(--surface); z-index:2; }
+.modal-head h3{ font-size:16px; font-weight:800; }
+.modal-body{ padding: 16px 18px 20px; }
+@keyframes overlayIn{ from{ opacity:0; } to{ opacity:1; } }
+@keyframes modalIn{ from{ opacity:0; transform: scale(.96) translateY(8px); } to{ opacity:1; transform: scale(1) translateY(0); } }
+
+/* ---------- app shell ---------- */
+#app{ min-height: 100vh; }
+.shell{ display:flex; min-height:100vh; }
+.sidebar{
+  width: var(--sidebar-w); flex:none; border-right: 1px solid var(--border); background: var(--bg-alt);
+  display:flex; flex-direction:column; padding: 18px 14px; position: sticky; top:0; height:100vh;
+  position:relative; transition: padding .15s ease;
+}
+.sidebar-resize-handle{
+  position:absolute; top:0; right:-4px; width:8px; height:100%; cursor:col-resize; z-index:6;
+  background:transparent;
+}
+.sidebar-resize-handle::after{
+  content:''; position:absolute; top:0; right:3px; width:2px; height:100%;
+  background: transparent; transition: background .15s ease;
+}
+.sidebar-resize-handle:hover::after, .sidebar-resize-handle.dragging::after{ background: var(--aqua); }
+.sidebar.collapsed{ padding-left:10px; padding-right:10px; }
+.sidebar.collapsed .brand{ justify-content:center; padding-left:0; padding-right:0; }
+.sidebar.collapsed .brand-word{ display:none; }
+.sidebar.collapsed .side-link{ justify-content:center; padding:11px 8px; }
+.sidebar.collapsed .side-link span.nav-label{ display:none; }
+.sidebar.collapsed .side-user{ flex-direction:column; gap:8px; padding: 10px 0; }
+.sidebar.collapsed .side-user-info{ display:none; }
+.brand{ display:flex; align-items:center; gap:10px; padding: 6px 8px 20px; }
+.brand-btn{ background:none; border:none; cursor:pointer; text-align:left; font:inherit; }
+.brand-mark{
+  width:44px; height:44px; display:flex; align-items:center; justify-content:center; flex:none;
+  border-radius:11px; overflow:hidden;
+}
+.brand-mark-img{ width:100%; height:100%; object-fit:cover; }
+.brand-mark.sm{ width:36px; height:36px; border-radius:9px; }
+.brand-word{ font-weight:800; font-size:16px; letter-spacing:.2px; font-family: var(--display-font); }
+.brand-word.sm{ font-size:14px; }
+.brand-word.brand-anim{ animation: brandMorph 1.3s var(--ease-smooth); }
+@keyframes brandMorph{
+  0%{ color: var(--text); }
+  15%{ color: var(--text); }
+  55%{ color: var(--aqua-deep); text-shadow: 0 0 12px rgba(131,139,82,.4); transform: scale(1.05); }
+  100%{ color: var(--text); text-shadow: none; transform: scale(1); }
+}
+.side-nav{ display:flex; flex-direction:column; gap:3px; flex:1; }
+.nav-icon-wrap{ position:relative; display:inline-flex; }
+.nav-dot{
+  position:absolute; top:-2px; right:-2px; width:8px; height:8px; border-radius:50%;
+  background: var(--danger); border:1.5px solid var(--bg-alt);
+}
+.side-link .nav-dot{ border-color: var(--bg-alt); }
+.side-link{
+  display:flex; align-items:center; gap:11px; padding: 11px 12px; border-radius: 12px; border:none;
+  background:transparent; color: var(--text-2); font-size:14px; font-weight:600; text-align:left;
+  transition: background .16s ease, color .16s ease;
+}
+.side-link:hover{ background: var(--surface-2); color: var(--text); }
+.side-link.active{ background: var(--aqua-dim); color: var(--aqua); }
+.side-user{
+  display:flex; align-items:center; gap:9px; padding: 10px; border-top:1px solid var(--border); margin-top: 10px;
+}
+.side-user-link{
+  display:flex; align-items:center; gap:9px; flex:1; min-width:0; background:none; border:none;
+  padding:0; text-align:left; border-radius:10px; transition: background .15s ease;
+}
+.side-user-link:hover{ background: var(--surface-2); }
+.side-user-info{ flex:1; min-width:0; }
+.side-user-name{ font-size:13.5px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.side-user-id{ font-size:11.5px; color: var(--text-3); }
+
+.main-col{ flex:1; min-width:0; display:flex; flex-direction:column; height:100vh; }
+.topbar{ display:none; }
+.main-scroll{ flex:1; overflow-y:auto; scroll-behavior:smooth; }
+.main-inner{ max-width: 880px; margin: 0 auto; padding: 16px 26px 60px; touch-action: pan-y; }
+.main-inner.view-enter{ animation: viewEnter .34s var(--ease-smooth); }
+.main-inner.enter-right{ animation: enterFromRight .3s var(--ease-smooth); }
+.main-inner.enter-left{ animation: enterFromLeft .3s var(--ease-smooth); }
+.bottom-nav-wrap{ display:none; position:relative; }
+@keyframes viewEnter{ from{ opacity:0; transform: translateY(7px); } to{ opacity:1; transform: translateY(0); } }
+@keyframes enterFromRight{ from{ opacity:0; transform: translateX(26px); } to{ opacity:1; transform: translateX(0); } }
+@keyframes enterFromLeft{ from{ opacity:0; transform: translateX(-26px); } to{ opacity:1; transform: translateX(0); } }
+
+/* ---------- toast ---------- */
+.layout-fab{
+  position:fixed; right: 18px; bottom: calc(18px + env(safe-area-inset-bottom));
+  width:48px; height:48px; border-radius:50%; border:none; z-index: 80;
+  background: linear-gradient(135deg, var(--aqua), var(--aqua-deep)); color: var(--on-accent);
+  display:flex; align-items:center; justify-content:center; box-shadow: 0 8px 20px rgba(0,0,0,.28);
+  transition: transform .15s ease;
+}
+.layout-fab:active{ transform: scale(.92); }
+.layout-fab .ic{ width:21px; height:21px; }
+
+.toast-host{ position: fixed; left:0; right:0; bottom: 18px; display:flex; justify-content:center; z-index: 90; pointer-events:none; padding: 0 16px; }
+.toast{
+  background: var(--surface-3); border:1px solid var(--border-strong); color: var(--text);
+  padding: 11px 18px; border-radius: 999px; font-size: 13.5px; font-weight:600; box-shadow: var(--shadow);
+  animation: toastIn .22s ease;
+}
+.toast.err{ background: var(--danger-dim); color: var(--danger); border-color: rgba(192,57,43,.35); }
+@keyframes toastIn{ from{ opacity:0; transform: translateY(8px);} to{ opacity:1; transform:translateY(0);} }
+
+.boot{ min-height:100vh; display:flex; align-items:center; justify-content:center; color: var(--text-3); font-size:14px; }
+
+/* ---------- login screen ---------- */
+.login-screen{
+  min-height:100vh; display:flex; flex-direction:column; align-items:center;
+  padding: 150px 20px 40px; position:relative; overflow:hidden;
+}
+.blob{ position:absolute; border-radius:50%; filter: blur(60px); opacity:.16; pointer-events:none; }
+.blob.b1{ width:380px; height:380px; background: var(--aqua); top:-120px; left:-100px; animation: floatA 14s ease-in-out infinite; }
+.blob.b2{ width:300px; height:300px; background: var(--aqua-deep); bottom:-100px; right:-80px; animation: floatB 17s ease-in-out infinite; }
+.blob.b3{ width:220px; height:220px; background: var(--aqua); top:40%; right:10%; opacity:.1; animation: floatA 20s ease-in-out infinite reverse; }
+@keyframes floatA{ 0%,100%{ transform: translate(0,0) scale(1);} 50%{ transform: translate(30px,20px) scale(1.08);} }
+@keyframes floatB{ 0%,100%{ transform: translate(0,0) scale(1);} 50%{ transform: translate(-24px,-18px) scale(1.05);} }
+
+.hero{
+  position:fixed; left:50%; top:50%; transform:translate(-50%,-50%); text-align:center; z-index:2;
+  width:100%; max-width:640px; padding:0 20px;
+  transition: top .85s var(--ease-smooth);
+}
+.hero.compact{ top:62px; }
+.hero-title{
+  font-size: clamp(28px, 5.4vw, 42px); font-weight:800; line-height:1.25; letter-spacing:-.3px;
+  font-family: var(--display-font);
+  transition: font-size .85s var(--ease-smooth);
+}
+.hero.compact .hero-title{ font-size: 21px; }
+.hero-sub{
+  margin-top: 10px; color: var(--text-2); font-size: 14px;
+  transition: opacity .5s ease, margin-top .5s ease, max-height .5s ease;
+  max-height: 30px; opacity:1; overflow:hidden;
+}
+.hero.compact .hero-sub{ opacity:0; max-height:0; margin-top:0; }
+.morph-word{
+  display:inline-block; color: var(--text); font-weight:700; will-change: transform, color;
+}
+.morph-word.charge{ color: var(--aqua-deep); transition: color .9s ease; }
+.morph-word.shake{ animation: wordShake .4s ease-in-out 2; }
+.morph-word.pop{ animation: wordPop .5s cubic-bezier(.34,1.56,.64,1); }
+.morph-word.morphed{
+  font-weight:800;
+  color: var(--aqua-deep);
+  letter-spacing:.2px;
+  font-family: var(--display-font);
+}
+@keyframes wordShake{
+  0%,100%{ transform: translate(0,0) rotate(0); }
+  20%{ transform: translate(-3px,1px) rotate(-2deg); }
+  40%{ transform: translate(3px,-1px) rotate(2deg); }
+  60%{ transform: translate(-2px,1px) rotate(-1.5deg); }
+  80%{ transform: translate(2px,-1px) rotate(1.5deg); }
+}
+@keyframes wordPop{
+  0%{ transform: scale(.7); }
+  60%{ transform: scale(1.1); }
+  100%{ transform: scale(1); }
+}
+
+.login-card{
+  width:100%; max-width: 360px; background: var(--surface); border:1px solid var(--border);
+  border-radius: 20px; padding: 24px 22px; box-shadow: var(--shadow); position:relative; z-index:1;
+  opacity:1; transform: translateY(0); transition: opacity .55s ease .05s, transform .55s var(--ease-smooth) .05s;
+}
+.login-card.pending{ opacity:0; transform: translateY(14px); transition:none; }
+.login-error{ color: var(--danger); font-size: 13px; margin: 8px 0 0; }
+.hint{ font-size:12px; color: var(--text-3); margin-top:-4px; }
+.hint b{ color: var(--text-2); }
+
+/* confetti — lives in a fixed viewport-level layer so it never gets dragged along by the hero's own transform/position transitions */
+.confetti-root{ position:fixed; inset:0; pointer-events:none; z-index:5; overflow:visible; }
+.confetti-piece{
+  position:absolute; width: var(--size); height: var(--size); left:0; top:0; border-radius:50%;
+  animation-name: confettiBurst; animation-fill-mode: forwards; opacity:0;
+}
+.confetti-piece.bar{ border-radius:2px; height: calc(var(--size) * 2.4); }
+@keyframes confettiBurst{
+  0%{
+    transform: translate(-50%,-50%) translate(0,0) rotate(0deg) scale(.5);
+    opacity:0;
+    animation-timing-function: cubic-bezier(.17,.84,.44,1);
+  }
+  8%{ opacity:1; transform: translate(-50%,-50%) translate(0,0) rotate(0deg) scale(1); }
+  42%{
+    transform: translate(-50%,-50%) translate(var(--tx1),var(--ty1)) rotate(calc(var(--rot) * .55)) scale(1);
+    opacity:1;
+    animation-timing-function: cubic-bezier(.5,0,.85,.4);
+  }
+  80%{ opacity:1; }
+  100%{
+    transform: translate(-50%,-50%) translate(var(--tx2),var(--ty2)) rotate(var(--rot)) scale(.55);
+    opacity:0;
+  }
+}
+
+/* ===================== responsive ===================== */
+@media (max-width: 879px){
+  .sidebar{ display:none; }
+  .layout-fab{ bottom: calc(78px + env(safe-area-inset-bottom)); }
+  .topbar{
+    display:flex; align-items:center; justify-content:space-between; gap:10px; padding: 12px 16px;
+    border-bottom:1px solid var(--border); background: var(--bg-alt); position: sticky; top:0; z-index: 20;
+  }
+  .topbar-actions{ display:flex; align-items:center; gap:8px; }
+  .topbar-avatar-btn, .topbar-icon-btn{ background:none; border:none; padding:2px; border-radius:50%; line-height:0; flex:none; }
+  .topbar-icon-circle{
+    width:34px; height:34px; border-radius:50%; background: var(--surface-2);
+    display:flex; align-items:center; justify-content:center; color: var(--text-3);
+    transition: background .15s ease, color .15s ease;
+  }
+  .topbar-icon-circle .ic{ width:18px; height:18px; }
+  .topbar-avatar-btn.active .topbar-icon-circle{ color: var(--aqua-deep); background: var(--aqua-dim); }
+  .main-col{ height:auto; min-height:100vh; }
+  .main-scroll{ overflow-y:visible; }
+  .main-inner{ padding: 14px 16px calc(94px + env(safe-area-inset-bottom)); }
+  .tt-wrap{ padding: 8px 4px; }
+  .tt-table th, .tt-table td{ padding: 7px 2px; font-size: 11px; }
+  .tt-table thead th{ font-size: 10.5px; }
+  .tt-table tbody th{ width: 16px; font-size: 11px; }
+  .bottom-nav-wrap{
+    display:block; position:fixed; left:0; right:0; bottom:0; z-index: 50; background: var(--bg-alt);
+    border-top:1px solid var(--border);
+  }
+  .bottom-nav{
+    display:flex; justify-content:space-evenly; overflow-x:auto; scroll-behavior:smooth; -webkit-overflow-scrolling:touch;
+    scrollbar-width:none; padding: 8px 10px calc(8px + env(safe-area-inset-bottom));
+  }
+  .bottom-nav::-webkit-scrollbar{ display:none; }
+  .bn-btn{
+    flex: 0 0 auto; min-width:64px; display:flex; flex-direction:column; align-items:center; gap:3px;
+    background:none; border:none; color: var(--text-3); font-size: 10.5px; font-weight:700;
+    padding: 6px 9px; border-radius: 10px; transition: color .16s ease;
+  }
+  .bn-btn.active{ color: var(--aqua-deep); }
+  .edge-cap{
+    position:absolute; top:0; bottom:0; width:26px; pointer-events:none;
+    opacity:0; transition: opacity .2s ease;
+  }
+  .edge-cap.left{ left:0; background: linear-gradient(to right, var(--bg-alt), transparent); }
+  .edge-cap.right{ right:0; background: linear-gradient(to left, var(--bg-alt), transparent); }
+  .bottom-nav-wrap.at-start .edge-cap.left{ opacity:1; }
+  .bottom-nav-wrap.at-end .edge-cap.right{ opacity:1; }
+  .home-grid{ grid-template-columns: 1fr; }
+  .login-screen{ padding-top: 134px; }
+}
+@media (min-width: 880px){
+  .main-inner{ padding: 22px 40px 60px; }
+}
+
+/* ---------- manual layout override (rotate button) ----------
+   Lets a person force PC-style (sidebar) or mobile-style (bottom nav) layout regardless of
+   actual screen width — mainly for tablets, where the automatic width breakpoint doesn't
+   always match what actually fits comfortably. */
+html[data-layout="pc"] .sidebar{ display:flex !important; }
+html[data-layout="pc"] .layout-fab{ bottom: calc(18px + env(safe-area-inset-bottom)) !important; }
+html[data-layout="pc"] .topbar{ display:none !important; }
+html[data-layout="pc"] .bottom-nav-wrap{ display:none !important; }
+html[data-layout="pc"] .main-col{ height:100vh !important; }
+html[data-layout="pc"] .main-scroll{ overflow-y:auto !important; }
+html[data-layout="pc"] .main-inner{ padding: 22px 40px 60px !important; }
+html[data-layout="pc"] .tt-table th, html[data-layout="pc"] .tt-table td{ padding: 9px 8px !important; font-size: 12.8px !important; }
+html[data-layout="pc"] .tt-table thead th{ font-size: 12.5px !important; }
+html[data-layout="pc"] .tt-table tbody th{ width: 30px !important; font-size: inherit !important; }
+
+html[data-layout="mobile"] .sidebar{ display:none !important; }
+html[data-layout="mobile"] .layout-fab{ bottom: calc(78px + env(safe-area-inset-bottom)) !important; }
+html[data-layout="mobile"] .topbar{
+  display:flex !important; align-items:center !important; justify-content:space-between !important; gap:10px !important;
+  padding: 12px 16px !important; border-bottom:1px solid var(--border) !important; background: var(--bg-alt) !important;
+  position: sticky !important; top:0 !important; z-index: 20 !important;
+}
+html[data-layout="mobile"] .bottom-nav-wrap{
+  display:block !important; position:fixed !important; left:0 !important; right:0 !important; bottom:0 !important;
+  z-index: 50 !important; background: var(--bg-alt) !important; border-top:1px solid var(--border) !important;
+}
+html[data-layout="mobile"] .main-col{ height:auto !important; min-height:100vh !important; }
+html[data-layout="mobile"] .main-scroll{ overflow-y:visible !important; }
+html[data-layout="mobile"] .main-inner{ padding: 14px 16px calc(94px + env(safe-area-inset-bottom)) !important; }
+html[data-layout="mobile"] .tt-wrap{ padding: 8px 4px !important; }
+html[data-layout="mobile"] .tt-table th, html[data-layout="mobile"] .tt-table td{ padding: 7px 2px !important; font-size: 11px !important; }
+html[data-layout="mobile"] .tt-table thead th{ font-size: 10.5px !important; }
+html[data-layout="mobile"] .tt-table tbody th{ width: 16px !important; font-size: 11px !important; }
+html[data-layout="mobile"] .topbar-avatar-btn{ background:none; border:none; padding:2px; border-radius:50%; line-height:0; flex:none; }
+html[data-layout="mobile"] .topbar-icon-circle{
+  width:34px; height:34px; border-radius:50%; background: var(--surface-2);
+  display:flex; align-items:center; justify-content:center; color: var(--text-3);
+}
+html[data-layout="mobile"] .topbar-icon-circle .ic{ width:18px; height:18px; }
+html[data-layout="mobile"] .bottom-nav{
+  display:flex !important; justify-content:space-evenly; overflow-x:auto; scroll-behavior:smooth;
+  -webkit-overflow-scrolling:touch; scrollbar-width:none; padding: 8px 10px calc(8px + env(safe-area-inset-bottom));
+}
+html[data-layout="mobile"] .bn-btn{
+  flex: 0 0 auto; min-width:64px; display:flex; flex-direction:column; align-items:center; gap:3px;
+  background:none; border:none; color: var(--text-3); font-size: 10.5px; font-weight:700;
+  padding: 6px 9px; border-radius: 10px;
+}
+html[data-layout="mobile"] .bn-btn.active{ color: var(--aqua-deep); }
+html[data-layout="mobile"] .edge-cap{
+  position:absolute !important; top:0; bottom:0; width:26px; pointer-events:none; opacity:0; transition: opacity .2s ease;
+}
+html[data-layout="mobile"] .edge-cap.left{ left:0; background: linear-gradient(to right, var(--bg-alt), transparent); }
+html[data-layout="mobile"] .edge-cap.right{ right:0; background: linear-gradient(to left, var(--bg-alt), transparent); }
+html[data-layout="mobile"] .bottom-nav-wrap.at-start .edge-cap.left{ opacity:1; }
+html[data-layout="mobile"] .bottom-nav-wrap.at-end .edge-cap.right{ opacity:1; }
+html[data-layout="mobile"] .home-grid{ grid-template-columns: 1fr; }
+
+/* Note: this splash and the view/modal fades intentionally ignore prefers-reduced-motion —
+   they're brief (a couple seconds, once per visit) rather than continuous, and disabling
+   them entirely made the whole app feel broken on some setups without actually helping
+   anyone. */
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+<script>
+/* ===================== All thing — app.js ===================== */
+
+/* ---------- tiny utils ---------- */
+function esc(v){
+  return String(v == null ? '' : v)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+function pad2(n){ return n < 10 ? '0'+n : ''+n; }
+function todayStr(){ const d = new Date(); return d.getFullYear()+'-'+pad2(d.getMonth()+1)+'-'+pad2(d.getDate()); }
+const WEEKDAY_KO = ['일','월','화','수','목','금','토'];
+function fmtDate(s){
+  if(!s) return '';
+  const [y,m,d] = s.split('-').map(Number);
+  const dt = new Date(y, m-1, d);
+  return `${m}월 ${d}일 (${WEEKDAY_KO[dt.getDay()]})`;
+}
+function dDayInfo(s, endS){
+  if(!s) return {label:'', cls:''};
+  const today = new Date(todayStr());
+  const [y,m,d] = s.split('-').map(Number);
+  const target = new Date(y, m-1, d);
+  const diff = Math.round((target - today) / 86400000);
+  if(endS && endS > s){
+    const [ey,em,ed] = endS.split('-').map(Number);
+    const end = new Date(ey, em-1, ed);
+    if(today >= target && today <= end){
+      const remain = Math.round((end - today) / 86400000);
+      return {label: remain === 0 ? '오늘 종료' : '진행중', cls:'dday-progress'};
+    }
+  }
+  if(diff === 0) return {label:'D-DAY', cls:'dday-now'};
+  if(diff > 0) return {label:'D-'+diff, cls: diff <= 3 ? 'dday-soon' : 'dday-normal'};
+  return {label:'종료', cls:'dday-past'};
+}
+
+const MEAL_GROUPS = [
+  { key:'breakfast', label:'조식' },
+  { key:'lunch', label:'중식' },
+  { key:'dinner', label:'석식' }
+];
+function mealGroupsHtml(it){
+  return MEAL_GROUPS.filter(g => (it[g.key]||[]).length).map(g => `
+    <div class="meal-group">
+      <div class="meal-group-head">
+        <span class="meal-group-label">${g.label}</span>
+        ${it[g.key+'Cal'] ? `<span class="meal-cal">${esc(it[g.key+'Cal'])}</span>` : ''}
+      </div>
+      <div class="chip-wrap">${it[g.key].map(x=>`<span class="chip">${esc(x)}</span>`).join('')}</div>
+    </div>
+  `).join('');
+}
+
+/* ---------- optional Firebase real-time sync ----------
+   This app works fully on its own (local save + occasional background sync) without any
+   setup below. Filling in FIREBASE_CONFIG with your own free Firebase project turns on
+   TRUE instant sync: the moment the admin changes the timetable/meals/exams/events/notices,
+   every connected classmate's screen updates immediately, no refresh needed.
+
+   How to get a config (about 5 minutes, one time):
+   1. https://console.firebase.google.com → 새 프로젝트 만들기 (무료 Spark 요금제)
+   2. 왼쪽 메뉴 Build → Realtime Database → 데이터베이스 만들기 → "테스트 모드"로 시작
+   3. 프로젝트 설정(⚙️) → 내 앱 → 웹 앱 추가(</>) → 아무 이름이나 입력
+   4. 나오는 firebaseConfig 값을 아래 FIREBASE_CONFIG에 그대로 붙여넣기
+   5. Realtime Database → 규칙(Rules) 탭에서 우리 반끼리만 쓰는 용도이니 아래처럼 설정:
+        { "rules": { ".read": true, ".write": true } }
+      (누구나 읽고 쓸 수 있다는 뜻이라 절대 민감한 정보는 넣지 마세요.)
+*/
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyABMhw8xbdRMKH9UNoI5uBKNJN_a7Xju8",
+  authDomain: "all-thing-fbac5.firebaseapp.com",
+  databaseURL: "https://all-thing-fbac5-default-rtdb.firebaseio.com",
+  projectId: "all-thing-fbac5",
+  storageBucket: "all-thing-fbac5.firebasestorage.app",
+  messagingSenderId: "594102091201",
+  appId: "1:594102091201:web:3b3b1d6d9413da1d9f8340"
+};
+
+let fsDb = null;
+const firebaseReady = !!(FIREBASE_CONFIG.projectId && typeof firebase !== 'undefined');
+
+if(firebaseReady){
+  try{
+    firebase.initializeApp(FIREBASE_CONFIG);
+    fsDb = firebase.firestore();
+  }catch(e){
+    console.error('All thing: Firebase 초기화 실패', e);
+  }
+}
+
+/* ---------- durable storage wrapper ----------
+   IMPORTANT:
+   - Shared app data now uses Cloud Firestore, not Realtime Database.
+   - Realtime Database can be completely shut off on the Spark plan after its monthly
+     download/storage quota is exceeded. When that happens, different devices can end
+     up showing different local mirrors. Firestore has a separate daily free quota.
+   - LocalStorage is ALWAYS written first and is never replaced by null/empty remote data.
+   - Exams are stored one document per exam; photos are stored in a subcollection so one
+     exam cannot exceed Firestore's 1 MiB document limit just because it has attachments.
+*/
+const LS_PREFIX = 'allthing:';
+function lsKey(key, shared){ return LS_PREFIX + (shared ? 'shared:' : 'own:') + key; }
+function lsGet(key, shared, fallback){
+  try{
+    const raw = localStorage.getItem(lsKey(key, shared));
+    if(raw == null) return fallback;
+    return JSON.parse(raw);
+  }catch(e){ return fallback; }
+}
+function lsSet(key, shared, value){
+  try{
+    localStorage.setItem(lsKey(key, shared), JSON.stringify(value));
+    return true;
+  }catch(e){ return false; }
+}
+const storageOK = !!(window.storage && window.storage.get && window.storage.set);
+
+async function firestoreGet(key, fallback){
+  if(!fsDb) return { ok:false, exists:false, value:fallback };
+
+  try{
+    if(key === 'allthing-exams'){
+      const snap = await fsDb.collection('allthing_exams').get();
+      if(snap.empty) return { ok:true, exists:false, value:fallback };
+
+      const docs = snap.docs.map(d => ({ id:d.id, ...d.data() }));
+      const items = await Promise.all(docs.map(async item => {
+        const photoSnap = await fsDb
+          .collection('allthing_exams').doc(item.id)
+          .collection('photos').orderBy('index')
+          .get();
+
+        const photos = photoSnap.docs
+          .map(d => d.data().data)
+          .filter(Boolean);
+
+        return { ...item, photos };
+      }));
+
+      return { ok:true, exists:true, value:items };
+    }
+
+    const snap = await fsDb.collection('allthing').doc(key).get();
+    if(!snap.exists) return { ok:true, exists:false, value:fallback };
+
+    const data = snap.data() || {};
+    return {
+      ok:true,
+      exists:true,
+      value:Object.prototype.hasOwnProperty.call(data,'value') ? data.value : fallback
+    };
+  }catch(e){
+    console.warn('Firestore read failed:', key, e);
+    return { ok:false, exists:false, value:fallback };
+  }
+}
+
+async function firestoreSet(key, value){
+  if(!fsDb) return false;
+
+  try{
+    if(key === 'allthing-exams'){
+      const col = fsDb.collection('allthing_exams');
+      const existing = await col.get();
+      const nextIds = new Set((Array.isArray(value) ? value : []).map(x => String(x.id)));
+
+      // Parent documents: metadata only. Photos live below each exam.
+      let batch = fsDb.batch();
+      let ops = 0;
+
+      existing.docs.forEach(doc => {
+        if(!nextIds.has(doc.id)){
+          batch.delete(doc.ref);
+          ops++;
+        }
+      });
+
+      for(const item of (Array.isArray(value) ? value : [])){
+        const ref = col.doc(String(item.id));
+        const clean = { ...item };
+        delete clean.photos;
+        clean.photoCount = Array.isArray(item.photos) ? item.photos.length : 0;
+        clean.updatedAt = Date.now();
+        batch.set(ref, clean, {merge:false});
+        ops++;
+
+        // Keep batches comfortably below Firestore's 500-operation batch limit.
+        if(ops >= 450){
+          await batch.commit();
+          batch = fsDb.batch();
+          ops = 0;
+        }
+      }
+
+      if(ops) await batch.commit();
+
+      // Replace photo subcollections. Photo documents are deliberately separate from the
+      // exam document so multiple attachments do not make one Firestore document too large.
+      for(const item of (Array.isArray(value) ? value : [])){
+        const ref = col.doc(String(item.id));
+        const oldPhotos = await ref.collection('photos').get();
+        let pb = fsDb.batch();
+        let pops = 0;
+
+        oldPhotos.docs.forEach(doc => {
+          pb.delete(doc.ref);
+          pops++;
+        });
+
+        const photos = Array.isArray(item.photos) ? item.photos : [];
+        photos.forEach((data, index) => {
+          if(!data) return;
+          const pref = ref.collection('photos').doc(String(index));
+          pb.set(pref, { index, data });
+          pops++;
+          if(pops >= 450){
+            // We cannot await inside forEach, so large photo sets are handled below.
+          }
+        });
+
+        // Rebuild in small batches without async callbacks.
+        if(pops <= 450){
+          if(pops) await pb.commit();
+        }else{
+          // Fallback for unusually large attachment sets.
+          const deletes = oldPhotos.docs;
+          let b = fsDb.batch(), n = 0;
+          for(const doc of deletes){
+            b.delete(doc.ref); n++;
+            if(n >= 450){ await b.commit(); b=fsDb.batch(); n=0; }
+          }
+          for(let i=0;i<photos.length;i++){
+            const pref = ref.collection('photos').doc(String(i));
+            b.set(pref,{index:i,data:photos[i]}); n++;
+            if(n >= 450){ await b.commit(); b=fsDb.batch(); n=0; }
+          }
+          if(n) await b.commit();
+        }
+      }
+
+      return true;
+    }
+
+    await fsDb.collection('allthing').doc(key).set({
+      value,
+      updatedAt: Date.now()
+    });
+    return true;
+  }catch(e){
+    console.error('Firestore write failed:', key, e);
+    return false;
+  }
+}
+
+async function sGet(key, shared, fallback){
+  // Session/read-only device state remains local.
+  if(!shared){
+    if(storageOK){
+      try{
+        const r = await window.storage.get(key, false);
+        if(r && r.value !== undefined && r.value !== null){
+          const val = JSON.parse(r.value);
+          lsSet(key,false,val);
+          return val;
+        }
+      }catch(e){}
+    }
+    return lsGet(key,false,fallback);
+  }
+
+  // Shared data: Firestore first.
+  if(firebaseReady && fsDb){
+    const remote = await firestoreGet(key, fallback);
+    if(remote.ok && remote.exists && remote.value !== null && remote.value !== undefined){
+      lsSet(key,true,remote.value);
+      return remote.value;
+    }
+    // If Firestore is empty/unavailable, DO NOT replace a good local mirror with fallback.
+    const local = lsGet(key,true,undefined);
+    if(local !== undefined && local !== null) return local;
+  }
+
+  // Optional legacy shared storage fallback.
+  if(storageOK){
+    try{
+      const r = await window.storage.get(key, true);
+      if(r && r.value !== undefined && r.value !== null){
+        const val = JSON.parse(r.value);
+        if(val !== null && val !== undefined){
+          lsSet(key,true,val);
+          return val;
+        }
+      }
+    }catch(e){}
+  }
+
+  return lsGet(key,true,fallback);
+}
+
+async function sSet(key, value, shared){
+  // Local mirror first. A failed cloud write can never erase this copy.
+  lsSet(key, shared, value);
+
+  if(shared && firebaseReady && fsDb){
+    const ok = await firestoreSet(key,value);
+    if(ok){
+      // Keep the local mirror as the exact value that was successfully written.
+      lsSet(key,true,value);
+    }
+  }
+
+  // Keep the existing storage layer as a best-effort secondary mirror only.
+  if(storageOK){
+    try{
+      await window.storage.set(key, JSON.stringify(value), shared);
+    }catch(e){}
+  }
+
+  return true;
+}
+
+async function sDel(key, shared){
+  // For sessions, clear only the local session. Shared application data is never deleted
+  // through this wrapper.
+  try{ localStorage.removeItem(lsKey(key, shared)); }catch(e){}
+
+  if(storageOK){
+    try{ await window.storage.delete(key, shared); }catch(e){}
+  }
+  return true;
+}
+
+// Remote-only read used by the legacy polling fallback. Firestore realtime listeners are
+// preferred, so this normally isn't used.
+async function sGetRemoteOnly(key, shared){
+  if(!shared || !firebaseReady || !fsDb) return null;
+  const remote = await firestoreGet(key,null);
+  return remote.ok && remote.exists ? remote.value : null;
+}
+
+/* ---------- constants ---------- */
+
+const DAYS = ['월','화','수','목','금'];
+const PERIODS = [1,2,3,4,5,6,7];
+function emptyGrid(){
+  const g = {};
+  DAYS.forEach(d => g[d] = PERIODS.map(()=> ''));
+  return g;
+}
+function defaultUsers(){
+  const names = ['건희','경록','동유','제하','현교','희택','민서','서우','예준','치현','진호','영빈','경민','동희','상결','하면','명한','제준','현준','서훈','지호','진원','정환','종하'];
+  const users = {};
+  for(let n = 1; n <= 24; n++){
+    const id = '208' + pad2(n);
+    users[id] = { password: id, displayName: names[n-1], studentNo: id, isAdmin: id === '20824' };
+  }
+  users['00000'] = { password: '00000', displayName: '선생님', studentNo: '', isAdmin: true };
+  return users;
+}
+
+/* ---------- section config (meals / exams / events / notices share one CRUD engine) ---------- */
+const SECTIONS = {
+  meals: {
+    label: '급식', icon: 'meal', storageKey: 'allthing-meals',
+    emptyMsg: '아직 등록된 급식 정보가 없어요.', pastLabel: '지난 급식',
+    fields: [
+      { name:'date', label:'날짜', type:'date', required:true },
+      { name:'breakfast', label:'조식 (한 줄에 하나씩, 없으면 비워두세요)', type:'lines', required:false },
+      { name:'lunch', label:'중식 (한 줄에 하나씩, 없으면 비워두세요)', type:'lines', required:false },
+      { name:'dinner', label:'석식 (한 줄에 하나씩, 없으면 비워두세요)', type:'lines', required:false }
+    ],
+    blank: () => ({ date: todayStr(), breakfast: [], lunch: [], dinner: [] }),
+    validate: (data) => {
+      if(!(data.breakfast||[]).length && !(data.lunch||[]).length && !(data.dinner||[]).length){
+        return '조식, 중식, 석식 중 하나는 입력해주세요.';
+      }
+      return '';
+    },
+    rowHtml: (it) => `
+      <div class="row-head">
+        <span class="row-date">${esc(fmtDate(it.date))}</span>
+      </div>
+      ${mealGroupsHtml(it) || '<span class="text-3">메뉴 없음</span>'}
+    `
+  },
+  exams: {
+    label: '수행평가·시험', icon: 'exam', storageKey: 'allthing-exams',
+    emptyMsg: '다가오는 수행평가·시험이 없어요.', pastLabel: '지난 수행평가·시험',
+    fields: [
+      { name:'kind', label:'종류', type:'select', required:true, options:[
+        { value:'perf', label:'수행평가' },
+        { value:'exam', label:'시험' }
+      ] },
+      { name:'subject', label:'과목', type:'text', required:true, placeholder:'예: 미적분1' },
+      { name:'title', label:'평가/시험명', type:'text', required:true, placeholder:'예: 2단원 수행평가' },
+      { name:'date', label:'날짜', type:'date', required:true },
+      { name:'endDate', label:'종료일 (선택)', type:'date', required:false },
+      { name:'session', label:'차시 (선택)', type:'multitext', required:false, placeholder:'예: 1차시' },
+      { name:'memo', label:'메모 (선택)', type:'text', required:false, placeholder:'예: 준비물, 범위 등' },
+      { name:'link', label:'링크 (선택)', type:'text', required:false, placeholder:'예: https://...' },
+      { name:'photos', label:'사진 첨부 (선택, 여러 장 가능)', type:'images', required:false }
+    ],
+    blank: () => ({ kind:'perf', subject:'', title:'', date: todayStr(), endDate:'', session:[], memo:'', link:'', photos:[] }),
+    rowHtml: (it) => {
+      const dd = dDayInfo(it.date, it.endDate);
+      const expanded = state.expandedExams.has(it.id);
+      const photos = it.photos || (it.photo ? [it.photo] : []);
+      const sessions = Array.isArray(it.session) ? it.session : (it.session ? [it.session] : []);
+      const hasExtra = !!(photos.length || it.link);
+      const range = it.endDate ? `${esc(fmtDate(it.date))} ~ ${esc(fmtDate(it.endDate))}` : esc(fmtDate(it.date));
+      return `
+      <div class="row-head">
+        <span class="badge">${esc(it.subject)}</span>
+        ${sessions.map(s => `<span class="badge badge-alt">${esc(s)}</span>`).join('')}
+        <span class="dday ${dd.cls}">${dd.label}</span>
+      </div>
+      <div class="row-title">${esc(it.title)}</div>
+      <div class="row-sub">${range}${it.memo ? ' · '+esc(it.memo) : ''}</div>
+      ${hasExtra ? `
+      <button type="button" class="expand-toggle ${expanded?'open':''}" data-act="toggleExamExpand" data-id="${esc(it.id)}">
+        ${expanded ? '접기' : '더보기'} ${icon('chevron')}
+      </button>
+      <div class="expand-panel ${expanded?'open':''}">
+        <div class="expand-inner">
+          ${photos.length ? `<div class="exam-photo-grid">${photos.map(p => `<button type="button" class="exam-photo-btn" data-act="viewPhoto" data-src="${esc(p)}"><img src="${esc(p)}" class="exam-photo" alt="첨부 사진 (누르면 크게 보기)"></button>`).join('')}</div>` : ''}
+          ${it.link ? `<a href="${esc(it.link)}" target="_blank" rel="noopener noreferrer" class="exam-link">${icon('copy')} ${esc(it.link)}</a>` : ''}
+        </div>
+      </div>` : ''}
+      `;
+    }
+  },
+  events: {
+    label: '일정', icon: 'event', storageKey: 'allthing-events',
+    emptyMsg: '다가오는 일정이 없어요.', pastLabel: '지난 일정',
+    fields: [
+      { name:'title', label:'일정명', type:'text', required:true, placeholder:'예: 현장체험학습' },
+      { name:'date', label:'날짜', type:'date', required:true },
+      { name:'endDate', label:'종료일 (선택)', type:'date', required:false },
+      { name:'memo', label:'메모 (선택)', type:'text', required:false }
+    ],
+    blank: () => ({ title:'', date: todayStr(), endDate:'', memo:'' }),
+    rowHtml: (it) => {
+      const dd = dDayInfo(it.date, it.endDate);
+      const range = it.endDate ? `${esc(fmtDate(it.date))} ~ ${esc(fmtDate(it.endDate))}` : esc(fmtDate(it.date));
+      return `
+      <div class="row-head">
+        <span class="dday ${dd.cls}">${dd.label}</span>
+      </div>
+      <div class="row-title">${esc(it.title)}</div>
+      <div class="row-sub">${range}${it.memo ? ' · '+esc(it.memo) : ''}</div>
+      `;
+    }
+  },
+  notices: {
+    label: '공지', icon: 'notice', storageKey: 'allthing-notices',
+    emptyMsg: '아직 등록된 공지가 없어요.',
+    fields: [
+      { name:'title', label:'제목', type:'text', required:true, placeholder:'예: 다음 주 시간표 변경 안내' },
+      { name:'content', label:'내용', type:'textarea', required:true, placeholder:'공지 내용을 입력해요' }
+    ],
+    blank: () => ({ title:'', content:'', date: todayStr(), author: '' }),
+    rowHtml: (it) => `
+      ${isNoticeUnread(it.id) ? '<span class="new-badge">NEW</span>' : ''}
+      <div class="row-head">
+        <span class="row-date">${esc(fmtDate(it.date))}</span>
+        <span class="text-3">· ${esc(it.author||'')}</span>
+      </div>
+      <div class="row-title">${esc(it.title)}</div>
+      <div class="row-sub notice-content">${esc(it.content).replace(/\n/g,'<br>')}</div>
+    `
+  }
+};
+
+/* ---------- global state ---------- */
+const state = {
+  booted: false,
+  currentUser: null,
+  view: 'home',
+  users: {},
+  timetables: {},
+  meals: [],
+  exams: [],
+  events: [],
+  notices: [],
+  editing: { section: null, id: null, data: null },
+  ttEditor: { open: false, no: null, grid: null, copyFrom: '' },
+  toast: null,
+  loginError: '',
+  splashPlayed: false,
+  canInstall: false,
+  acctEditing: null,
+  acctAdding: false,
+  expandedExams: new Set(),
+  lightboxSrc: null,
+  brandAnimPlayed: false,
+  navAnim: 'view-enter',
+  forceLayout: lsGet('layout-pref', false, null),
+  noticesUnreadSnapshot: null
+};
+
+function me(){ return state.currentUser ? state.users[state.currentUser] : null; }
+function isAdmin(){ const u = me(); return !!(u && u.isAdmin); }
+
+function showToast(msg, type){
+  state.toast = { msg, type: type || 'ok' };
+  render();
+  clearTimeout(showToast._t);
+  showToast._t = setTimeout(() => { state.toast = null; render(); }, 2200);
+}
+
+/* ---------- icons (minimal inline SVG, stroke style) ---------- */
+const ICONS = {
+  home: '<path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h5v-6h4v6h5V9.5"/>',
+  meal: '<path d="M7 2v7a2 2 0 0 0 4 0V2"/><path d="M9 9v13"/><path d="M17 2c-1.6 0-3 1.7-3 4.5S15.4 11 17 11"/><path d="M17 11v11"/>',
+  timetable: '<rect x="3" y="4.5" width="18" height="16" rx="2.2"/><path d="M3 9.5h18"/><path d="M9 4.5v16"/><path d="M15 4.5v16"/>',
+  exam: '<rect x="5" y="3.2" width="14" height="18" rx="2"/><path d="M9 3.2h6v3H9z"/><path d="m9 13 2 2 4-4"/>',
+  event: '<rect x="3" y="5" width="18" height="16" rx="2.2"/><path d="M3 10h18"/><path d="M8 3v4"/><path d="M16 3v4"/>',
+  notice: '<path d="M3 10.5v4a1 1 0 0 0 1 1h2l5.5 4V5.5L6 9.5H4a1 1 0 0 0-1 1z"/><path d="M17 8a4.3 4.3 0 0 1 0 8.5"/>',
+  profile: '<circle cx="12" cy="8" r="4"/><path d="M4 21c1.4-4.2 5-6.3 8-6.3s6.6 2.1 8 6.3"/>',
+  logout: '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/>',
+  edit: '<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/>',
+  trash: '<path d="M3.5 6h17"/><path d="M8 6V4h8v2"/><path d="M18.5 6 17.6 20H6.4L5.5 6"/><path d="M10 10.5v6"/><path d="M14 10.5v6"/>',
+  plus: '<circle cx="12" cy="12" r="9.2"/><path d="M12 7.5v9"/><path d="M7.5 12h9"/>',
+  chevron: '<path d="M9 6l6 6-6 6"/>',
+  x: '<path d="M18 6 6 18"/><path d="M6 6l12 12"/>',
+  crown: '<path d="M3 8.5 6.8 11 12 4.5 17.2 11l3.8-2.5-1.8 10.5H4.8Z"/>',
+  key: '<circle cx="8" cy="15" r="4"/><path d="M10.5 12.5 20 3"/><path d="M17 6l3 3"/><path d="M14 9l2 2"/>',
+  hash: '<path d="M4 9h16"/><path d="M4 15h16"/><path d="M10 3 8 21"/><path d="M16 3l-2 18"/>',
+  check: '<path d="M20 6 9 17l-5-5"/>',
+  more: '<circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/>',
+  copy: '<rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/>',
+  eye: '<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/>',
+  'eye-off': '<path d="M3 3l18 18"/><path d="M10.6 5.2A10.6 10.6 0 0 1 12 5c6.4 0 10 7 10 7a17.7 17.7 0 0 1-3.2 4.2"/><path d="M6.5 6.7C3.9 8.4 2 12 2 12s3.6 7 10 7a9.6 9.6 0 0 0 4.4-1"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/>',
+  users: '<circle cx="9" cy="8" r="3.2"/><path d="M2.5 20c1-3.3 3.6-5 6.5-5s5.5 1.7 6.5 5"/><circle cx="17.2" cy="8.4" r="2.6"/><path d="M16 15.4c2.3.4 4 1.9 4.8 4.6"/>',
+  rotate: '<path d="M3 12a9 9 0 0 1 15-6.7"/><path d="M21 3v6h-6"/><path d="M21 12a9 9 0 0 1-15 6.7"/><path d="M3 21v-6h6"/>'
+};
+function icon(name, cls){
+  return `<svg class="ic ${cls||''}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${ICONS[name]||''}</svg>`;
+}
+
+/* ---------- init ---------- */
+function withTimeout(promise, ms, fallback){
+  return new Promise((resolve) => {
+    let settled = false;
+    const timer = setTimeout(() => { if(!settled){ settled = true; resolve(fallback); } }, ms);
+    promise.then((v) => { if(!settled){ settled = true; clearTimeout(timer); resolve(v); } })
+           .catch(() => { if(!settled){ settled = true; clearTimeout(timer); resolve(fallback); } });
+  });
+}
+/* ---------- notice notifications ----------
+   Local-notification based (works while the browser/app is open or backgrounded on this
+   device). True push-to-a-closed-app notifications would need a server component (Firebase
+   Cloud Messaging + a paid Cloud Function trigger) — out of scope for a static file, so
+   this covers "app open somewhere on this phone" rather than "phone fully closed".
+*/
+function notifEnabled(){
+  return typeof Notification !== 'undefined' && Notification.permission === 'granted' && !!lsGet('notif-enabled', false, false);
+}
+async function toggleNotif(){
+  if(typeof Notification === 'undefined'){ showToast('이 브라우저는 알림을 지원하지 않아요.', 'err'); return; }
+  const currentlyOn = notifEnabled();
+  if(currentlyOn){
+    lsSet('notif-enabled', false, false);
+    showToast('알림을 껐어요.');
+    render();
+    return;
+  }
+  if(Notification.permission === 'denied'){
+    showToast('브라우저에서 알림이 차단되어 있어요. 브라우저 설정에서 허용해주세요.', 'err');
+    return;
+  }
+  const perm = Notification.permission === 'granted' ? 'granted' : await Notification.requestPermission();
+  if(perm === 'granted'){
+    lsSet('notif-enabled', false, true);
+    seedSeenNotices();
+    showToast('알림을 켰어요.');
+  } else {
+    showToast('알림 권한이 허용되지 않았어요.', 'err');
+  }
+  render();
+}
+function getSeenNoticeIds(){ return new Set(lsGet('seen-notice-ids', false, [])); }
+function saveSeenNoticeIds(set){ lsSet('seen-notice-ids', false, Array.from(set)); }
+function seedSeenNotices(){
+  const seen = getSeenNoticeIds();
+  state.notices.forEach(n => seen.add(n.id));
+  saveSeenNoticeIds(seen);
+}
+function notifyNewNotices(){
+  if(!notifEnabled()){ seedSeenNotices(); return; }
+  const seen = getSeenNoticeIds();
+  const newOnes = state.notices.filter(n => !seen.has(n.id));
+  if(newOnes.length === 0) return;
+  newOnes.forEach(n => { seen.add(n.id); showNoticeNotification(n); });
+  saveSeenNoticeIds(seen);
+}
+function showNoticeNotification(notice){
+  const title = '📢 All thing';
+  const body = '새로운 공지가 등록되었습니다!';
+  const fallback = () => { try{ new Notification(title, { body, icon:'icon-192.png' }); }catch(e){} };
+  if(navigator.serviceWorker && navigator.serviceWorker.ready){
+    navigator.serviceWorker.ready.then(reg => {
+      if(reg && reg.showNotification){
+        reg.showNotification(title, { body, icon:'icon-192.png', badge:'icon-192.png', tag:'notice-'+notice.id }).catch(fallback);
+      } else fallback();
+    }).catch(fallback);
+  } else fallback();
+}
+
+/* ---------- notice read/unread tracking (drives the nav red-dot + NEW badges) ----------
+   Deliberately separate from the "seen" set above: that one seeds on every app open (so we
+   don't fire a notification burst for notices that already existed before this session).
+   This one only updates when the person actually opens the 공지 tab, so the red dot/NEW
+   badge correctly persists across app restarts until they've really looked.
+*/
+function getReadNoticeIds(){ return new Set(lsGet('read-notice-ids', false, [])); }
+function saveReadNoticeIds(set){ lsSet('read-notice-ids', false, Array.from(set)); }
+function markNoticesRead(){
+  const read = getReadNoticeIds();
+  state.notices.forEach(n => read.add(n.id));
+  saveReadNoticeIds(read);
+}
+function hasUnreadNotices(){
+  const read = getReadNoticeIds();
+  return state.notices.some(n => !read.has(n.id));
+}
+function isNoticeUnread(id){
+  return !!(state.noticesUnreadSnapshot && state.noticesUnreadSnapshot.has(id));
+}
+
+async function loadField(key, shared, fallback, ms){
+  // sGet() already falls back through Firebase -> window.storage -> localStorage on its own,
+  // but a *hung* read (typically Firebase's .once('value') waiting forever for a connection
+  // that will never come while offline) never rejects, so a per-call timeout is needed too.
+  // Racing that timeout to `undefined` — not the real fallback — is what matters: it lets us
+  // tell "genuinely no data" apart from "the read never came back", so a hung read falls
+  // through to the local mirror instead of being treated as if the data didn't exist.
+  const result = await withTimeout(sGet(key, shared, fallback), ms, undefined);
+  if(result !== undefined) return result;
+  return lsGet(key, shared, fallback);
+}
+async function migrateLocalCacheToFirestore(){
+  if(!firebaseReady || !fsDb) return false;
+
+  // Bootstrap is allowed only from a device whose LOCAL mirror contains an admin account.
+  // This must happen before login on a fresh device; otherwise Firestore starts empty and
+  // there is no account table to authenticate against. A normal student device has no admin
+  // account in its local cache, so it cannot overwrite the shared database.
+  const localUsers = lsGet('allthing-users', true, null);
+  const localAdmin = localUsers && Object.values(localUsers).some(u => u && u.isAdmin);
+  if(!localAdmin) return false;
+
+  // Never overwrite an already-populated Firestore database from a stale local mirror.
+  const keys = ['allthing-users','allthing-timetables','allthing-meals','allthing-events','allthing-notices'];
+
+  for(const key of keys){
+    try{
+      const remote = await firestoreGet(key,null);
+      if(!remote.exists){
+        const local = lsGet(key,true,null);
+        if(local !== null && local !== undefined){
+          await firestoreSet(key,local);
+        }
+      }
+    }catch(e){}
+  }
+
+  try{
+    const examSnap = await fsDb.collection('allthing_exams').limit(1).get();
+    if(examSnap.empty){
+      const local = lsGet('allthing-exams',true,null);
+      if(Array.isArray(local) && local.length) await firestoreSet('allthing-exams',local);
+    }
+  }catch(e){}
+
+  // Refresh from Firestore after migration so every device uses the same source of truth.
+  try{
+    for(const key of keys){
+      const remote = await firestoreGet(key,null);
+      if(remote.exists) applyRemoteUpdate(SYNC_KEY_MAP[key],remote.value);
+    }
+    const remoteExams = await firestoreGet('allthing-exams',[]);
+    if(remoteExams.exists) applyRemoteUpdate('exams',remoteExams.value);
+  }catch(e){}
+  return true;
+}
+
+async function init(){
+  let users, timetables, meals, exams, events, notices, session;
+  try{
+    const results = await Promise.all([
+      loadField('allthing-users', true, null, 4000),
+      loadField('allthing-timetables', true, {}, 4000),
+      loadField('allthing-meals', true, [], 4000),
+      loadField('allthing-exams', true, [], 4000),
+      loadField('allthing-events', true, [], 4000),
+      loadField('allthing-notices', true, [], 4000),
+      loadField('allthing-session', false, null, 4000)
+    ]);
+    users = results[0]; timetables = results[1]; meals = results[2];
+    exams = results[3]; events = results[4]; notices = results[5]; session = results[6];
+  }catch(err){
+    console.error('All thing: 초기 데이터를 불러오는 중 문제가 있었어요.', err);
+    // last resort if even the above somehow throws — read straight from the local mirror
+    // rather than let a network hiccup look like everything got wiped
+    users = lsGet('allthing-users', true, null);
+    timetables = lsGet('allthing-timetables', true, {});
+    meals = lsGet('allthing-meals', true, []);
+    exams = lsGet('allthing-exams', true, []);
+    events = lsGet('allthing-events', true, []);
+    notices = lsGet('allthing-notices', true, []);
+    session = lsGet('allthing-session', false, null);
+  }
+
+  // Never manufacture a fresh user table when the cloud read fails.
+  // Doing that made a quota outage look exactly like an account reset on a new device.
+  state.users = users || {};
+  state.timetables = timetables || {};
+  state.meals = meals || [];
+  state.exams = exams || [];
+  state.events = events || [];
+  state.notices = notices || [];
+  seedSeenNotices();
+
+  if(session && session.id && state.users[session.id]){
+    state.currentUser = session.id;
+    state.view = 'home';
+    // launched via a home-screen-icon shortcut (long-press → 급식/시간표/수행평가·시험)
+    try{
+      const requested = new URLSearchParams(location.search).get('view');
+      const validShortcutViews = ['meals', 'timetable', 'exams'];
+      if(requested && validShortcutViews.includes(requested)){
+        state.view = requested;
+      }
+    }catch(e){}
+  }
+  // IMPORTANT: bootstrap Firestore BEFORE the first login screen is used. On the admin
+  // computer/phone, the old app's local mirror already contains the real account table.
+  // If Firestore is empty, copy that known-good cache first. Student devices do not have a
+  // local admin account, so they simply wait for the shared database to be populated.
+  if(firebaseReady && fsDb){
+    try{ await migrateLocalCacheToFirestore(); }catch(e){ console.warn('Firestore bootstrap failed:', e); }
+  }
+
+  // Re-read users once after bootstrap. This makes the first login work immediately without
+  // requiring a second page refresh.
+  if(firebaseReady && fsDb){
+    try{
+      const remoteUsers = await firestoreGet('allthing-users', null);
+      if(remoteUsers.exists) state.users = remoteUsers.value || {};
+    }catch(e){}
+  }
+
+  state.booted = true;
+  render();
+  if(!state.currentUser) playSplash();
+  startRealtimeSync();
+}
+
+/* ---------- near-real-time sync ----------
+   If a Firebase project is configured (see FIREBASE_CONFIG above), this attaches live
+   listeners so every change is pushed to connected classmates instantly. Otherwise it
+   falls back to quietly polling the shared storage every few seconds — a static HTML
+   file with no Firebase project has no server of its own to push updates from, so this
+   polling fallback is the closest approximation without that setup.
+   Either way, it's skipped while an edit form or the timetable editor is open, so it
+   never overwrites something you're in the middle of typing.
+*/
+const SYNC_KEY_MAP = {
+  'allthing-users':'users',
+  'allthing-timetables':'timetables',
+  'allthing-meals':'meals',
+  'allthing-exams':'exams',
+  'allthing-events':'events',
+  'allthing-notices':'notices'
+};
+
+function applyRemoteUpdate(sKey, val){
+  if(val === null || val === undefined) return;
+  if(JSON.stringify(state[sKey]) === JSON.stringify(val)) return;
+  state[sKey] = val;
+  lsSet(sKey, true, val);
+
+  if(sKey === 'notices'){
+    notifyNewNotices();
+    if(state.view === 'notices') markNoticesRead();
+  }
+  if(state.ttEditor.open || state.editing.section) return;
+  render();
+}
+
+let firestoreUnsubscribers = [];
+
+function stopRealtimeSync(){
+  firestoreUnsubscribers.forEach(fn => {
+    try{ if(typeof fn === 'function') fn(); }catch(e){}
+  });
+  firestoreUnsubscribers = [];
+}
+
+function startRealtimeSync(){
+  stopRealtimeSync();
+
+  if(firebaseReady && fsDb){
+    // Small config documents
+    ['allthing-users','allthing-timetables','allthing-meals','allthing-events','allthing-notices']
+      .forEach(key => {
+        try{
+          const unsub = fsDb.collection('allthing').doc(key).onSnapshot(
+            snap => {
+              if(!state.currentUser || !snap.exists) return;
+              const data = snap.data() || {};
+              if(!Object.prototype.hasOwnProperty.call(data,'value')) return;
+              applyRemoteUpdate(SYNC_KEY_MAP[key], data.value);
+            },
+            err => console.warn('Firestore listener failed:', key, err)
+          );
+          firestoreUnsubscribers.push(unsub);
+        }catch(e){
+          console.warn('Firestore listener setup failed:', key, e);
+        }
+      });
+
+    // Exams: parent collection listener triggers whenever an exam is added/edited/deleted.
+    // We then read the complete exam set, including photo subcollections.
+    try{
+      const unsub = fsDb.collection('allthing_exams').onSnapshot(
+        async snap => {
+          if(!state.currentUser) return;
+          try{
+            const docs = snap.docs.map(d => ({ id:d.id, ...d.data() }));
+            const items = await Promise.all(docs.map(async item => {
+              const photoSnap = await fsDb
+                .collection('allthing_exams').doc(item.id)
+                .collection('photos').orderBy('index')
+                .get();
+              return {
+                ...item,
+                photos: photoSnap.docs.map(d => d.data().data).filter(Boolean)
+              };
+            }));
+            applyRemoteUpdate('exams', items);
+          }catch(e){
+            console.warn('Firestore exam sync failed:', e);
+          }
+        },
+        err => console.warn('Firestore exam listener failed:', err)
+      );
+      firestoreUnsubscribers.push(unsub);
+    }catch(e){
+      console.warn('Firestore exam listener setup failed:', e);
+    }
+
+    return;
+  }
+
+  // No cloud backend: do not poll aggressively. The local mirror remains usable.
+}
+
+/* ---------- auth ---------- */
+
+async function handleLoginSubmit(){
+  const idEl = document.getElementById('loginId');
+  const pwEl = document.getElementById('loginPw');
+  const rememberEl = document.getElementById('loginRemember');
+  if(!idEl || !pwEl) return;
+  const id = idEl.value.trim();
+  const pw = pwEl.value.trim();
+  const remember = rememberEl ? rememberEl.checked : true;
+
+  // One last cloud/local refresh when the login table is empty or stale. This fixes the
+  // first-login race on devices opened immediately after the Firestore migration.
+  if(!state.users || Object.keys(state.users).length === 0){
+    const localUsers = lsGet('allthing-users', true, null);
+    if(localUsers && Object.keys(localUsers).length) state.users = localUsers;
+    if((!state.users || Object.keys(state.users).length === 0) && firebaseReady && fsDb){
+      const remoteUsers = await firestoreGet('allthing-users', null);
+      if(remoteUsers.exists) state.users = remoteUsers.value || {};
+    }
+  }
+
+  const user = state.users[id];
+  if(!user || user.password !== pw){
+    state.loginError = Object.keys(state.users || {}).length === 0
+      ? '계정 정보를 불러오지 못했어요. 인터넷 연결과 Firestore 설정을 확인해주세요.'
+      : '아이디 또는 비밀번호가 올바르지 않아요.';
+    render();
+    return;
+  }
+  state.loginError = '';
+  state.currentUser = id;
+  state.view = 'home';
+  // launched via a home-screen-icon shortcut but wasn't logged in yet — land on the
+  // requested tab once login succeeds instead of just going to home
+  try{
+    const requested = new URLSearchParams(location.search).get('view');
+    const validShortcutViews = ['meals', 'timetable', 'exams'];
+    if(requested && validShortcutViews.includes(requested)){
+      state.view = requested;
+    }
+  }catch(e){}
+  state.brandAnimPlayed = false;
+  if(remember){
+    await sSet('allthing-session', { id, ts: Date.now() }, false);
+  } else {
+    await sDel('allthing-session', false);
+  }
+  render();
+}
+async function handleLogout(){
+  state.currentUser = null;
+  state.view = 'home';
+  state.splashPlayed = false;
+  await sDel('allthing-session', false);
+  render();
+  playSplash();
+}
+function goto(view, animClass){
+  state.navAnim = animClass || 'view-enter';
+  if(view === 'notices' && state.view !== 'notices'){
+    // Snapshot which notices are still unread right now, so THIS viewing still shows the NEW
+    // badge on them — then mark everything read immediately (clears the nav dot right away,
+    // and means the badge is gone by the next visit).
+    const read = getReadNoticeIds();
+    state.noticesUnreadSnapshot = new Set(state.notices.filter(n => !read.has(n.id)).map(n => n.id));
+    markNoticesRead();
+  }
+  state.view = view;
+  state.editing = { section:null, id:null, data:null };
+  render();
+  const main = document.getElementById('mainScroll');
+  if(main) main.scrollTop = 0;
+  // Skip the nav bar's own auto-scroll animation during a swipe — running two independently-timed
+  // animations (this scroll + the content slide) at once is what was producing the "bounce" feel.
+  if(!animClass || animClass === 'view-enter'){
+    const navEl = document.getElementById('bottomNavScroll');
+    if(navEl){
+      const activeBtn = navEl.querySelector('.bn-btn.active');
+      if(activeBtn) activeBtn.scrollIntoView({ behavior:'smooth', inline:'center', block:'nearest' });
+    }
+  }
+}
+function togglePwVisibility(targetId, btn){
+  const inp = document.getElementById(targetId);
+  if(!inp) return;
+  const nowShowing = inp.type === 'text';
+  inp.type = nowShowing ? 'password' : 'text';
+  if(btn) btn.innerHTML = icon(nowShowing ? 'eye' : 'eye-off');
+}
+
+/* ---------- profile actions ---------- */
+async function saveDisplayName(){
+  const val = document.getElementById('pfName').value.trim();
+  if(!val){ showToast('표시 이름을 입력해주세요.', 'err'); return; }
+  state.users[state.currentUser].displayName = val;
+  await sSet('allthing-users', state.users, true);
+  showToast('표시 이름을 저장했어요.');
+  render();
+}
+async function changePassword(){
+  const pw1 = document.getElementById('pfPw1').value;
+  const pw2 = document.getElementById('pfPw2').value;
+  if(pw1.length < 6){ showToast('비밀번호는 6자 이상으로 입력해주세요.', 'err'); return; }
+  if(pw1 !== pw2){ showToast('새 비밀번호가 서로 달라요.', 'err'); return; }
+  state.users[state.currentUser].password = pw1;
+  await sSet('allthing-users', state.users, true);
+  showToast('비밀번호를 바꿨어요.');
+  render();
+}
+async function saveStudentNo(){
+  const val = document.getElementById('pfNo').value.trim();
+  if(!val){ showToast('학번을 입력해주세요.', 'err'); return; }
+  state.users[state.currentUser].studentNo = val;
+  await sSet('allthing-users', state.users, true);
+  showToast('학번을 저장했어요.');
+  render();
+}
+
+/* ---------- account management actions (admin only) ---------- */
+function acctEdit(id){
+  state.acctEditing = id;
+  render();
+}
+function acctCancel(){
+  state.acctEditing = null;
+  render();
+}
+async function acctResetDefault(id){
+  const u = state.users[id];
+  if(!u) return;
+  if(!confirm(`${u.displayName}(${id})의 비밀번호를 아이디와 같은 값으로 초기화할까요?`)) return;
+  u.password = id;
+  await sSet('allthing-users', state.users, true);
+  showToast('비밀번호를 초기화했어요.');
+  state.acctEditing = null;
+  render();
+}
+async function acctSave(id){
+  const idEl = document.getElementById('acctId');
+  const nameEl = document.getElementById('acctName');
+  const pwEl = document.getElementById('acctPw');
+  const adminEl = document.getElementById('acctIsAdmin');
+  if(!idEl) return;
+  const newId = idEl.value.trim();
+  const newName = nameEl ? nameEl.value.trim() : '';
+  const newPw = pwEl ? pwEl.value : '';
+  const newIsAdmin = adminEl ? adminEl.checked : !!state.users[id].isAdmin;
+  if(!newId){ showToast('아이디를 입력해주세요.', 'err'); return; }
+  if(!newName){ showToast('표시 이름을 입력해주세요.', 'err'); return; }
+  if(newPw && newPw.length < 6){ showToast('비밀번호는 6자 이상으로 입력해주세요.', 'err'); return; }
+  if(newId !== id && state.users[newId]){ showToast('이미 사용 중인 아이디예요.', 'err'); return; }
+  if(id === state.currentUser && !newIsAdmin){
+    showToast('현재 로그인한 계정의 관리자 권한은 스스로 해제할 수 없어요.', 'err');
+    return;
+  }
+
+  if(newId !== id){
+    const record = Object.assign({}, state.users[id]);
+    delete state.users[id];
+    state.users[newId] = record;
+    if(state.currentUser === id){
+      state.currentUser = newId;
+      const session = await sGet('allthing-session', false, null);
+      if(session) await sSet('allthing-session', { id: newId, ts: Date.now() }, false);
+    }
+  }
+  state.users[newId].displayName = newName;
+  state.users[newId].isAdmin = newIsAdmin;
+  if(newPw) state.users[newId].password = newPw;
+  await sSet('allthing-users', state.users, true);
+  showToast('계정 정보를 저장했어요.');
+  state.acctEditing = null;
+  render();
+}
+function acctOpenAdd(){
+  state.acctAdding = true;
+  state.acctEditing = null;
+  render();
+  const el = document.getElementById('acctAddForm');
+  if(el) el.scrollIntoView({ behavior:'smooth', block:'start' });
+}
+function acctCancelAdd(){
+  state.acctAdding = false;
+  render();
+}
+async function acctSubmitAdd(){
+  const idEl = document.getElementById('newAcctId');
+  const nameEl = document.getElementById('newAcctName');
+  const noEl = document.getElementById('newAcctNo');
+  const id = idEl.value.trim();
+  if(!id){ showToast('아이디를 입력해주세요.', 'err'); return; }
+  if(state.users[id]){ showToast('이미 사용 중인 아이디예요.', 'err'); return; }
+  const name = nameEl.value.trim() || id;
+  const no = noEl.value.trim() || id;
+  state.users[id] = { password: id, displayName: name, studentNo: no, isAdmin: false };
+  await sSet('allthing-users', state.users, true);
+  showToast('계정을 추가했어요.');
+  state.acctAdding = false;
+  render();
+}
+async function acctDelete(id){
+  const u = state.users[id];
+  if(!u) return;
+  if(id === state.currentUser){ showToast('현재 로그인한 계정은 삭제할 수 없어요.', 'err'); return; }
+  if(!confirm(`${u.displayName}(${id}) 계정을 정말 삭제할까요? 되돌릴 수 없어요.`)) return;
+  delete state.users[id];
+  await sSet('allthing-users', state.users, true);
+  showToast('계정을 삭제했어요.');
+  render();
+}
+
+/* ---------- generic section CRUD (meals / exams / events / notices) ---------- */
+function openAddForm(section, presetDate){
+  const blank = SECTIONS[section].blank();
+  if(presetDate) blank.date = presetDate;
+  state.editing = { section, id: null, data: blank };
+  render();
+  const el = document.getElementById('sectionForm');
+  if(el) el.scrollIntoView({ behavior:'smooth', block:'start' });
+}
+function openEditForm(section, id){
+  const item = state[section].find(x => x.id === id);
+  if(!item) return;
+  state.editing = { section, id, data: Object.assign({}, item) };
+  render();
+  const el = document.getElementById('sectionForm');
+  if(el) el.scrollIntoView({ behavior:'smooth', block:'start' });
+}
+function cancelForm(){
+  state.editing = { section:null, id:null, data:null };
+  render();
+}
+function toggleExamExpand(id){
+  if(state.expandedExams.has(id)) state.expandedExams.delete(id);
+  else state.expandedExams.add(id);
+  render();
+}
+function viewPhoto(src){
+  state.lightboxSrc = src;
+  render();
+  setupLightboxZoom();
+}
+function closeLightbox(){
+  state.lightboxSrc = null;
+  render();
+}
+function setupLightboxZoom(){
+  const overlay = document.querySelector('.lightbox-overlay');
+  const img = document.querySelector('.lightbox-img');
+  if(!overlay || !img) return;
+
+  let scale = 1, tx = 0, ty = 0;
+  const MIN_SCALE = 1, MAX_SCALE = 5;
+  const pointers = new Map();
+  let pinchStartDist = 0, pinchStartScale = 1;
+  let panStart = null;
+  let didInteract = false;
+
+  function applyTransform(){
+    img.style.transform = `translate(${tx}px, ${ty}px) scale(${scale})`;
+    img.style.cursor = scale > 1 ? 'grab' : 'zoom-in';
+  }
+  function clampScale(s){ return Math.max(MIN_SCALE, Math.min(MAX_SCALE, s)); }
+  function clampPan(){
+    // keep the image roughly within reach of the viewport once zoomed
+    const rect = overlay.getBoundingClientRect();
+    const maxX = (rect.width * (scale - 1)) / 2 + 40;
+    const maxY = (rect.height * (scale - 1)) / 2 + 40;
+    tx = Math.max(-maxX, Math.min(maxX, tx));
+    ty = Math.max(-maxY, Math.min(maxY, ty));
+  }
+  function settle(){
+    if(scale <= 1.001){ scale = 1; tx = 0; ty = 0; }
+    applyTransform();
+  }
+
+  img.style.transition = 'none';
+  img.style.touchAction = 'none';
+  img.style.transformOrigin = 'center center';
+  applyTransform();
+
+  // PC: scroll wheel to zoom, centered near the cursor
+  overlay.addEventListener('wheel', function(e){
+    e.preventDefault();
+    const rect = img.getBoundingClientRect();
+    const prevScale = scale;
+    scale = clampScale(scale * (1 - e.deltaY * 0.0018));
+    const cx = e.clientX - (rect.left + rect.width/2);
+    const cy = e.clientY - (rect.top + rect.height/2);
+    tx -= cx * (scale/prevScale - 1);
+    ty -= cy * (scale/prevScale - 1);
+    clampPan();
+    settle();
+  }, { passive:false });
+
+  // touch: pinch to zoom, single-finger drag to pan once zoomed
+  overlay.addEventListener('pointerdown', function(e){
+    pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if(pointers.size === 2){
+      const pts = Array.from(pointers.values());
+      pinchStartDist = Math.hypot(pts[0].x-pts[1].x, pts[0].y-pts[1].y);
+      pinchStartScale = scale;
+      panStart = null;
+    } else if(pointers.size === 1 && scale > 1){
+      panStart = { x: e.clientX, y: e.clientY, tx, ty };
+    }
+  });
+  overlay.addEventListener('pointermove', function(e){
+    if(!pointers.has(e.pointerId)) return;
+    pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if(pointers.size === 2){
+      const pts = Array.from(pointers.values());
+      const dist = Math.hypot(pts[0].x-pts[1].x, pts[0].y-pts[1].y);
+      if(pinchStartDist > 0){
+        didInteract = true;
+        scale = clampScale(pinchStartScale * (dist / pinchStartDist));
+        clampPan();
+        applyTransform();
+      }
+    } else if(pointers.size === 1 && panStart && scale > 1){
+      didInteract = true;
+      tx = panStart.tx + (e.clientX - panStart.x);
+      ty = panStart.ty + (e.clientY - panStart.y);
+      clampPan();
+      applyTransform();
+    }
+  });
+  function endPointer(e){
+    pointers.delete(e.pointerId);
+    if(pointers.size < 2) pinchStartDist = 0;
+    if(pointers.size === 0){ panStart = null; settle(); }
+  }
+  overlay.addEventListener('pointerup', endPointer);
+  overlay.addEventListener('pointercancel', endPointer);
+  overlay.addEventListener('pointerleave', endPointer);
+
+  // don't let a pinch/pan gesture that ends over the backdrop accidentally close the lightbox
+  overlay.addEventListener('click', function(e){
+    if(didInteract){ e.stopPropagation(); didInteract = false; }
+  }, true);
+}
+function addMultiField(group, placeholder){
+  const container = document.getElementById('group-'+group);
+  if(!container) return;
+  const row = document.createElement('div');
+  row.className = 'multitext-row';
+  row.innerHTML = `<input type="text" class="multitext-input" data-group="${esc(group)}" placeholder="${esc(placeholder||'')}"><button type="button" class="icon-btn" data-act="removeMultiField" aria-label="삭제">${icon('x')}</button>`;
+  container.appendChild(row);
+  const input = row.querySelector('input');
+  if(input) input.focus();
+}
+function removeMultiField(btn){
+  const row = btn.closest('.multitext-row');
+  const container = row ? row.parentElement : null;
+  if(row) row.remove();
+  if(container && container.querySelectorAll('.multitext-row').length === 0){
+    const emptyRow = document.createElement('div');
+    emptyRow.className = 'multitext-row';
+    emptyRow.innerHTML = `<input type="text" class="multitext-input" data-group="${container.id.replace('group-','')}"><button type="button" class="icon-btn" data-act="removeMultiField" aria-label="삭제">${icon('x')}</button>`;
+    container.appendChild(emptyRow);
+  }
+}
+function removePhotoThumb(btn){
+  const thumb = btn.closest('.photo-thumb');
+  if(thumb) thumb.remove();
+}
+/* Photos of handouts/worksheets need enough resolution to actually read the text, so this
+   aims high (1800px, quality .88) and only steps down if the result would be too heavy to
+   sync. The cap matters because photos are stored as base64 inside the shared data blob —
+   letting one photo balloon would slow every device's sync and can overflow local storage. */
+const PHOTO_MAX_DIM = 1800;
+const PHOTO_QUALITY = 0.88;
+const PHOTO_BUDGET_BYTES = 900 * 1024; // per photo, measured on the encoded data URL
+function resizeImageToDataUrl(file, maxDim, quality){
+  maxDim = maxDim || PHOTO_MAX_DIM;
+  quality = quality || PHOTO_QUALITY;
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        function encode(dim, q){
+          let w = img.width, h = img.height;
+          if(w > dim || h > dim){
+            if(w > h){ h = Math.round(h * dim / w); w = dim; }
+            else { w = Math.round(w * dim / h); h = dim; }
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = w; canvas.height = h;
+          const ctx = canvas.getContext('2d');
+          // better downscaling than the browser default — noticeably sharper text
+          ctx.imageSmoothingEnabled = true;
+          if('imageSmoothingQuality' in ctx) ctx.imageSmoothingQuality = 'high';
+          ctx.drawImage(img, 0, 0, w, h);
+          return canvas.toDataURL('image/jpeg', q);
+        }
+        // start at full requested quality, back off only as far as needed to fit the budget
+        const attempts = [[maxDim, quality], [maxDim, 0.8], [1400, 0.8], [1200, 0.75], [900, 0.72]];
+        let out = null;
+        for(const [d, q] of attempts){
+          out = encode(d, q);
+          if(out.length <= PHOTO_BUDGET_BYTES) break;
+        }
+        resolve(out);
+      };
+      img.onerror = () => reject(new Error('image load failed'));
+      img.src = e.target.result;
+    };
+    reader.onerror = () => reject(new Error('file read failed'));
+    reader.readAsDataURL(file);
+  });
+}
+async function submitSectionForm(section){
+  const cfg = SECTIONS[section];
+  const data = {};
+  for(const f of cfg.fields){
+    let val;
+    if(f.type === 'image'){
+      const fileInput = document.getElementById('field-'+f.name);
+      const removeEl = document.getElementById('field-'+f.name+'-remove');
+      const existing = (state.editing.data && state.editing.data[f.name]) || '';
+      if(removeEl && removeEl.checked){
+        val = '';
+      } else if(fileInput && fileInput.files && fileInput.files[0]){
+        try{
+          val = await resizeImageToDataUrl(fileInput.files[0]);
+        }catch(e){
+          showToast('사진을 처리하지 못했어요.', 'err');
+          return;
+        }
+      } else {
+        val = existing;
+      }
+    } else if(f.type === 'images'){
+      const container = document.getElementById('group-'+f.name);
+      const kept = container ? Array.from(container.querySelectorAll('.photo-thumb')).map(el => el.dataset.photo) : [];
+      const fileInput = document.getElementById('field-'+f.name);
+      let newOnes = [];
+      if(fileInput && fileInput.files && fileInput.files.length){
+        try{
+          newOnes = await Promise.all(Array.from(fileInput.files).map(file => resizeImageToDataUrl(file)));
+        }catch(e){
+          showToast('사진을 처리하지 못했어요.', 'err');
+          return;
+        }
+      }
+      val = kept.concat(newOnes);
+    } else if(f.type === 'select'){
+      const checked = document.querySelector('input[name="field-'+f.name+'"]:checked');
+      val = checked ? checked.value : ((f.options && f.options[0]) ? f.options[0].value : '');
+    } else if(f.type === 'multitext'){
+      const inputs = document.querySelectorAll('.multitext-input[data-group="'+f.name+'"]');
+      val = Array.from(inputs).map(i => i.value.trim()).filter(Boolean);
+    } else {
+      const el = document.getElementById('field-'+f.name);
+      if(!el) return;
+      val = el.value;
+      if(f.type === 'lines'){
+        val = val.split('\n').map(s=>s.trim()).filter(Boolean);
+      } else {
+        val = val.trim();
+      }
+    }
+    if(f.required && (!val || (Array.isArray(val) && val.length===0))){
+      showToast(f.label+'을(를) 입력해주세요.', 'err');
+      return;
+    }
+    data[f.name] = val;
+  }
+  if(cfg.validate){
+    const err = cfg.validate(data);
+    if(err){ showToast(err, 'err'); return; }
+  }
+  const id = state.editing.id;
+  if(id){
+    const idx = state[section].findIndex(x=>x.id===id);
+    if(idx>-1) state[section][idx] = Object.assign({}, state[section][idx], data);
+  } else {
+    const newItem = Object.assign({ id: uid() }, data);
+    if(section === 'notices'){
+      newItem.date = todayStr();
+      newItem.author = me() ? me().displayName : '';
+    }
+    state[section].push(newItem);
+  }
+  state[section].sort((a,b) => (a.date||'').localeCompare(b.date||''));
+  await sSet(cfg.storageKey, state[section], true);
+  if(section === 'notices'){ seedSeenNotices(); markNoticesRead(); } // this device already knows about the notice it just posted
+  state.editing = { section:null, id:null, data:null };
+  showToast(id ? '수정했어요.' : '추가했어요.');
+  render();
+}
+async function deleteSectionItem(section, id){
+  if(!confirm('정말 삭제할까요?')) return;
+  state[section] = state[section].filter(x=>x.id!==id);
+  await sSet(SECTIONS[section].storageKey, state[section], true);
+  showToast('삭제했어요.');
+  render();
+}
+
+/* ---------- timetable admin editor ---------- */
+function openTtEditor(){
+  state.ttEditor = { open:true, no:null, grid:null, copyFrom:'' };
+  render();
+}
+function closeTtEditor(){
+  state.ttEditor = { open:false, no:null, grid:null, copyFrom:'' };
+  render();
+}
+function selectTtNo(no){
+  state.ttEditor.no = no;
+  state.ttEditor.grid = JSON.parse(JSON.stringify(state.timetables[no] || emptyGrid()));
+  render();
+}
+async function saveTtGrid(){
+  const no = state.ttEditor.no;
+  if(!no) return;
+  const grid = emptyGrid();
+  DAYS.forEach(day => {
+    PERIODS.forEach((p, i) => {
+      const el = document.getElementById('cell-'+day+'-'+i);
+      grid[day][i] = el ? el.value.trim() : '';
+    });
+  });
+  state.timetables[no] = grid;
+  state.ttEditor.grid = grid;
+  await sSet('allthing-timetables', state.timetables, true);
+  showToast(no + ' 시간표를 저장했어요.');
+  render();
+}
+async function copyTtFrom(){
+  const from = document.getElementById('ttCopyFrom').value.trim();
+  const to = state.ttEditor.no;
+  if(!to){ showToast('먼저 학번을 선택해주세요.', 'err'); return; }
+  if(!from){ showToast('복사할 학번을 입력해주세요.', 'err'); return; }
+  if(!state.timetables[from]){ showToast(from + '의 시간표가 아직 없어요.', 'err'); return; }
+  state.timetables[to] = JSON.parse(JSON.stringify(state.timetables[from]));
+  await sSet('allthing-timetables', state.timetables, true);
+  state.ttEditor.grid = JSON.parse(JSON.stringify(state.timetables[to]));
+  showToast(from + '의 시간표를 ' + to + '(으)로 복사했어요.');
+  render();
+}
+function studentIdList(){
+  return Object.keys(state.users).filter(id => id !== '00000').sort();
+}
+
+/* ---------- nav config ---------- */
+const NAV = [
+  { key:'home', label:'홈', icon:'home' },
+  { key:'meals', label:'급식', icon:'meal' },
+  { key:'timetable', label:'시간표', icon:'timetable' },
+  { key:'exams', label:'수행평가·시험', icon:'exam' },
+  { key:'events', label:'일정', icon:'event' },
+  { key:'notices', label:'공지', icon:'notice' },
+  { key:'profile', label:'내 정보', icon:'profile' }
+];
+const ACCOUNTS_NAV_ITEM = { key:'accounts', label:'계정 관리', icon:'users' };
+function visibleNav(){ return isAdmin() ? NAV.concat([ACCOUNTS_NAV_ITEM]) : NAV; }
+
+/* ---------- section list/form (generic CRUD render) ---------- */
+function isPastItem(section, it){
+  if(section === 'notices') return false;
+  const cutoff = it.endDate || it.date || '';
+  return cutoff < todayStr();
+}
+function renderSectionList(section, overrideList, mode){
+  const cfg = SECTIONS[section];
+  let list = overrideList || state[section];
+  if(section === 'notices') list = list.slice().reverse();
+  const renderItem = (it) => `
+    <div class="list-item ${isPastItem(section, it) ? 'past' : ''}">
+      <div class="list-item-body">${cfg.rowHtml(it)}</div>
+      ${isAdmin() ? `
+      <div class="list-item-actions">
+        <button class="icon-btn" data-act="openEdit" data-section="${section}" data-id="${it.id}" aria-label="수정">${icon('edit')}</button>
+        <button class="icon-btn danger" data-act="deleteItem" data-section="${section}" data-id="${it.id}" aria-label="삭제">${icon('trash')}</button>
+      </div>` : ''}
+    </div>
+  `;
+  // 'upcoming' / 'past' let a caller render the two groups in separate places (the exams
+  // split view puts every past item below both columns instead of inside each one)
+  if(mode === 'upcoming' || mode === 'past'){
+    const subset = list.filter(it => mode === 'past' ? isPastItem(section, it) : !isPastItem(section, it));
+    if(mode === 'past'){
+      subset.sort((a,b) => (b.endDate||b.date||'').localeCompare(a.endDate||a.date||''));
+      return subset.length ? `<div class="list">${subset.map(renderItem).join('')}</div>` : '';
+    }
+    return subset.length
+      ? `<div class="list">${subset.map(renderItem).join('')}</div>`
+      : `<div class="empty-state">${icon(cfg.icon)}<p>${cfg.emptyMsg}</p></div>`;
+  }
+  if(list.length === 0){
+    return `<div class="empty-state">${icon(cfg.icon)}<p>${cfg.emptyMsg}</p></div>`;
+  }
+  if(!cfg.pastLabel){
+    return `<div class="list">${list.map(renderItem).join('')}</div>`;
+  }
+  const upcoming = list.filter(it => !isPastItem(section, it));
+  const past = list.filter(it => isPastItem(section, it))
+    .slice().sort((a,b) => (b.endDate||b.date||'').localeCompare(a.endDate||a.date||''));
+  return `
+    ${upcoming.length ? `<div class="list">${upcoming.map(renderItem).join('')}</div>` : `<div class="empty-state">${icon(cfg.icon)}<p>${cfg.emptyMsg}</p></div>`}
+    ${past.length ? `
+    <div class="section-divider">${esc(cfg.pastLabel)}</div>
+    <div class="list">${past.map(renderItem).join('')}</div>` : ''}
+  `;
+}
+function renderExamsSplit(){
+  // items saved before the 수행평가/시험 distinction existed have no `kind` — treat those
+  // as 수행평가 so nothing silently disappears from the view
+  const all = state.exams;
+  const perf = all.filter(it => (it.kind || 'perf') === 'perf');
+  const exam = all.filter(it => it.kind === 'exam');
+  const pastPerf = renderSectionList('exams', perf, 'past');
+  const pastExam = renderSectionList('exams', exam, 'past');
+  const hasPast = !!(pastPerf || pastExam);
+  return `
+  <div class="split-cols">
+    <section class="split-col">
+      <h3 class="split-col-head">${icon('exam')} 수행평가</h3>
+      ${renderSectionList('exams', perf, 'upcoming')}
+    </section>
+    <section class="split-col">
+      <h3 class="split-col-head">${icon('exam')} 시험</h3>
+      ${renderSectionList('exams', exam, 'upcoming')}
+    </section>
+  </div>
+  ${hasPast ? `
+  <div class="section-divider">${esc(SECTIONS.exams.pastLabel)}</div>
+  <div class="split-cols">
+    <section class="split-col">${pastPerf}</section>
+    <section class="split-col">${pastExam}</section>
+  </div>` : ''}`;
+}
+function renderSectionForm(section){
+  const cfg = SECTIONS[section];
+  const data = state.editing.data || cfg.blank();
+  const fieldsHtml = cfg.fields.map(f => {
+    const val = data[f.name];
+    if(f.type === 'lines'){
+      return `<label class="field"><span>${f.label}</span><textarea id="field-${f.name}" rows="4" placeholder="${esc(f.placeholder||'')}">${esc((val||[]).join('\n'))}</textarea></label>`;
+    }
+    if(f.type === 'select'){
+      const cur = val || (f.options && f.options[0] ? f.options[0].value : '');
+      return `<label class="field"><span>${f.label}</span>
+        <div class="seg-select">
+          ${(f.options||[]).map(o => `
+          <label class="seg-option ${cur===o.value?'active':''}">
+            <input type="radio" name="field-${f.name}" value="${esc(o.value)}" ${cur===o.value?'checked':''}>
+            <span>${esc(o.label)}</span>
+          </label>`).join('')}
+        </div>
+      </label>`;
+    }
+    if(f.type === 'textarea'){
+      return `<label class="field"><span>${f.label}</span><textarea id="field-${f.name}" rows="4" placeholder="${esc(f.placeholder||'')}">${esc(val||'')}</textarea></label>`;
+    }
+    if(f.type === 'image'){
+      return `<label class="field"><span>${f.label}</span>
+        ${val ? `
+        <div class="photo-preview">
+          <img src="${esc(val)}" alt="첨부 사진 미리보기">
+          <label class="checkline photo-remove"><input type="checkbox" id="field-${f.name}-remove"> 사진 제거</label>
+        </div>` : ''}
+        <input id="field-${f.name}" type="file" accept="image/*">
+      </label>`;
+    }
+    if(f.type === 'images'){
+      const photos = val || [];
+      return `<label class="field"><span>${f.label}</span></label>
+        <div class="photo-grid" id="group-${f.name}">
+          ${photos.map(p => `
+          <div class="photo-thumb" data-photo="${esc(p)}">
+            <img src="${esc(p)}" alt="첨부 사진">
+            <button type="button" class="photo-thumb-remove" data-act="removePhotoThumb" aria-label="사진 삭제">${icon('x')}</button>
+          </div>`).join('')}
+        </div>
+        <input id="field-${f.name}" type="file" accept="image/*" multiple>`;
+    }
+    if(f.type === 'multitext'){
+      const items = (val && val.length) ? val : [''];
+      return `<label class="field"><span>${f.label}</span></label>
+        <div class="multitext-group" id="group-${f.name}">
+          ${items.map(v => `
+          <div class="multitext-row">
+            <input type="text" class="multitext-input" data-group="${f.name}" value="${esc(v)}" placeholder="${esc(f.placeholder||'')}">
+            <button type="button" class="icon-btn" data-act="removeMultiField" aria-label="삭제">${icon('x')}</button>
+          </div>`).join('')}
+        </div>
+        <button type="button" class="btn btn-ghost btn-sm" data-act="addMultiField" data-group="${f.name}" data-placeholder="${esc(f.placeholder||'')}">${icon('plus')} 추가</button>`;
+    }
+    return `<label class="field"><span>${f.label}</span><input id="field-${f.name}" type="${f.type}" value="${esc(val||'')}" placeholder="${esc(f.placeholder||'')}"></label>`;
+  }).join('');
+  return `
+  <form id="sectionForm" class="card form-card" data-form="section" data-section="${section}">
+    <h3>${state.editing.id ? cfg.label+' 수정' : cfg.label+' 추가'}</h3>
+    ${fieldsHtml}
+    <div class="form-actions">
+      <button type="button" class="btn btn-ghost" data-act="cancelForm">취소</button>
+      <button type="submit" class="btn btn-primary">저장</button>
+    </div>
+  </form>`;
+}
+function renderSectionView(section){
+  const cfg = SECTIONS[section];
+  const showMealImport = section === 'meals' && isAdmin();
+  return `
+  <div class="view-header">
+    <h2>${icon(cfg.icon)} ${cfg.label}</h2>
+    <div style="display:flex; gap:8px; flex-wrap:wrap;">
+      ${showMealImport ? `
+      <input id="mealJsonInput" type="file" accept="application/json,.json" style="display:none">
+      <button class="btn btn-ghost btn-sm" data-act="importMealsJson">${icon('copy')} 나이스 JSON 불러오기</button>
+      ` : ''}
+      ${isAdmin() ? `<button class="btn btn-primary btn-sm" data-act="openAdd" data-section="${section}">${icon('plus')} 추가</button>` : ''}
+    </div>
+  </div>
+  ${showMealImport ? `<p class="text-3 small" style="margin:-6px 0 14px;">나이스 급식식단정보 오픈API에서 내려받은 JSON 파일을 그대로 올리면 날짜별로 자동 등록돼요. 같은 날짜는 덮어써요.</p>` : ''}
+  ${state.editing.section === section ? renderSectionForm(section) : ''}
+  ${section === 'exams' ? renderExamsSplit() : renderSectionList(section)}
+  `;
+}
+
+/* ---------- meal JSON import (NEIS 급식식단정보 오픈API export) ---------- */
+const MEAL_TYPE_MAP = { '조식':'breakfast', '중식':'lunch', '석식':'dinner', '조':'breakfast', '중':'lunch', '석':'dinner' };
+function cleanDishName(raw){
+  return String(raw || '')
+    .replace(/\(([\d.\s]+)\)\s*$/, '')
+    .replace(/\*+$/, '')
+    .trim();
+}
+async function handleMealJsonFile(file){
+  if(!file) return;
+  let rows;
+  try{
+    const text = await file.text();
+    const parsed = JSON.parse(text);
+    rows = Array.isArray(parsed) ? parsed : ((parsed && parsed.mealServiceDietInfo && parsed.mealServiceDietInfo[1] && parsed.mealServiceDietInfo[1].row) || []);
+  }catch(e){
+    showToast('JSON 파일을 읽지 못했어요. 파일 형식을 확인해주세요.', 'err');
+    return;
+  }
+  const valid = rows.filter(r => r && typeof r.MLSV_YMD === 'string' && /^\d{8}$/.test(r.MLSV_YMD));
+  if(valid.length === 0){
+    showToast('가져올 급식 데이터를 찾지 못했어요.', 'err');
+    return;
+  }
+  const existing = {};
+  state.meals.forEach(m => { existing[m.date] = m; });
+  const touchedDates = new Set();
+  valid.forEach(r => {
+    const date = r.MLSV_YMD.slice(0,4)+'-'+r.MLSV_YMD.slice(4,6)+'-'+r.MLSV_YMD.slice(6,8);
+    const key = MEAL_TYPE_MAP[(r.MMEAL_SC_NM || '').trim()];
+    const dishes = String(r.DDISH_NM || '').split('<br/>').map(cleanDishName).filter(Boolean);
+    if(!touchedDates.has(date)){
+      const prevId = existing[date] && existing[date].id;
+      existing[date] = { id: prevId || uid(), date, breakfast: [], lunch: [], dinner: [] };
+      touchedDates.add(date);
+    }
+    if(key){
+      existing[date][key] = dishes;
+      if(r.CAL_INFO) existing[date][key+'Cal'] = String(r.CAL_INFO).trim();
+    }
+  });
+  state.meals = Object.values(existing).sort((a,b) => (a.date||'').localeCompare(b.date||''));
+  await sSet(SECTIONS.meals.storageKey, state.meals, true);
+  showToast(`${touchedDates.size}일치 급식을 불러왔어요.`);
+  render();
+}
+
+/* ---------- timetable view ---------- */
+function renderTimetableTable(grid){
+  if(!grid) return '';
+  return `
+  <div class="tt-wrap card">
+    <table class="tt-table">
+      <thead><tr><th></th>${DAYS.map(d=>`<th>${d}</th>`).join('')}</tr></thead>
+      <tbody>
+        ${PERIODS.map((p,i)=>`
+        <tr><th>${p}</th>${DAYS.map(d=>`<td>${esc((grid[d]||[])[i] || '') || '<span class="text-3">-</span>'}</td>`).join('')}</tr>
+        `).join('')}
+      </tbody>
+    </table>
+  </div>`;
+}
+function renderTimetableView(){
+  const u = me();
+  const no = u.studentNo;
+  const grid = no ? (state.timetables[no] || null) : null;
+  return `
+  <div class="view-header">
+    <h2>${icon('timetable')} 시간표</h2>
+    ${isAdmin() ? `<button class="btn btn-primary btn-sm" data-act="ttOpen">${icon('edit')} 시간표 편집</button>` : ''}
+  </div>
+  <div class="text-2 tt-caption">${no ? '학번 '+esc(no)+' 기준' : '내 정보 탭에서 학번을 먼저 설정해주세요.'}</div>
+  ${no && grid ? renderTimetableTable(grid) : ''}
+  ${no && !grid ? `<div class="empty-state">${icon('timetable')}<p>아직 시간표가 입력되지 않았어요. 관리자에게 알려주세요.</p></div>` : ''}
+  ${!no ? `<div class="empty-state">${icon('hash')}<p>학번을 설정하면 시간표가 표시돼요.</p></div>` : ''}
+  <p class="footnote">학교 사정으로 바뀔 수 있어요 · 틀린 부분은 관리자에게 알려주세요</p>
+  ${state.ttEditor.open ? renderTtModal() : ''}
+  `;
+}
+function renderTtModal(){
+  const ids = studentIdList();
+  const grid = state.ttEditor.grid;
+  const no = state.ttEditor.no;
+  return `
+  <div class="modal-overlay" data-act="ttClose" data-backdrop="1">
+    <div class="modal">
+      <div class="modal-head">
+        <h3>시간표 편집 (관리자)</h3>
+        <button class="icon-btn" data-act="ttClose">${icon('x')}</button>
+      </div>
+      <div class="modal-body">
+        <label class="field"><span>학번</span>
+          <div class="inline-input">
+            <input id="ttSearchNo" type="text" placeholder="예: 20801" value="${esc(no||'')}">
+            <button type="button" class="btn btn-ghost btn-sm" data-act="ttSelectInput">불러오기</button>
+          </div>
+        </label>
+        <div class="chip-select">
+          ${ids.map(id => `<button class="chip-btn ${no===id?'active':''}" data-act="ttSelect" data-no="${id}">${esc(id)}${state.users[id].displayName!==id ? ' '+esc(state.users[id].displayName) : ''}</button>`).join('')}
+        </div>
+        ${grid ? `
+        <p class="text-3 small" style="margin:2px 0 8px;">칸 안에서 줄바꿈(Enter)하면 과목명과 교실을 두 줄로 나눠 넣을 수 있어요.</p>
+        <div class="tt-edit-wrap">
+          <table class="tt-table tt-edit">
+            <thead><tr><th></th>${DAYS.map(d=>`<th>${d}</th>`).join('')}</tr></thead>
+            <tbody>
+              ${PERIODS.map((p,i)=>`
+              <tr><th>${p}</th>${DAYS.map(d=>`<td><textarea id="cell-${d}-${i}" rows="2">${esc((grid[d]||[])[i] || '')}</textarea></td>`).join('')}</tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+        <button class="btn btn-primary btn-block" data-act="ttSave">${icon('check')} ${esc(no)} 시간표 저장</button>
+        <div class="copy-box">
+          <p class="text-2">다른 학번 시간표 복사해오기</p>
+          <div class="inline-input">
+            <input id="ttCopyFrom" type="text" placeholder="복사할 학번 (예: 20801)">
+            <button type="button" class="btn btn-ghost btn-sm" data-act="ttCopy">${icon('copy')} 복사</button>
+          </div>
+          <p class="text-3 small">${esc(no)}의 기존 시간표는 지워지고 덮어써요.</p>
+        </div>
+        <div class="copy-box">
+          <p class="text-2">과목 줄임말 한 번에 펼치기</p>
+          <button type="button" class="btn btn-ghost btn-sm" data-act="ttExpandAbbrev">${icon('check')} 모든 학번에 적용</button>
+          <p class="text-3 small">지시과 → 지구과학시스템 처럼, 등록된 모든 시간표의 줄임말을 정식 과목명으로 바꿔요. 괄호 안 반 표시는 그대로 둬요.</p>
+        </div>
+        <div class="copy-box">
+          <p class="text-2">업로드해주신 변경 시간표 일괄 적용 (8반, 9월 1일자)</p>
+          <button type="button" class="btn btn-primary btn-sm" data-act="ttApplyImport20260831">${icon('check')} 20801~20824 전체 적용</button>
+          <p class="text-3 small">올려주신 hwpx 파일 내용 그대로 24명 전체 시간표를 한 번에 덮어써요. 한 번 누르면 확인 창이 한 번 더 떠요.</p>
+        </div>
+        ` : `<p class="text-2 modal-hint">학번을 선택하면 편집할 수 있어요.</p>`}
+      </div>
+    </div>
+  </div>`;
+}
+
+/* ---------- subject abbreviation expansion ----------
+   Matching is exact on the trimmed subject line, so running this twice is harmless: an
+   already-expanded name no longer matches any key. Lines like "(2-7)" are left untouched.
+*/
+const SUBJECT_ABBREV = {
+  '지시과': '지구시스템과학',
+  '지구과학시스템': '지구시스템과학', // corrects timetables already expanded with the old wording
+  '한지탐': '한국지리 탐구',
+  '물질': '물질과 에너지',
+  '역학': '역학과 에너지',
+  '인수': '인공지능 수학',
+  '인공': '인공지능 기초',
+  '융과탐': '융합과학탐구',
+  '법사': '법과 사회',
+  '윤사': '윤리와 사상',
+  '사문탐': '사회문제 탐구',
+  '동역': '동아시아 역사 기행',
+  '일회': '일본어 회화'
+};
+function expandSubjectCell(cell){
+  if(!cell) return cell;
+  return cell.split('\n').map(line => {
+    const trimmed = line.trim();
+    if(SUBJECT_ABBREV[trimmed]) return SUBJECT_ABBREV[trimmed];
+    // also handle the abbreviation sitting on the same line as the class, e.g. "지시과(2-7)"
+    for(const key of Object.keys(SUBJECT_ABBREV)){
+      if(trimmed.startsWith(key)){
+        const rest = trimmed.slice(key.length);
+        if(rest.startsWith('(')) return SUBJECT_ABBREV[key] + rest;
+      }
+    }
+    return line;
+  }).join('\n');
+}
+/* ---------- one-time bulk timetable import (8반 1학기 변경시간표, 2026-08-31) ----------
+   Extracted directly from the .hwpx file the user uploaded. Applies all 24 students'
+   전체 시간표 at once so nobody has to be retyped by hand.
+*/
+const TT_IMPORT_20260831 = {"20801":{"월":["지시과\n(2-7)","지시과\n(2-7)","영어2","인공\n(2-1)","스생2","역학\n(2-3)","역학\n(2-3)"],"화":["독작","융과탐\n(2-6)","미적1","영어2","물질\n(2-4)","동아리","동아리"],"수":["독작","영어2","지시과\n(2-7)","독작","인공\n(2-1)","인공\n(2-1)",""],"목":["영어2","스생2","미적1","미적1","융과탐\n(2-6)","융과탐\n(2-6)","창체"],"금":["물질\n(2-4)","물질\n(2-4)","독작","미적1","역학\n(2-3)","",""]},"20802":{"월":["지시과\n(2-7)","지시과\n(2-7)","영어2","세포\n(2-6)","스생2","인공\n(2-9)","인공\n(2-9)"],"화":["독작","융과탐\n(2-6)","미적1","영어2","물질\n(2-4)","동아리","동아리"],"수":["독작","영어2","지시과\n(2-7)","독작","세포\n(2-6)","세포\n(2-6)",""],"목":["영어2","스생2","미적1","미적1","융과탐\n(2-6)","융과탐\n(2-6)","창체"],"금":["물질\n(2-4)","물질\n(2-4)","독작","미적1","인공\n(2-9)","",""]},"20803":{"월":["융과탐\n(2-5)","융과탐\n(2-5)","영어2","윤사\n(2-5)","스생2","물질\n(2-2)","물질\n(2-2)"],"화":["독작","인공\n(2-7)","미적1","영어2","역학\n(다목1)","동아리","동아리"],"수":["독작","영어2","융과탐\n(2-5)","독작","윤사\n(2-5)","윤사\n(2-5)",""],"목":["영어2","스생2","미적1","미적1","인공\n(2-7)","인공\n(2-7)","창체"],"금":["역학\n(다목1)","역학\n(다목1)","독작","미적1","물질\n(2-2)","",""]},"20804":{"월":["역학\n(다목1)","역학\n(다목1)","영어2","인공\n(2-1)","스생2","물질\n(2-2)","물질\n(2-2)"],"화":["독작","융과탐\n(2-6)","미적1","영어2","지시과\n(2-6)","동아리","동아리"],"수":["독작","영어2","역학\n(다목1)","독작","인공\n(2-1)","인공\n(2-1)",""],"목":["영어2","스생2","미적1","미적1","융과탐\n(2-6)","융과탐\n(2-6)","창체"],"금":["지시과\n(2-6)","지시과\n(2-6)","독작","미적1","물질\n(2-2)","",""]},"20805":{"월":["융과탐\n(2-5)","융과탐\n(2-5)","영어2","인공\n(2-1)","스생2","역학\n(2-3)","역학\n(2-3)"],"화":["독작","지시과\n(2-8)","미적1","영어2","물질\n(2-4)","동아리","동아리"],"수":["독작","영어2","융과탐\n(2-5)","독작","인공\n(2-1)","인공\n(2-1)",""],"목":["영어2","스생2","미적1","미적1","지시과\n(2-8)","지시과\n(2-8)","창체"],"금":["물질\n(2-4)","물질\n(2-4)","독작","미적1","역학\n(2-3)","",""]},"20806":{"월":["지시과\n(2-7)","지시과\n(2-7)","영어2","인공\n(2-1)","스생2","역학\n(2-3)","역학\n(2-3)"],"화":["독작","물질\n(2-3)","미적1","영어2","인수\n(2-7)","동아리","동아리"],"수":["독작","영어2","지시과\n(2-7)","독작","인공\n(2-1)","인공\n(2-1)",""],"목":["영어2","스생2","미적1","미적1","물질\n(2-3)","물질\n(2-3)","창체"],"금":["인수\n(2-7)","인수\n(2-7)","독작","미적1","역학\n(2-3)","",""]},"20807":{"월":["지시과\n(2-7)","지시과\n(2-7)","영어2","물질\n(2-9)","스생2","인수\n(2-8)","인수\n(2-8)"],"화":["독작","역학\n(2-9)","미적1","영어2","인공\n(2-3)","동아리","동아리"],"수":["독작","영어2","지시과\n(2-7)","독작","물질\n(2-9)","물질\n(2-9)",""],"목":["영어2","스생2","미적1","미적1","역학\n(2-9)","역학\n(2-9)","창체"],"금":["인공\n(2-3)","인공\n(2-3)","독작","미적1","인수\n(2-8)","",""]},"20808":{"월":["지시과\n(2-7)","지시과\n(2-7)","영어2","인수\n(2-3)","스생2","인공\n(2-9)","인공\n(2-9)"],"화":["독작","물질\n(2-3)","미적1","영어2","역학\n(다목1)","동아리","동아리"],"수":["독작","영어2","지시과\n(2-7)","독작","인수\n(2-3)","인수\n(2-3)",""],"목":["영어2","스생2","미적1","미적1","물질\n(2-3)","물질\n(2-3)","창체"],"금":["역학\n(다목1)","역학\n(다목1)","독작","미적1","인공\n(2-9)","",""]},"20809":{"월":["물질\n(2-8)","물질\n(2-8)","영어2","인공\n(2-1)","스생2","역학\n(2-3)","역학\n(2-3)"],"화":["독작","융과탐\n(2-6)","미적1","영어2","지시과\n(2-6)","동아리","동아리"],"수":["독작","영어2","물질\n(2-8)","독작","인공\n(2-1)","인공\n(2-1)",""],"목":["영어2","스생2","미적1","미적1","융과탐\n(2-6)","융과탐\n(2-6)","창체"],"금":["지시과\n(2-6)","지시과\n(2-6)","독작","미적1","역학\n(2-3)","",""]},"20810":{"월":["지시과\n(2-7)","지시과\n(2-7)","영어2","일회\n(2-8)","스생2","물질\n(2-2)","물질\n(2-2)"],"화":["독작","역학\n(2-9)","미적1","영어2","인수\n(2-7)","동아리","동아리"],"수":["독작","영어2","지시과\n(2-7)","독작","일회\n(2-8)","일회\n(2-8)",""],"목":["영어2","스생2","미적1","미적1","역학\n(2-9)","역학\n(2-9)","창체"],"금":["인수\n(2-7)","인수\n(2-7)","독작","미적1","물질\n(2-2)","",""]},"20811":{"월":["윤사\n(2-2)","윤사\n(2-2)","영어2","한지탐\n(2-7)","스생2","일회\n(2-7)","일회\n(2-7)"],"화":["독작","사문탐\n(미래)","미적1","영어2","법사\n(2-9)","동아리","동아리"],"수":["독작","영어2","윤사\n(2-2)","독작","한지탐\n(2-7)","한지탐\n(2-7)",""],"목":["영어2","스생2","미적1","미적1","사문탐\n(미래)","사문탐\n(미래)","창체"],"금":["법사\n(2-9)","법사\n(2-9)","독작","미적1","일회\n(2-7)","",""]},"20812":{"월":["법사\n(2-3)","법사\n(2-3)","영어2","사문탐\n(2-2)","스생2","인공\n(2-9)","인공\n(2-9)"],"화":["독작","윤사\n(2-4)","미적1","영어2","동역\n(2-1)","동아리","동아리"],"수":["독작","영어2","법사\n(2-3)","독작","사문탐\n(2-2)","사문탐\n(2-2)",""],"목":["영어2","스생2","미적1","미적1","윤사\n(2-4)","윤사\n(2-4)","창체"],"금":["동역\n(2-1)","동역\n(2-1)","독작","미적1","인공\n(2-9)","",""]},"20813":{"월":["지시과\n(2-7)","지시과\n(2-7)","영어2","인공\n(2-1)","스생2","인수\n(2-8)","인수\n(2-8)"],"화":["독작","역학\n(2-9)","미적1","영어2","물질\n(2-4)","동아리","동아리"],"수":["독작","영어2","지시과\n(2-7)","독작","인공\n(2-1)","인공\n(2-1)",""],"목":["영어2","스생2","미적1","미적1","역학\n(2-9)","역학\n(2-9)","창체"],"금":["물질\n(2-4)","물질\n(2-4)","독작","미적1","인수\n(2-8)","",""]},"20814":{"월":["경제\n(2-1)","경제\n(2-1)","영어2","윤사\n(2-5)","스생2","한지탐\n(2-6)","한지탐\n(2-6)"],"화":["독작","일회\n(2-1)","미적1","영어2","동역\n(2-1)","동아리","동아리"],"수":["독작","영어2","경제\n(2-1)","독작","윤사\n(2-5)","윤사\n(2-5)",""],"목":["영어2","스생2","미적1","미적1","일회\n(2-1)","일회\n(2-1)","창체"],"금":["동역\n(2-1)","동역\n(2-1)","독작","미적1","한지탐\n(2-6)","",""]},"20815":{"월":["지시과\n(2-7)","지시과\n(2-7)","영어2","인공\n(2-1)","스생2","인수\n(2-8)","인수\n(2-8)"],"화":["독작","물질\n(2-3)","미적1","영어2","역학\n(다목1)","동아리","동아리"],"수":["독작","영어2","지시과\n(2-7)","독작","인공\n(2-1)","인공\n(2-1)",""],"목":["영어2","스생2","미적1","미적1","물질\n(2-3)","물질\n(2-3)","창체"],"금":["역학\n(다목1)","역학\n(다목1)","독작","미적1","인수\n(2-8)","",""]},"20816":{"월":["지시과\n(2-7)","지시과\n(2-7)","영어2","인수\n(2-3)","스생2","물질\n(2-2)","물질\n(2-2)"],"화":["독작","역학\n(2-9)","미적1","영어2","인공\n(2-3)","동아리","동아리"],"수":["독작","영어2","지시과\n(2-7)","독작","인수\n(2-3)","인수\n(2-3)",""],"목":["영어2","스생2","미적1","미적1","역학\n(2-9)","역학\n(2-9)","창체"],"금":["인공\n(2-3)","인공\n(2-3)","독작","미적1","물질\n(2-2)","",""]},"20817":{"월":["지시과\n(2-7)","지시과\n(2-7)","영어2","인공\n(2-1)","스생2","물질\n(2-2)","물질\n(2-2)"],"화":["독작","역학\n(2-9)","미적1","영어2","인수\n(2-7)","동아리","동아리"],"수":["독작","영어2","지시과\n(2-7)","독작","인공\n(2-1)","인공\n(2-1)",""],"목":["영어2","스생2","미적1","미적1","역학\n(2-9)","역학\n(2-9)","창체"],"금":["인수\n(2-7)","인수\n(2-7)","독작","미적1","물질\n(2-2)","",""]},"20818":{"월":["융과탐\n(2-5)","융과탐\n(2-5)","영어2","인공\n(2-1)","스생2","역학\n(2-3)","역학\n(2-3)"],"화":["독작","지시과\n(2-8)","미적1","영어2","물질\n(2-4)","동아리","동아리"],"수":["독작","영어2","융과탐\n(2-5)","독작","인공\n(2-1)","인공\n(2-1)",""],"목":["영어2","스생2","미적1","미적1","지시과\n(2-8)","지시과\n(2-8)","창체"],"금":["물질\n(2-4)","물질\n(2-4)","독작","미적1","역학\n(2-3)","",""]},"20819":{"월":["융과탐\n(2-5)","융과탐\n(2-5)","영어2","물질\n(2-9)","스생2","역학\n(2-3)","역학\n(2-3)"],"화":["독작","인공\n(2-7)","미적1","영어2","지시과\n(2-6)","동아리","동아리"],"수":["독작","영어2","융과탐\n(2-5)","독작","물질\n(2-9)","물질\n(2-9)",""],"목":["영어2","스생2","미적1","미적1","인공\n(2-7)","인공\n(2-7)","창체"],"금":["지시과\n(2-6)","지시과\n(2-6)","독작","미적1","역학\n(2-3)","",""]},"20820":{"월":["역학\n(다목1)","역학\n(다목1)","영어2","인공\n(2-1)","스생2","물질\n(2-2)","물질\n(2-2)"],"화":["독작","지시과\n(2-8)","미적1","영어2","인수\n(2-7)","동아리","동아리"],"수":["독작","영어2","역학\n(다목1)","독작","인공\n(2-1)","인공\n(2-1)",""],"목":["영어2","스생2","미적1","미적1","지시과\n(2-8)","지시과\n(2-8)","창체"],"금":["인수\n(2-7)","인수\n(2-7)","독작","미적1","물질\n(2-2)","",""]},"20821":{"월":["경제\n(2-1)","경제\n(2-1)","영어2","한지탐\n(2-7)","스생2","인공\n(2-9)","인공\n(2-9)"],"화":["독작","동역\n(2-2)","미적1","영어2","물질\n(2-4)","동아리","동아리"],"수":["독작","영어2","경제\n(2-1)","독작","한지탐\n(2-7)","한지탐\n(2-7)",""],"목":["영어2","스생2","미적1","미적1","동역\n(2-2)","동역\n(2-2)","창체"],"금":["물질\n(2-4)","물질\n(2-4)","독작","미적1","인공\n(2-9)","",""]},"20822":{"월":["역학\n(다목1)","역학\n(다목1)","영어2","인수\n(2-3)","스생2","물질\n(2-2)","물질\n(2-2)"],"화":["독작","인공\n(2-7)","미적1","영어2","지시과\n(2-6)","동아리","동아리"],"수":["독작","영어2","역학\n(다목1)","독작","인수\n(2-3)","인수\n(2-3)",""],"목":["영어2","스생2","미적1","미적1","인공\n(2-7)","인공\n(2-7)","창체"],"금":["지시과\n(2-6)","지시과\n(2-6)","독작","미적1","물질\n(2-2)","",""]},"20823":{"월":["역학\n(다목1)","역학\n(다목1)","영어2","인수\n(2-3)","스생2","물질\n(2-2)","물질\n(2-2)"],"화":["독작","지시과\n(2-8)","미적1","영어2","인공\n(2-3)","동아리","동아리"],"수":["독작","영어2","역학\n(다목1)","독작","인수\n(2-3)","인수\n(2-3)",""],"목":["영어2","스생2","미적1","미적1","지시과\n(2-8)","지시과\n(2-8)","창체"],"금":["인공\n(2-3)","인공\n(2-3)","독작","미적1","물질\n(2-2)","",""]},"20824":{"월":["융과탐\n(2-5)","융과탐\n(2-5)","영어2","물질\n(2-9)","스생2","인공\n(2-9)","인공\n(2-9)"],"화":["독작","역학\n(2-9)","미적1","영어2","지시과\n(2-6)","동아리","동아리"],"수":["독작","영어2","융과탐\n(2-5)","독작","물질\n(2-9)","물질\n(2-9)",""],"목":["영어2","스생2","미적1","미적1","역학\n(2-9)","역학\n(2-9)","창체"],"금":["지시과\n(2-6)","지시과\n(2-6)","독작","미적1","인공\n(2-9)","",""]}};
+async function applyImportedTimetables_20260831(){
+  if(!confirm('업로드해주신 파일 기준으로 20801~20824 전체 시간표를 덮어씁니다. 계속할까요?')) return;
+  const next = Object.assign({}, state.timetables);
+  let count = 0;
+  Object.keys(TT_IMPORT_20260831).forEach(no => {
+    next[no] = TT_IMPORT_20260831[no];
+    count++;
+  });
+  state.timetables = next;
+  if(state.ttEditor.open && state.ttEditor.no && TT_IMPORT_20260831[state.ttEditor.no]){
+    state.ttEditor.grid = TT_IMPORT_20260831[state.ttEditor.no];
+  }
+  await sSet('allthing-timetables', state.timetables, true);
+  showToast(count + '명의 시간표를 새로 적용했어요.');
+  render();
+}
+async function expandAllTimetableAbbrevs(){
+  let changed = 0;
+  const next = {};
+  Object.keys(state.timetables).forEach(no => {
+    const grid = state.timetables[no] || {};
+    const newGrid = {};
+    Object.keys(grid).forEach(day => {
+      newGrid[day] = (grid[day] || []).map(cell => {
+        const out = expandSubjectCell(cell);
+        if(out !== cell) changed++;
+        return out;
+      });
+    });
+    next[no] = newGrid;
+  });
+  if(changed === 0){ showToast('바꿀 줄임말이 없어요.'); return; }
+  state.timetables = next;
+  if(state.ttEditor.open && state.ttEditor.no){
+    state.ttEditor.grid = state.timetables[state.ttEditor.no] || state.ttEditor.grid;
+  }
+  await sSet('allthing-timetables', state.timetables, true);
+  showToast(changed + '개 칸의 줄임말을 펼쳤어요.');
+  render();
+}
+
+/* ---------- home view ---------- */
+function homeMealSummary(){
+  const t = state.meals.find(m => m.date === todayStr());
+  const html = t ? mealGroupsHtml(t) : '';
+  if(!html) return `<p class="text-2">오늘은 급식 정보가 없어요.</p>`;
+  return html;
+}
+function homeTimetableSummary(){
+  const u = me();
+  const day = WEEKDAY_KO[new Date().getDay()];
+  if(!DAYS.includes(day)) return `<p class="text-2">오늘은 등교하지 않는 날이에요.</p>`;
+  if(!u.studentNo || !state.timetables[u.studentNo]) return `<p class="text-2">아직 시간표가 없어요.</p>`;
+  const grid = state.timetables[u.studentNo];
+  const list = PERIODS.map((p,i)=>({ p, s: (grid[day]||[])[i] || '' })).filter(x => x.s);
+  if(list.length === 0) return `<p class="text-2">오늘은 등록된 수업이 없어요.</p>`;
+  return `<div class="mini-list">${list.map(x=>`<div class="mini-row"><span class="mini-p">${x.p}교시</span><span>${esc(x.s)}</span></div>`).join('')}</div>`;
+}
+function homeUpcomingExams(){
+  const list = state.exams.filter(x => (x.endDate || x.date) >= todayStr()).slice(0,2);
+  if(list.length === 0) return `<p class="text-2">${SECTIONS.exams.emptyMsg}</p>`;
+  return `<div class="mini-list">${list.map(it => {
+    const dd = dDayInfo(it.date, it.endDate);
+    return `<div class="mini-row"><span class="dday sm ${dd.cls}">${dd.label}</span><span>${esc(it.subject)} · ${esc(it.title)}</span></div>`;
+  }).join('')}</div>`;
+}
+function homeUpcomingEvents(){
+  const list = state.events.filter(x => (x.endDate || x.date) >= todayStr()).slice(0,2);
+  if(list.length === 0) return `<p class="text-2">${SECTIONS.events.emptyMsg}</p>`;
+  return `<div class="mini-list">${list.map(it => {
+    const dd = dDayInfo(it.date, it.endDate);
+    return `<div class="mini-row"><span class="dday sm ${dd.cls}">${dd.label}</span><span>${esc(it.title)}</span></div>`;
+  }).join('')}</div>`;
+}
+function renderHome(){
+  const u = me();
+  const now = new Date();
+  const dateLabel = `${now.getFullYear()}년 ${now.getMonth()+1}월 ${now.getDate()}일 (${WEEKDAY_KO[now.getDay()]})`;
+  const showDefaultPwHint = u.password === state.currentUser;
+  return `
+  <div class="home-greeting">
+    <h2>안녕, ${esc(u.displayName)}님 👋</h2>
+    <p class="text-2">${dateLabel}</p>
+  </div>
+  ${showDefaultPwHint ? `
+  <div class="banner">
+    ${icon('key')}
+    <span>아직 처음 받은 비밀번호를 쓰고 있어요. <b class="banner-link" data-act="goto" data-view="profile">내 정보</b>에서 바꿔보세요.</span>
+  </div>` : ''}
+  ${renderInstallBanner()}
+  <div class="home-grid">
+    <div class="card home-card">
+      <div class="home-card-head"><h3>${icon('meal')} 오늘의 급식</h3><button class="link-btn" data-act="goto" data-view="meals">더보기 ${icon('chevron')}</button></div>
+      ${homeMealSummary()}
+    </div>
+    <div class="card home-card">
+      <div class="home-card-head"><h3>${icon('timetable')} 오늘의 시간표</h3><button class="link-btn" data-act="goto" data-view="timetable">더보기 ${icon('chevron')}</button></div>
+      ${homeTimetableSummary()}
+    </div>
+    <div class="card home-card">
+      <div class="home-card-head"><h3>${icon('exam')} 다가오는 수행평가·시험</h3><button class="link-btn" data-act="goto" data-view="exams">더보기 ${icon('chevron')}</button></div>
+      ${homeUpcomingExams()}
+    </div>
+    <div class="card home-card">
+      <div class="home-card-head"><h3>${icon('event')} 다가오는 일정</h3><button class="link-btn" data-act="goto" data-view="events">더보기 ${icon('chevron')}</button></div>
+      ${homeUpcomingEvents()}
+    </div>
+  </div>
+  `;
+}
+
+/* ---------- profile view ---------- */
+function renderProfileView(){
+  const u = me();
+  const initial = (u.displayName || '?').trim().charAt(0) || '?';
+  return `
+  <div class="view-header"><h2>${icon('profile')} 내 정보</h2></div>
+
+  <div class="card">
+    <h3>${icon('profile')} 프로필</h3>
+    <div class="profile-row">
+      <div class="avatar">${esc(initial)}</div>
+      <div>
+        <div class="profile-name">${esc(u.displayName)}</div>
+        <div class="profile-sub">${esc(state.currentUser)}${u.isAdmin ? ` · 관리자 ${icon('crown','crown-ic')}` : ''}</div>
+      </div>
+    </div>
+    <label class="field"><span>표시 이름</span>
+      <div class="inline-input">
+        <input id="pfName" type="text" value="${esc(u.displayName)}">
+        <button class="btn btn-primary btn-sm" data-act="saveDisplayName">저장</button>
+      </div>
+    </label>
+  </div>
+
+  <div class="card">
+    <h3>${icon('key')} 비밀번호 변경</h3>
+    <p class="text-2">처음 받은 비밀번호(아이디와 같아요)는 내가 원하는 것으로 바꿔주세요.</p>
+    <label class="field"><span>새 비밀번호 (6자 이상)</span>
+      <div class="pw-field">
+        <input id="pfPw1" type="password" autocomplete="new-password">
+        <button type="button" class="pw-toggle" data-act="togglePw" data-target="pfPw1" aria-label="비밀번호 표시">${icon('eye')}</button>
+      </div>
+    </label>
+    <label class="field"><span>새 비밀번호 확인</span>
+      <div class="pw-field">
+        <input id="pfPw2" type="password" autocomplete="new-password">
+        <button type="button" class="pw-toggle" data-act="togglePw" data-target="pfPw2" aria-label="비밀번호 표시">${icon('eye')}</button>
+      </div>
+    </label>
+    <button class="btn btn-primary btn-block" data-act="changePassword">비밀번호 변경</button>
+  </div>
+
+  <div class="card">
+    <h3>${icon('hash')} 내 학번</h3>
+    <p class="text-2">학번을 바꾸면 시간표도 그 학번 기준으로 보여요.</p>
+    <label class="field"><span>학번 (예: 20801)</span>
+      <div class="inline-input">
+        <input id="pfNo" type="text" value="${esc(u.studentNo)}">
+        <button class="btn btn-primary btn-sm" data-act="saveStudentNo">저장</button>
+      </div>
+    </label>
+  </div>
+
+  ${renderNotificationCard()}
+
+  <button class="btn btn-ghost btn-block logout-btn" data-act="logout">${icon('logout')} 로그아웃</button>
+  `;
+}
+function renderNotificationCard(){
+  if(typeof Notification === 'undefined') return '';
+  const enabled = notifEnabled();
+  return `
+  <div class="card">
+    <h3>${icon('notice')} 알림</h3>
+    <div class="toggle-row">
+      <div>
+        <div class="toggle-row-title">새 공지 알림</div>
+        <div class="text-2">공지가 새로 올라오면 이 기기로 알려드려요</div>
+      </div>
+      <button type="button" class="switch ${enabled?'on':''}" data-act="toggleNotif" role="switch" aria-checked="${enabled}" aria-label="새 공지 알림">
+        <span class="switch-knob"></span>
+      </button>
+    </div>
+  </div>`;
+}
+
+/* ---------- accounts management (admin only) ---------- */
+function renderAccountsView(){
+  const ids = Object.keys(state.users).sort();
+  return `
+  <div class="view-header">
+    <h2>${icon('users')} 계정 관리</h2>
+    <button class="btn btn-primary btn-sm" data-act="acctOpenAdd">${icon('plus')} 계정 추가</button>
+  </div>
+  <p class="text-2" style="margin:-6px 0 14px;">비밀번호를 잊어버린 친구는 여기서 초기화하거나 새 비밀번호를 정해줄 수 있어요. 로그인 아이디도 바꿀 수 있고, 새 계정을 추가하거나 삭제할 수도 있어요.</p>
+  ${state.acctAdding ? renderAccountAddForm() : ''}
+  <div class="list">
+    ${ids.map(id => renderAccountRow(id)).join('')}
+  </div>
+  `;
+}
+function renderAccountAddForm(){
+  return `
+  <form id="acctAddForm" class="card form-card" data-form="acctAdd">
+    <h3>${icon('plus')} 새 계정 추가</h3>
+    <label class="field"><span>아이디 (로그인용)</span><input id="newAcctId" type="text" placeholder="예: 20825"></label>
+    <label class="field"><span>표시 이름 (선택, 비워두면 아이디와 같아요)</span><input id="newAcctName" type="text" placeholder="예: 김민결"></label>
+    <label class="field"><span>학번 (선택, 비워두면 아이디와 같아요)</span><input id="newAcctNo" type="text" placeholder="예: 20825"></label>
+    <p class="text-3 small">처음 비밀번호는 아이디와 같게 설정돼요.</p>
+    <div class="form-actions">
+      <button type="button" class="btn btn-ghost" data-act="acctCancelAdd">취소</button>
+      <button type="submit" class="btn btn-primary">추가</button>
+    </div>
+  </form>`;
+}
+function renderAccountRow(id){
+  const u = state.users[id];
+  if(!u) return '';
+  const editing = state.acctEditing === id;
+  return `
+  <div class="list-item">
+    <div class="list-item-body">
+      <div class="row-head">
+        <span class="row-title" style="margin:0;">${esc(u.displayName)}</span>
+        ${u.isAdmin ? icon('crown','crown-ic') : ''}
+      </div>
+      <div class="row-sub">아이디: ${esc(id)}${u.studentNo ? ' · 학번: '+esc(u.studentNo) : ''}</div>
+      ${editing ? renderAccountEditForm(id) : ''}
+    </div>
+    ${!editing ? `
+    <div class="list-item-actions">
+      <button class="icon-btn" data-act="acctEdit" data-id="${esc(id)}" aria-label="편집">${icon('edit')}</button>
+      <button class="icon-btn danger" data-act="acctDelete" data-id="${esc(id)}" aria-label="삭제">${icon('trash')}</button>
+    </div>` : ''}
+  </div>`;
+}
+function renderAccountEditForm(id){
+  const u = state.users[id];
+  return `
+  <div class="acct-edit">
+    <label class="field"><span>표시 이름</span><input id="acctName" type="text" value="${esc(u.displayName)}"></label>
+    <label class="field"><span>아이디 (로그인용)</span><input id="acctId" type="text" value="${esc(id)}"></label>
+    <label class="field"><span>새 비밀번호 (6자 이상 — 비워두면 비밀번호는 그대로 둬요)</span>
+      <div class="pw-field">
+        <input id="acctPw" type="password" placeholder="새 비밀번호" autocomplete="new-password">
+        <button type="button" class="pw-toggle" data-act="togglePw" data-target="acctPw" aria-label="비밀번호 표시">${icon('eye')}</button>
+      </div>
+    </label>
+    <label class="checkline"><input type="checkbox" id="acctIsAdmin" ${u.isAdmin?'checked':''}> 관리자 권한 부여</label>
+    <div class="form-actions" style="justify-content:space-between; flex-wrap:wrap;">
+      <button type="button" class="btn btn-ghost btn-sm" data-act="acctResetDefault" data-id="${esc(id)}">${icon('key')} 비밀번호를 아이디로 초기화</button>
+      <div style="display:flex; gap:8px;">
+        <button type="button" class="btn btn-ghost btn-sm" data-act="acctCancel">취소</button>
+        <button type="button" class="btn btn-primary btn-sm" data-act="acctSave" data-id="${esc(id)}">저장</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+/* ---------- shell (sidebar / topbar / bottom nav) ---------- */
+function renderViewContent(){
+  switch(state.view){
+    case 'home': return renderHome();
+    case 'meals': return renderSectionView('meals');
+    case 'timetable': return renderTimetableView();
+    case 'exams': return renderSectionView('exams');
+    case 'events': return renderSectionView('events');
+    case 'notices': return renderSectionView('notices');
+    case 'profile': return renderProfileView();
+    case 'accounts': return isAdmin() ? renderAccountsView() : renderHome();
+    default: return renderHome();
+  }
+}
+function navIconHtml(n){
+  const dot = n.key === 'notices' && hasUnreadNotices() ? '<span class="nav-dot"></span>' : '';
+  return `<span class="nav-icon-wrap">${icon(n.icon)}${dot}</span>`;
+}
+function renderSidebar(){
+  const u = me();
+  const brandAnim = !state.brandAnimPlayed ? 'brand-anim' : '';
+  const collapsed = sidebarWidthPref() < SIDEBAR_COLLAPSE_AT ? 'collapsed' : '';
+  return `
+  <aside class="sidebar ${collapsed}">
+    <div class="sidebar-resize-handle" id="sidebarResizeHandle"></div>
+    <button class="brand brand-btn" data-act="goto" data-view="home" aria-label="홈으로">
+      <div class="brand-mark"><img src="icon-badge.png" alt="" class="brand-mark-img"></div>
+      <div class="brand-word ${brandAnim}">All thing</div>
+    </button>
+    <nav class="side-nav">
+      ${visibleNav().map(n => `
+      <button class="side-link ${state.view===n.key?'active':''}" data-act="goto" data-view="${n.key}" aria-label="${n.label}">
+        ${navIconHtml(n)}<span class="nav-label">${n.label}</span>
+      </button>`).join('')}
+    </nav>
+    <div class="side-user">
+      <button class="side-user-link" data-act="goto" data-view="profile" aria-label="내 정보">
+        <div class="avatar sm">${esc((u.displayName||'?').charAt(0))}</div>
+        <div class="side-user-info">
+          <div class="side-user-name">${esc(u.displayName)}${u.isAdmin ? ` ${icon('crown','crown-ic sm')}` : ''}</div>
+          <div class="side-user-id">${esc(state.currentUser)}</div>
+        </div>
+      </button>
+      <button class="icon-btn" data-act="logout" aria-label="로그아웃">${icon('logout')}</button>
+    </div>
+  </aside>`;
+}
+function renderTopbar(){
+  const brandAnim = !state.brandAnimPlayed ? 'brand-anim' : '';
+  return `
+  <header class="topbar">
+    <button class="brand brand-btn" data-act="goto" data-view="home" aria-label="홈으로">
+      <div class="brand-mark"><img src="icon-badge.png" alt="" class="brand-mark-img"></div>
+      <div class="brand-word ${brandAnim}">All thing</div>
+    </button>
+    <button class="topbar-avatar-btn ${state.view==='profile'?'active':''}" data-act="goto" data-view="profile" aria-label="내 정보">
+      <span class="topbar-icon-circle">${icon('profile')}</span>
+    </button>
+  </header>`;
+}
+function renderBottomNav(){
+  return `
+  <div class="bottom-nav-wrap">
+    <nav class="bottom-nav" id="bottomNavScroll">
+      ${visibleNav().map(n => `<button class="bn-btn ${state.view===n.key?'active':''}" data-act="goto" data-view="${n.key}">${navIconHtml(n)}<span>${n.label}</span></button>`).join('')}
+    </nav>
+    <div class="edge-cap left"></div>
+    <div class="edge-cap right"></div>
+  </div>
+  `;
+}
+function renderShell(){
+  return `
+  <div class="shell">
+    ${renderSidebar()}
+    <div class="main-col">
+      ${renderTopbar()}
+      <main class="main-scroll" id="mainScroll">
+        <div class="main-inner ${esc(state.navAnim || 'view-enter')}">${renderViewContent()}</div>
+      </main>
+      ${renderBottomNav()}
+    </div>
+  </div>
+  <button class="layout-fab" data-act="toggleLayout" aria-label="화면 방향 전환">${icon('rotate')}</button>
+  `;
+}
+
+/* ---------- login screen ---------- */
+function renderLogin(){
+  const already = state.splashPlayed;
+  return `
+  <div class="login-screen">
+    <div class="blob b1"></div>
+    <div class="blob b2"></div>
+    <div class="blob b3"></div>
+    <div class="hero ${already?'compact':''}" id="hero">
+      <h1 class="hero-title">우리 반의 <span class="morph-word ${already?'morphed':''}" id="morphWord">${already?'All thing':'모든 것'}</span></h1>
+      <p class="hero-sub">급식, 시간표, 수행평가부터 일정까지 — 한 눈에</p>
+    </div>
+    <form class="login-card ${already?'show':'pending'}" id="loginCard" data-form="login">
+      <label class="field"><span>아이디</span><input id="loginId" type="text" autocomplete="username" placeholder="예: 20801" required></label>
+      <label class="field"><span>비밀번호</span>
+        <div class="pw-field">
+          <input id="loginPw" type="password" autocomplete="current-password" placeholder="비밀번호" required>
+          <button type="button" class="pw-toggle" data-act="togglePw" data-target="loginPw" aria-label="비밀번호 표시">${icon('eye')}</button>
+        </div>
+      </label>
+      ${Object.keys(state.users).length === 0 ? `
+        <p class="login-error" style="margin-top:10px;">
+          계정 서버에 연결하지 못했어요. 기존 계정이 삭제된 것이 아니라, 서버 연결이 복구되면 다시 불러옵니다.
+        </p>` : ''}
+      <p class="hint">처음 비밀번호는 <b>아이디(학번)</b>와 같아요 (예: 아이디가 20801이면 비밀번호도 20801)</p>
+      ${state.loginError ? `<p class="login-error">${esc(state.loginError)}</p>` : ''}
+      <label class="checkline"><input id="loginRemember" type="checkbox" checked> 로그인 상태 유지</label>
+      <button type="submit" class="btn btn-primary btn-block">로그인</button>
+    </form>
+  </div>`;
+}
+
+/* ---------- splash animation ---------- */
+function playSplash(){
+  if(state.currentUser) return;
+  const word = document.getElementById('morphWord');
+  const heroEl = document.getElementById('hero');
+  const card = document.getElementById('loginCard');
+  if(!word || !heroEl) return;
+
+  // 초기 상태: 흰색 '모든 것', 화면 중앙에 크게
+  word.classList.remove('morphed','shake','pop','charge');
+  word.textContent = '모든 것';
+  heroEl.classList.remove('compact');
+  if(card) card.classList.add('pending');
+
+  // 브라우저가 흰색 글자를 렌더링하도록 다음 프레임에서 애니메이션 시작
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      // 1. 아쿠아색으로 물드는 효과 시작
+      word.classList.add('charge');
+
+      // 2. 0.85초 후 텍스트 흔들림
+      setTimeout(() => word.classList.add('shake'), 850);
+
+      // 3. 1.3초 후 폭죽 효과 + 'All thing' 교체 + 팝 효과
+      setTimeout(() => {
+        burstConfetti(word);
+        word.classList.remove('shake','charge');
+        word.textContent = 'All thing';
+        word.classList.add('morphed','pop');
+      }, 1300);
+
+      // 4. 1.85초 후 (폭죽이 잠시 보인 다음) 제목이 로그인 화면 상단 자리로 축소 이동 + 로그인 카드 등장
+      setTimeout(() => {
+        heroEl.classList.add('compact');
+        if(card){ card.classList.remove('pending'); card.classList.add('show'); }
+        state.splashPlayed = true;
+      }, 1850);
+    });
+  });
+}
+function burstConfetti(targetEl){
+  const rect = targetEl.getBoundingClientRect();
+  const cx = rect.left + rect.width/2;
+  const cy = rect.top + rect.height/2;
+  const colors = ['#838952','#6B7143','#B8752E','#FFFCF5','#A9AE7C'];
+  let root = document.getElementById('confettiRoot');
+  if(!root){
+    root = document.createElement('div');
+    root.id = 'confettiRoot';
+    root.className = 'confetti-root';
+    document.body.appendChild(root);
+  }
+  const count = 34;
+  for(let i=0;i<count;i++){
+    const p = document.createElement('span');
+    const isBar = Math.random() < 0.35;
+    p.className = 'confetti-piece ' + (isBar ? 'bar' : 'dot');
+    const angle = Math.random() * Math.PI * 2;
+    const dist1 = 26 + Math.random()*42;
+    const dist2 = dist1 + 22 + Math.random()*42;
+    const tx1 = Math.cos(angle)*dist1, ty1 = Math.sin(angle)*dist1;
+    const tx2 = Math.cos(angle)*dist2*0.6, ty2 = ty1 + 40 + Math.random()*46;
+    const size = isBar ? (3+Math.random()*2.4) : (3.5+Math.random()*3.5);
+    p.style.left = cx+'px';
+    p.style.top = cy+'px';
+    p.style.setProperty('--tx1', tx1.toFixed(1)+'px');
+    p.style.setProperty('--ty1', ty1.toFixed(1)+'px');
+    p.style.setProperty('--tx2', tx2.toFixed(1)+'px');
+    p.style.setProperty('--ty2', ty2.toFixed(1)+'px');
+    p.style.setProperty('--rot', (Math.random()*540-270).toFixed(0)+'deg');
+    p.style.setProperty('--size', size.toFixed(1)+'px');
+    p.style.background = colors[Math.floor(Math.random()*colors.length)];
+    p.style.animationDuration = (620+Math.random()*420)+'ms';
+    p.style.animationDelay = (Math.random()*90)+'ms';
+    root.appendChild(p);
+  }
+  setTimeout(() => { root.innerHTML = ''; }, 1500);
+}
+
+/* ---------- master render ---------- */
+function renderToastHtml(){
+  return state.toast ? `<div class="toast-host"><div class="toast ${state.toast.type}">${esc(state.toast.msg)}</div></div>` : '';
+}
+function updateBottomNavEdges(el){
+  if(!el) return;
+  const wrap = el.parentElement;
+  if(!wrap) return;
+  const hasOverflow = el.scrollWidth > el.clientWidth + 1;
+  const atStart = el.scrollLeft <= 1;
+  const atEnd = el.scrollLeft + el.clientWidth >= el.scrollWidth - 1;
+  wrap.classList.toggle('at-start', hasOverflow && atStart);
+  wrap.classList.toggle('at-end', hasOverflow && atEnd);
+}
+function isMobileLayoutActive(){
+  const sidebar = document.querySelector('.sidebar');
+  if(!sidebar) return true;
+  return getComputedStyle(sidebar).display === 'none';
+}
+async function toggleLayout(){
+  // Real device rotation only makes sense on an actual touchscreen (phone/tablet) — on desktop,
+  // screen.orientation.lock() can trivially "succeed" without doing anything real, which would
+  // wrongly skip the manual layout toggle. So only attempt it on touch-primary devices.
+  const isTouchDevice = (window.matchMedia && window.matchMedia('(pointer: coarse)').matches) || navigator.maxTouchPoints > 0;
+  try{
+    if(isTouchDevice && screen.orientation && screen.orientation.lock){
+      if(!document.fullscreenElement && document.documentElement.requestFullscreen){
+        await document.documentElement.requestFullscreen().catch(() => {});
+      }
+      const current = screen.orientation.type || '';
+      const goingLandscape = !current.startsWith('landscape');
+      await screen.orientation.lock(goingLandscape ? 'landscape' : 'portrait');
+      state.forceLayout = null;
+      lsSet('layout-pref', false, null);
+      render();
+      return;
+    }
+  }catch(e){ /* not allowed here (plain browser tab) — fall through to the manual toggle */ }
+  if(!state.forceLayout){
+    state.forceLayout = isMobileLayoutActive() ? 'pc' : 'mobile';
+  } else {
+    state.forceLayout = state.forceLayout === 'pc' ? 'mobile' : 'pc';
+  }
+  lsSet('layout-pref', false, state.forceLayout);
+  render();
+}
+
+/* ---------- resizable / collapsible sidebar ---------- */
+const SIDEBAR_MIN = 76;
+const SIDEBAR_MAX = 320;
+const SIDEBAR_DEFAULT = 236;
+const SIDEBAR_COLLAPSE_AT = 130;
+function sidebarWidthPref(){
+  const w = lsGet('sidebar-width', false, SIDEBAR_DEFAULT);
+  return Math.max(SIDEBAR_MIN, Math.min(SIDEBAR_MAX, Number(w) || SIDEBAR_DEFAULT));
+}
+function applySidebarWidth(w){
+  document.documentElement.style.setProperty('--sidebar-w', w + 'px');
+  const sidebar = document.querySelector('.sidebar');
+  if(sidebar) sidebar.classList.toggle('collapsed', w < SIDEBAR_COLLAPSE_AT);
+}
+(function setupSidebarResize(){
+  let dragging = false, startX = 0, startW = SIDEBAR_DEFAULT;
+  document.addEventListener('pointerdown', function(e){
+    const handle = e.target.closest && e.target.closest('#sidebarResizeHandle');
+    if(!handle) return;
+    dragging = true;
+    startX = e.clientX;
+    const sidebar = document.querySelector('.sidebar');
+    startW = sidebar ? sidebar.getBoundingClientRect().width : SIDEBAR_DEFAULT;
+    handle.classList.add('dragging');
+    if(handle.setPointerCapture) { try{ handle.setPointerCapture(e.pointerId); }catch(err){} }
+    e.preventDefault();
+  });
+  document.addEventListener('pointermove', function(e){
+    if(!dragging) return;
+    const dx = e.clientX - startX;
+    let w = Math.round(startW + dx);
+    w = Math.max(SIDEBAR_MIN, Math.min(SIDEBAR_MAX, w));
+    applySidebarWidth(w);
+  });
+  function stop(){
+    if(!dragging) return;
+    dragging = false;
+    const handle = document.getElementById('sidebarResizeHandle');
+    if(handle) handle.classList.remove('dragging');
+    const val = getComputedStyle(document.documentElement).getPropertyValue('--sidebar-w');
+    const w = parseInt(val) || SIDEBAR_DEFAULT;
+    lsSet('sidebar-width', false, w);
+  }
+  document.addEventListener('pointerup', stop);
+  document.addEventListener('pointercancel', stop);
+})();
+
+function renderLightboxHtml(){
+  if(!state.lightboxSrc) return '';
+  return `
+  <div class="lightbox-overlay" data-act="closeLightbox" data-backdrop="1">
+    <button type="button" class="lightbox-close" data-act="closeLightbox" aria-label="닫기">${icon('x')}</button>
+    <img src="${esc(state.lightboxSrc)}" class="lightbox-img" alt="첨부 사진 크게 보기">
+  </div>`;
+}
+function render(){
+  const app = document.getElementById('app');
+  if(!state.booted){ app.innerHTML = `<div class="boot">불러오는 중…</div>`; return; }
+  app.innerHTML = (state.currentUser ? renderShell() : renderLogin()) + renderToastHtml() + renderLightboxHtml();
+  document.documentElement.setAttribute('data-layout', state.forceLayout || 'auto');
+  if(state.currentUser) applySidebarWidth(sidebarWidthPref());
+  updateBottomNavEdges(document.getElementById('bottomNavScroll'));
+  if(state.currentUser && !state.brandAnimPlayed) state.brandAnimPlayed = true;
+}
+
+/* ---------- event delegation (avoids relying on inline on* attributes) ---------- */
+function bindEvents(){
+  document.addEventListener('click', function(e){
+    const el = e.target.closest('[data-act]');
+    if(!el) return;
+    if(el.hasAttribute('data-backdrop') && e.target !== el) return;
+    const act = el.getAttribute('data-act');
+    switch(act){
+      case 'goto': goto(el.dataset.view); break;
+      case 'logout': handleLogout(); break;
+      case 'openAdd': openAddForm(el.dataset.section, el.dataset.date); break;
+      case 'openEdit': openEditForm(el.dataset.section, el.dataset.id); break;
+      case 'cancelForm': cancelForm(); break;
+      case 'deleteItem': deleteSectionItem(el.dataset.section, el.dataset.id); break;
+      case 'ttOpen': openTtEditor(); break;
+      case 'ttClose': closeTtEditor(); break;
+      case 'ttSelect': selectTtNo(el.dataset.no); break;
+      case 'ttSelectInput': {
+        const inp = document.getElementById('ttSearchNo');
+        if(inp) selectTtNo(inp.value.trim());
+        break;
+      }
+      case 'ttSave': saveTtGrid(); break;
+      case 'ttExpandAbbrev': expandAllTimetableAbbrevs(); break;
+      case 'ttApplyImport20260831': applyImportedTimetables_20260831(); break;
+      case 'ttCopy': copyTtFrom(); break;
+      case 'importMealsJson': {
+        const inp = document.getElementById('mealJsonInput');
+        if(inp) inp.click();
+        break;
+      }
+      case 'saveDisplayName': saveDisplayName(); break;
+      case 'changePassword': changePassword(); break;
+      case 'saveStudentNo': saveStudentNo(); break;
+      case 'togglePw': togglePwVisibility(el.dataset.target, el); break;
+      case 'toggleNotif': toggleNotif(); break;
+      case 'toggleExamExpand': toggleExamExpand(el.dataset.id); break;
+      case 'viewPhoto': viewPhoto(el.dataset.src); break;
+      case 'closeLightbox': closeLightbox(); break;
+      case 'addMultiField': addMultiField(el.dataset.group, el.dataset.placeholder); break;
+      case 'removeMultiField': removeMultiField(el); break;
+      case 'removePhotoThumb': removePhotoThumb(el); break;
+      case 'toggleLayout': toggleLayout(); break;
+      case 'installApp': triggerInstall(); break;
+      case 'acctEdit': acctEdit(el.dataset.id); break;
+      case 'acctCancel': acctCancel(); break;
+      case 'acctResetDefault': acctResetDefault(el.dataset.id); break;
+      case 'acctSave': acctSave(el.dataset.id); break;
+      case 'acctOpenAdd': acctOpenAdd(); break;
+      case 'acctCancelAdd': acctCancelAdd(); break;
+      case 'acctDelete': acctDelete(el.dataset.id); break;
+      default: break;
+    }
+  });
+  document.addEventListener('submit', function(e){
+    const form = e.target;
+    if(!form || !form.matches) return;
+    if(form.matches('[data-form="login"]')){
+      e.preventDefault();
+      handleLoginSubmit();
+    } else if(form.matches('[data-form="section"]')){
+      e.preventDefault();
+      submitSectionForm(form.dataset.section);
+    } else if(form.matches('[data-form="acctAdd"]')){
+      e.preventDefault();
+      acctSubmitAdd();
+    }
+  });
+  window.addEventListener('error', function(e){
+    console.error('All thing runtime error:', e && (e.error || e.message));
+  });
+  // capture phase: 'scroll' doesn't bubble, so listen on document with capture:true
+  // to catch it firing on the horizontally-scrolling bottom nav strip.
+  document.addEventListener('scroll', function(e){
+    if(e.target && e.target.id === 'bottomNavScroll') updateBottomNavEdges(e.target);
+  }, true);
+  document.addEventListener('change', function(e){
+    if(e.target && e.target.id === 'mealJsonInput'){
+      const file = e.target.files && e.target.files[0];
+      handleMealJsonFile(file);
+      e.target.value = '';
+    }
+  });
+}
+
+/* ---------- PWA: installable app + home-screen icon ---------- */
+function isIOS(){ return /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.MSStream; }
+function isStandaloneApp(){ return (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone === true; }
+if('serviceWorker' in navigator){
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').then((reg) => {
+      // if a newer sw.js is already waiting (from a previous visit), activate it now
+      if(reg.waiting) reg.waiting.postMessage('skipWaiting');
+      reg.addEventListener('updatefound', () => {
+        const nw = reg.installing;
+        if(!nw) return;
+        nw.addEventListener('statechange', () => {
+          if(nw.state === 'installed' && navigator.serviceWorker.controller){
+            nw.postMessage('skipWaiting');
+          }
+        });
+      });
+    }).catch(() => {});
+    // a new service worker just took control — reload once so the fresh files are used
+    let refreshed = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if(refreshed) return;
+      refreshed = true;
+      window.location.reload();
+    });
+  });
+}
+let deferredInstallPrompt = null;
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredInstallPrompt = e;
+  state.canInstall = true;
+  if(state.booted) render();
+});
+window.addEventListener('appinstalled', () => {
+  deferredInstallPrompt = null;
+  state.canInstall = false;
+  render();
+});
+async function triggerInstall(){
+  if(!deferredInstallPrompt) return;
+  deferredInstallPrompt.prompt();
+  await deferredInstallPrompt.userChoice;
+  deferredInstallPrompt = null;
+  state.canInstall = false;
+  render();
+}
+function renderInstallBanner(){
+  if(isStandaloneApp()) return '';
+  if(state.canInstall){
+    return `<div class="banner install-banner">${icon('plus')}<span>홈 화면에 추가하면 앱처럼 바로 열 수 있어요.</span><button class="btn btn-primary btn-sm" data-act="installApp">추가</button></div>`;
+  }
+  if(isIOS()){
+    return `<div class="banner install-banner"><span>${icon('plus')} 아이폰에서는 공유 버튼을 누르고 <b>홈 화면에 추가</b>를 선택하면 앱처럼 쓸 수 있어요.</span></div>`;
+  }
+  return '';
+}
+
+/* ---------- swipe left/right between tabs (mobile) ---------- */
+(function setupSwipeNav(){
+  let startX = 0, startY = 0, touching = false, skip = false, decided = false, horizontal = false;
+  const THRESHOLD = 55;
+  const DIR_LOCK = 10;
+  document.addEventListener('touchstart', function(e){
+    if(!state.currentUser || !e.touches || !e.touches[0]) return;
+    if(!isMobileLayoutActive()) { skip = true; return; }
+    if(state.ttEditor.open || state.editing.section || state.lightboxSrc || document.querySelector('.modal-overlay')) { skip = true; return; }
+    skip = !!e.target.closest('.tt-wrap, .tt-edit-wrap, .chip-select, .bottom-nav, .date-pills, .lightbox-overlay, input, textarea');
+    const t = e.touches[0];
+    startX = t.clientX; startY = t.clientY; touching = true; decided = false; horizontal = false;
+  }, { passive:true });
+  document.addEventListener('touchmove', function(e){
+    if(!touching || skip || !e.touches || !e.touches[0]) return;
+    const t = e.touches[0];
+    const dx = t.clientX - startX;
+    const dy = t.clientY - startY;
+    if(!decided && (Math.abs(dx) > DIR_LOCK || Math.abs(dy) > DIR_LOCK)){
+      decided = true;
+      horizontal = Math.abs(dx) > Math.abs(dy) * 1.6;
+    }
+    // Once we know it's a horizontal swipe, tell the browser we're handling it — this stops
+    // Samsung/Chrome's own edge-swipe-back and toolbar-hide gestures from firing at the same
+    // time as our slide animation, which is what was producing the "bounce".
+    if(horizontal && e.cancelable) e.preventDefault();
+  }, { passive:false });
+  document.addEventListener('touchend', function(e){
+    if(!touching) return;
+    touching = false;
+    if(skip || !e.changedTouches || !e.changedTouches[0]) return;
+    const t = e.changedTouches[0];
+    const dx = t.clientX - startX;
+    const dy = t.clientY - startY;
+    if(Math.abs(dx) > THRESHOLD && Math.abs(dx) > Math.abs(dy) * 1.6){
+      const nav = visibleNav();
+      const idx = nav.findIndex(n => n.key === state.view);
+      if(idx === -1) return;
+      if(dx < 0 && idx < nav.length - 1){
+        goto(nav[idx+1].key, 'enter-right');
+      } else if(dx > 0 && idx > 0){
+        goto(nav[idx-1].key, 'enter-left');
+      }
+    }
+  }, { passive:true });
+})();
+
+/* ---------- press back again to exit ----------
+   On mobile, the browser/OS back button normally leaves the app on the very first press,
+   which is easy to hit by accident. This pushes a harmless extra history entry so the first
+   back press is caught (shown as a toast) instead of leaving; pressing back again within a
+   couple seconds lets it through so the app actually closes.
+*/
+(function setupBackToExit(){
+  const EXIT_WINDOW = 2000;
+  let lastBackAt = 0;
+  let programmaticBack = false;
+  function armGuard(){
+    try{ history.pushState({ allthingGuard: true }, '', location.href); }catch(e){}
+  }
+  window.addEventListener('popstate', function(){
+    if(programmaticBack){ programmaticBack = false; return; } // our own history.back() below — let it proceed
+    const now = Date.now();
+    if(lastBackAt && now - lastBackAt < EXIT_WINDOW){
+      // second press within the window — go back one more step to actually leave, since the
+      // guard entry we pushed points at the same page and wouldn't exit on its own
+      lastBackAt = 0;
+      programmaticBack = true;
+      history.back();
+      return;
+    }
+    lastBackAt = now;
+    showToast('뒤로 가기를 한 번 더 누르면 앱이 종료돼요.');
+    armGuard();
+  });
+  armGuard();
+  // Some mobile browsers don't fully register a pushState call made this early (right at
+  // script load, before the page has "settled" or seen any user interaction) — the very
+  // first back press then skips straight past it. Re-arming on load and on the first touch
+  // makes sure the guard is in place by the time a real back press can happen.
+  window.addEventListener('load', armGuard);
+  window.addEventListener('pageshow', armGuard);
+  document.addEventListener('touchstart', armGuard, { once:true, capture:true });
+  document.addEventListener('click', armGuard, { once:true, capture:true });
+})();
+
+bindEvents();
+init();
+</script>
+</body>
+</html>
