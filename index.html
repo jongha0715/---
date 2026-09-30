@@ -1634,7 +1634,7 @@ async function openEditForm(section, id){
   const el = document.getElementById('sectionForm');
   if(el) el.scrollIntoView({ behavior:'smooth', block:'start' });
   if(section === 'exams' && (item.photoCount || 0) > 0){
-    const photos = await loadPhotosForItem(id);
+    const photos = await withTimeout(loadPhotosForItem(id).catch(() => []), 6000, []);
     if(state.editing.section === section && state.editing.id === id){ // still editing this same item
       state.editing.data.photos = photos;
       render();
@@ -1661,9 +1661,16 @@ async function loadExamPhotosSafely(id){
   if(photoCount === 0 || (state.examPhotosCache && state.examPhotosCache[id])) return;
   state.examPhotoLoadFailed = state.examPhotoLoadFailed || {};
   delete state.examPhotoLoadFailed[id];
-  try{
-    await loadPhotosForItem(id); // loadPhotosForItem itself always resolves within a few seconds, even offline — this catch is a belt-and-suspenders guard against anything unexpected leaving the UI stuck on "불러오는 중"
-  }catch(e){
+  // Hard OUTER cap, fully independent of loadPhotosForItem's own internal timeout. If a
+  // Firebase read hangs somewhere below in a way its internal safeguard doesn't catch (this
+  // is exactly what kept happening — the inner timeout alone wasn't enough), this guarantees
+  // the UI moves past "불러오는 중" after a fixed wait no matter what.
+  const result = await withTimeout(
+    loadPhotosForItem(id).then(photos => ({ ok:true, photos })).catch(() => ({ ok:false })),
+    6000,
+    { ok:false }
+  );
+  if(!result.ok){
     state.examPhotoLoadFailed[id] = true;
   }
   if(state.expandedExams.has(id)) render(); // only re-render if still expanded
