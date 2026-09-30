@@ -870,6 +870,63 @@ async function sGetRemoteOnly(key, shared){
   }catch(e){ return null; }
 }
 
+/* ---------- safe read-before-write for shared collections ----------
+   Every shared key (exams, events, notices, meals, users, timetables) is a single JSON
+   blob, not per-item rows, so any write replaces the WHOLE thing. If a device's `state`
+   is even slightly behind (it missed a realtime update, was backgrounded, just reconnected
+   after being offline), blindly writing that device's local copy back silently deletes
+   whatever other devices added in the meantime — this is what was wiping out exams/accounts
+   across devices. The fix: right before every write, re-fetch the current shared value fresh
+   and apply just this one change to THAT, never to the local `state` copy.
+*/
+async function freshSharedValue(key, fallback){
+  const result = await withTimeout(sGet(key, true, fallback), 4000, undefined);
+  if(result !== undefined && result !== null) return result;
+  const local = lsGet(key, true, fallback);
+  return (local !== undefined && local !== null) ? local : fallback;
+}
+async function saveSectionItem(section, id, data){
+  const cfg = SECTIONS[section];
+  const fresh = await freshSharedValue(cfg.storageKey, []);
+  const list = (Array.isArray(fresh) ? fresh : []).slice();
+  if(id){
+    const idx = list.findIndex(x => x.id === id);
+    if(idx > -1) list[idx] = Object.assign({}, list[idx], data);
+    else list.push(Object.assign({ id }, data)); // item vanished from the fresh copy — keep the edit instead of silently dropping it
+  } else {
+    const newItem = Object.assign({ id: uid() }, data);
+    if(section === 'notices'){ newItem.date = todayStr(); newItem.author = me() ? me().displayName : ''; }
+    list.push(newItem);
+  }
+  list.sort((a,b) => (a.date||'').localeCompare(b.date||''));
+  state[section] = list;
+  await sSet(cfg.storageKey, list, true);
+  return list;
+}
+async function deleteSectionItemSafe(section, id){
+  const cfg = SECTIONS[section];
+  const fresh = await freshSharedValue(cfg.storageKey, []);
+  const list = (Array.isArray(fresh) ? fresh : []).filter(x => x.id !== id);
+  state[section] = list;
+  await sSet(cfg.storageKey, list, true);
+}
+async function mutateSharedUsers(mutateFn){
+  const fresh = await freshSharedValue('allthing-users', null);
+  const users = (fresh && typeof fresh === 'object') ? Object.assign({}, fresh) : Object.assign({}, state.users);
+  mutateFn(users);
+  state.users = users;
+  await sSet('allthing-users', users, true);
+  return users;
+}
+async function mutateSharedTimetables(mutateFn){
+  const fresh = await freshSharedValue('allthing-timetables', null);
+  const tts = (fresh && typeof fresh === 'object') ? Object.assign({}, fresh) : Object.assign({}, state.timetables);
+  mutateFn(tts);
+  state.timetables = tts;
+  await sSet('allthing-timetables', tts, true);
+  return tts;
+}
+
 /* ---------- constants ---------- */
 const DAYS = ['월','화','수','목','금'];
 const PERIODS = [1,2,3,4,5,6,7];
@@ -1361,8 +1418,11 @@ function togglePwVisibility(targetId, btn){
 async function saveDisplayName(){
   const val = document.getElementById('pfName').value.trim();
   if(!val){ showToast('표시 이름을 입력해주세요.', 'err'); return; }
-  state.users[state.currentUser].displayName = val;
-  await sSet('allthing-users', state.users, true);
+  const myId = state.currentUser;
+  await mutateSharedUsers(users => {
+    if(!users[myId]) users[myId] = Object.assign({}, state.users[myId]);
+    users[myId].displayName = val;
+  });
   showToast('표시 이름을 저장했어요.');
   render();
 }
@@ -1371,16 +1431,22 @@ async function changePassword(){
   const pw2 = document.getElementById('pfPw2').value;
   if(pw1.length < 6){ showToast('비밀번호는 6자 이상으로 입력해주세요.', 'err'); return; }
   if(pw1 !== pw2){ showToast('새 비밀번호가 서로 달라요.', 'err'); return; }
-  state.users[state.currentUser].password = pw1;
-  await sSet('allthing-users', state.users, true);
+  const myId = state.currentUser;
+  await mutateSharedUsers(users => {
+    if(!users[myId]) users[myId] = Object.assign({}, state.users[myId]);
+    users[myId].password = pw1;
+  });
   showToast('비밀번호를 바꿨어요.');
   render();
 }
 async function saveStudentNo(){
   const val = document.getElementById('pfNo').value.trim();
   if(!val){ showToast('학번을 입력해주세요.', 'err'); return; }
-  state.users[state.currentUser].studentNo = val;
-  await sSet('allthing-users', state.users, true);
+  const myId = state.currentUser;
+  await mutateSharedUsers(users => {
+    if(!users[myId]) users[myId] = Object.assign({}, state.users[myId]);
+    users[myId].studentNo = val;
+  });
   showToast('학번을 저장했어요.');
   render();
 }
@@ -1398,8 +1464,9 @@ async function acctResetDefault(id){
   const u = state.users[id];
   if(!u) return;
   if(!confirm(`${u.displayName}(${id})의 비밀번호를 아이디와 같은 값으로 초기화할까요?`)) return;
-  u.password = id;
-  await sSet('allthing-users', state.users, true);
+  await mutateSharedUsers(users => {
+    if(users[id]) users[id].password = id;
+  });
   showToast('비밀번호를 초기화했어요.');
   state.acctEditing = null;
   render();
@@ -1417,26 +1484,31 @@ async function acctSave(id){
   if(!newId){ showToast('아이디를 입력해주세요.', 'err'); return; }
   if(!newName){ showToast('표시 이름을 입력해주세요.', 'err'); return; }
   if(newPw && newPw.length < 6){ showToast('비밀번호는 6자 이상으로 입력해주세요.', 'err'); return; }
-  if(newId !== id && state.users[newId]){ showToast('이미 사용 중인 아이디예요.', 'err'); return; }
   if(id === state.currentUser && !newIsAdmin){
     showToast('현재 로그인한 계정의 관리자 권한은 스스로 해제할 수 없어요.', 'err');
     return;
   }
 
-  if(newId !== id){
-    const record = Object.assign({}, state.users[id]);
-    delete state.users[id];
-    state.users[newId] = record;
-    if(state.currentUser === id){
-      state.currentUser = newId;
-      const session = await sGet('allthing-session', false, null);
-      if(session) await sSet('allthing-session', { id: newId, ts: Date.now() }, false);
+  let idTaken = false;
+  const renaming = newId !== id;
+  await mutateSharedUsers(users => {
+    if(renaming && users[newId]){ idTaken = true; return; }
+    let record = users[id] ? Object.assign({}, users[id]) : Object.assign({}, state.users[id]);
+    if(renaming){
+      delete users[id];
+      users[newId] = record;
     }
+    record = users[newId];
+    record.displayName = newName;
+    record.isAdmin = newIsAdmin;
+    if(newPw) record.password = newPw;
+  });
+  if(idTaken){ showToast('이미 사용 중인 아이디예요.', 'err'); return; }
+  if(renaming && state.currentUser === id){
+    state.currentUser = newId;
+    const session = await sGet('allthing-session', false, null);
+    if(session) await sSet('allthing-session', { id: newId, ts: Date.now() }, false);
   }
-  state.users[newId].displayName = newName;
-  state.users[newId].isAdmin = newIsAdmin;
-  if(newPw) state.users[newId].password = newPw;
-  await sSet('allthing-users', state.users, true);
   showToast('계정 정보를 저장했어요.');
   state.acctEditing = null;
   render();
@@ -1458,11 +1530,14 @@ async function acctSubmitAdd(){
   const noEl = document.getElementById('newAcctNo');
   const id = idEl.value.trim();
   if(!id){ showToast('아이디를 입력해주세요.', 'err'); return; }
-  if(state.users[id]){ showToast('이미 사용 중인 아이디예요.', 'err'); return; }
   const name = nameEl.value.trim() || id;
   const no = noEl.value.trim() || id;
-  state.users[id] = { password: id, displayName: name, studentNo: no, isAdmin: false };
-  await sSet('allthing-users', state.users, true);
+  let idTaken = false;
+  await mutateSharedUsers(users => {
+    if(users[id]){ idTaken = true; return; }
+    users[id] = { password: id, displayName: name, studentNo: no, isAdmin: false };
+  });
+  if(idTaken){ showToast('이미 사용 중인 아이디예요.', 'err'); return; }
   showToast('계정을 추가했어요.');
   state.acctAdding = false;
   render();
@@ -1472,8 +1547,7 @@ async function acctDelete(id){
   if(!u) return;
   if(id === state.currentUser){ showToast('현재 로그인한 계정은 삭제할 수 없어요.', 'err'); return; }
   if(!confirm(`${u.displayName}(${id}) 계정을 정말 삭제할까요? 되돌릴 수 없어요.`)) return;
-  delete state.users[id];
-  await sSet('allthing-users', state.users, true);
+  await mutateSharedUsers(users => { delete users[id]; });
   showToast('계정을 삭제했어요.');
   render();
 }
@@ -1741,19 +1815,7 @@ async function submitSectionForm(section){
     if(err){ showToast(err, 'err'); return; }
   }
   const id = state.editing.id;
-  if(id){
-    const idx = state[section].findIndex(x=>x.id===id);
-    if(idx>-1) state[section][idx] = Object.assign({}, state[section][idx], data);
-  } else {
-    const newItem = Object.assign({ id: uid() }, data);
-    if(section === 'notices'){
-      newItem.date = todayStr();
-      newItem.author = me() ? me().displayName : '';
-    }
-    state[section].push(newItem);
-  }
-  state[section].sort((a,b) => (a.date||'').localeCompare(b.date||''));
-  await sSet(cfg.storageKey, state[section], true);
+  await saveSectionItem(section, id, data);
   if(section === 'notices'){ seedSeenNotices(); markNoticesRead(); } // this device already knows about the notice it just posted
   state.editing = { section:null, id:null, data:null };
   showToast(id ? '수정했어요.' : '추가했어요.');
@@ -1761,8 +1823,7 @@ async function submitSectionForm(section){
 }
 async function deleteSectionItem(section, id){
   if(!confirm('정말 삭제할까요?')) return;
-  state[section] = state[section].filter(x=>x.id!==id);
-  await sSet(SECTIONS[section].storageKey, state[section], true);
+  await deleteSectionItemSafe(section, id);
   showToast('삭제했어요.');
   render();
 }
@@ -1791,9 +1852,8 @@ async function saveTtGrid(){
       grid[day][i] = el ? el.value.trim() : '';
     });
   });
-  state.timetables[no] = grid;
+  await mutateSharedTimetables(tts => { tts[no] = grid; });
   state.ttEditor.grid = grid;
-  await sSet('allthing-timetables', state.timetables, true);
   showToast(no + ' 시간표를 저장했어요.');
   render();
 }
@@ -1802,10 +1862,15 @@ async function copyTtFrom(){
   const to = state.ttEditor.no;
   if(!to){ showToast('먼저 학번을 선택해주세요.', 'err'); return; }
   if(!from){ showToast('복사할 학번을 입력해주세요.', 'err'); return; }
-  if(!state.timetables[from]){ showToast(from + '의 시간표가 아직 없어요.', 'err'); return; }
-  state.timetables[to] = JSON.parse(JSON.stringify(state.timetables[from]));
-  await sSet('allthing-timetables', state.timetables, true);
-  state.ttEditor.grid = JSON.parse(JSON.stringify(state.timetables[to]));
+  let missing = false;
+  let copiedGrid = null;
+  await mutateSharedTimetables(tts => {
+    if(!tts[from]){ missing = true; return; }
+    copiedGrid = JSON.parse(JSON.stringify(tts[from]));
+    tts[to] = copiedGrid;
+  });
+  if(missing){ showToast(from + '의 시간표가 아직 없어요.', 'err'); return; }
+  state.ttEditor.grid = copiedGrid;
   showToast(from + '의 시간표를 ' + to + '(으)로 복사했어요.');
   render();
 }
@@ -2014,8 +2079,9 @@ async function handleMealJsonFile(file){
     showToast('가져올 급식 데이터를 찾지 못했어요.', 'err');
     return;
   }
+  const freshMeals = await freshSharedValue(SECTIONS.meals.storageKey, []);
   const existing = {};
-  state.meals.forEach(m => { existing[m.date] = m; });
+  (Array.isArray(freshMeals) ? freshMeals : []).forEach(m => { existing[m.date] = m; });
   const touchedDates = new Set();
   valid.forEach(r => {
     const date = r.MLSV_YMD.slice(0,4)+'-'+r.MLSV_YMD.slice(4,6)+'-'+r.MLSV_YMD.slice(6,8);
@@ -2168,41 +2234,39 @@ function expandSubjectCell(cell){
 const TT_IMPORT_20260831 = {"20801":{"월":["지시과\n(2-7)","지시과\n(2-7)","영어2","인공\n(2-1)","스생2","역학\n(2-3)","역학\n(2-3)"],"화":["독작","융과탐\n(2-6)","미적1","영어2","물질\n(2-4)","동아리","동아리"],"수":["독작","영어2","지시과\n(2-7)","독작","인공\n(2-1)","인공\n(2-1)",""],"목":["영어2","스생2","미적1","미적1","융과탐\n(2-6)","융과탐\n(2-6)","창체"],"금":["물질\n(2-4)","물질\n(2-4)","독작","미적1","역학\n(2-3)","",""]},"20802":{"월":["지시과\n(2-7)","지시과\n(2-7)","영어2","세포\n(2-6)","스생2","인공\n(2-9)","인공\n(2-9)"],"화":["독작","융과탐\n(2-6)","미적1","영어2","물질\n(2-4)","동아리","동아리"],"수":["독작","영어2","지시과\n(2-7)","독작","세포\n(2-6)","세포\n(2-6)",""],"목":["영어2","스생2","미적1","미적1","융과탐\n(2-6)","융과탐\n(2-6)","창체"],"금":["물질\n(2-4)","물질\n(2-4)","독작","미적1","인공\n(2-9)","",""]},"20803":{"월":["융과탐\n(2-5)","융과탐\n(2-5)","영어2","윤사\n(2-5)","스생2","물질\n(2-2)","물질\n(2-2)"],"화":["독작","인공\n(2-7)","미적1","영어2","역학\n(다목1)","동아리","동아리"],"수":["독작","영어2","융과탐\n(2-5)","독작","윤사\n(2-5)","윤사\n(2-5)",""],"목":["영어2","스생2","미적1","미적1","인공\n(2-7)","인공\n(2-7)","창체"],"금":["역학\n(다목1)","역학\n(다목1)","독작","미적1","물질\n(2-2)","",""]},"20804":{"월":["역학\n(다목1)","역학\n(다목1)","영어2","인공\n(2-1)","스생2","물질\n(2-2)","물질\n(2-2)"],"화":["독작","융과탐\n(2-6)","미적1","영어2","지시과\n(2-6)","동아리","동아리"],"수":["독작","영어2","역학\n(다목1)","독작","인공\n(2-1)","인공\n(2-1)",""],"목":["영어2","스생2","미적1","미적1","융과탐\n(2-6)","융과탐\n(2-6)","창체"],"금":["지시과\n(2-6)","지시과\n(2-6)","독작","미적1","물질\n(2-2)","",""]},"20805":{"월":["융과탐\n(2-5)","융과탐\n(2-5)","영어2","인공\n(2-1)","스생2","역학\n(2-3)","역학\n(2-3)"],"화":["독작","지시과\n(2-8)","미적1","영어2","물질\n(2-4)","동아리","동아리"],"수":["독작","영어2","융과탐\n(2-5)","독작","인공\n(2-1)","인공\n(2-1)",""],"목":["영어2","스생2","미적1","미적1","지시과\n(2-8)","지시과\n(2-8)","창체"],"금":["물질\n(2-4)","물질\n(2-4)","독작","미적1","역학\n(2-3)","",""]},"20806":{"월":["지시과\n(2-7)","지시과\n(2-7)","영어2","인공\n(2-1)","스생2","역학\n(2-3)","역학\n(2-3)"],"화":["독작","물질\n(2-3)","미적1","영어2","인수\n(2-7)","동아리","동아리"],"수":["독작","영어2","지시과\n(2-7)","독작","인공\n(2-1)","인공\n(2-1)",""],"목":["영어2","스생2","미적1","미적1","물질\n(2-3)","물질\n(2-3)","창체"],"금":["인수\n(2-7)","인수\n(2-7)","독작","미적1","역학\n(2-3)","",""]},"20807":{"월":["지시과\n(2-7)","지시과\n(2-7)","영어2","물질\n(2-9)","스생2","인수\n(2-8)","인수\n(2-8)"],"화":["독작","역학\n(2-9)","미적1","영어2","인공\n(2-3)","동아리","동아리"],"수":["독작","영어2","지시과\n(2-7)","독작","물질\n(2-9)","물질\n(2-9)",""],"목":["영어2","스생2","미적1","미적1","역학\n(2-9)","역학\n(2-9)","창체"],"금":["인공\n(2-3)","인공\n(2-3)","독작","미적1","인수\n(2-8)","",""]},"20808":{"월":["지시과\n(2-7)","지시과\n(2-7)","영어2","인수\n(2-3)","스생2","인공\n(2-9)","인공\n(2-9)"],"화":["독작","물질\n(2-3)","미적1","영어2","역학\n(다목1)","동아리","동아리"],"수":["독작","영어2","지시과\n(2-7)","독작","인수\n(2-3)","인수\n(2-3)",""],"목":["영어2","스생2","미적1","미적1","물질\n(2-3)","물질\n(2-3)","창체"],"금":["역학\n(다목1)","역학\n(다목1)","독작","미적1","인공\n(2-9)","",""]},"20809":{"월":["물질\n(2-8)","물질\n(2-8)","영어2","인공\n(2-1)","스생2","역학\n(2-3)","역학\n(2-3)"],"화":["독작","융과탐\n(2-6)","미적1","영어2","지시과\n(2-6)","동아리","동아리"],"수":["독작","영어2","물질\n(2-8)","독작","인공\n(2-1)","인공\n(2-1)",""],"목":["영어2","스생2","미적1","미적1","융과탐\n(2-6)","융과탐\n(2-6)","창체"],"금":["지시과\n(2-6)","지시과\n(2-6)","독작","미적1","역학\n(2-3)","",""]},"20810":{"월":["지시과\n(2-7)","지시과\n(2-7)","영어2","일회\n(2-8)","스생2","물질\n(2-2)","물질\n(2-2)"],"화":["독작","역학\n(2-9)","미적1","영어2","인수\n(2-7)","동아리","동아리"],"수":["독작","영어2","지시과\n(2-7)","독작","일회\n(2-8)","일회\n(2-8)",""],"목":["영어2","스생2","미적1","미적1","역학\n(2-9)","역학\n(2-9)","창체"],"금":["인수\n(2-7)","인수\n(2-7)","독작","미적1","물질\n(2-2)","",""]},"20811":{"월":["윤사\n(2-2)","윤사\n(2-2)","영어2","한지탐\n(2-7)","스생2","일회\n(2-7)","일회\n(2-7)"],"화":["독작","사문탐\n(미래)","미적1","영어2","법사\n(2-9)","동아리","동아리"],"수":["독작","영어2","윤사\n(2-2)","독작","한지탐\n(2-7)","한지탐\n(2-7)",""],"목":["영어2","스생2","미적1","미적1","사문탐\n(미래)","사문탐\n(미래)","창체"],"금":["법사\n(2-9)","법사\n(2-9)","독작","미적1","일회\n(2-7)","",""]},"20812":{"월":["법사\n(2-3)","법사\n(2-3)","영어2","사문탐\n(2-2)","스생2","인공\n(2-9)","인공\n(2-9)"],"화":["독작","윤사\n(2-4)","미적1","영어2","동역\n(2-1)","동아리","동아리"],"수":["독작","영어2","법사\n(2-3)","독작","사문탐\n(2-2)","사문탐\n(2-2)",""],"목":["영어2","스생2","미적1","미적1","윤사\n(2-4)","윤사\n(2-4)","창체"],"금":["동역\n(2-1)","동역\n(2-1)","독작","미적1","인공\n(2-9)","",""]},"20813":{"월":["지시과\n(2-7)","지시과\n(2-7)","영어2","인공\n(2-1)","스생2","인수\n(2-8)","인수\n(2-8)"],"화":["독작","역학\n(2-9)","미적1","영어2","물질\n(2-4)","동아리","동아리"],"수":["독작","영어2","지시과\n(2-7)","독작","인공\n(2-1)","인공\n(2-1)",""],"목":["영어2","스생2","미적1","미적1","역학\n(2-9)","역학\n(2-9)","창체"],"금":["물질\n(2-4)","물질\n(2-4)","독작","미적1","인수\n(2-8)","",""]},"20814":{"월":["경제\n(2-1)","경제\n(2-1)","영어2","윤사\n(2-5)","스생2","한지탐\n(2-6)","한지탐\n(2-6)"],"화":["독작","일회\n(2-1)","미적1","영어2","동역\n(2-1)","동아리","동아리"],"수":["독작","영어2","경제\n(2-1)","독작","윤사\n(2-5)","윤사\n(2-5)",""],"목":["영어2","스생2","미적1","미적1","일회\n(2-1)","일회\n(2-1)","창체"],"금":["동역\n(2-1)","동역\n(2-1)","독작","미적1","한지탐\n(2-6)","",""]},"20815":{"월":["지시과\n(2-7)","지시과\n(2-7)","영어2","인공\n(2-1)","스생2","인수\n(2-8)","인수\n(2-8)"],"화":["독작","물질\n(2-3)","미적1","영어2","역학\n(다목1)","동아리","동아리"],"수":["독작","영어2","지시과\n(2-7)","독작","인공\n(2-1)","인공\n(2-1)",""],"목":["영어2","스생2","미적1","미적1","물질\n(2-3)","물질\n(2-3)","창체"],"금":["역학\n(다목1)","역학\n(다목1)","독작","미적1","인수\n(2-8)","",""]},"20816":{"월":["지시과\n(2-7)","지시과\n(2-7)","영어2","인수\n(2-3)","스생2","물질\n(2-2)","물질\n(2-2)"],"화":["독작","역학\n(2-9)","미적1","영어2","인공\n(2-3)","동아리","동아리"],"수":["독작","영어2","지시과\n(2-7)","독작","인수\n(2-3)","인수\n(2-3)",""],"목":["영어2","스생2","미적1","미적1","역학\n(2-9)","역학\n(2-9)","창체"],"금":["인공\n(2-3)","인공\n(2-3)","독작","미적1","물질\n(2-2)","",""]},"20817":{"월":["지시과\n(2-7)","지시과\n(2-7)","영어2","인공\n(2-1)","스생2","물질\n(2-2)","물질\n(2-2)"],"화":["독작","역학\n(2-9)","미적1","영어2","인수\n(2-7)","동아리","동아리"],"수":["독작","영어2","지시과\n(2-7)","독작","인공\n(2-1)","인공\n(2-1)",""],"목":["영어2","스생2","미적1","미적1","역학\n(2-9)","역학\n(2-9)","창체"],"금":["인수\n(2-7)","인수\n(2-7)","독작","미적1","물질\n(2-2)","",""]},"20818":{"월":["융과탐\n(2-5)","융과탐\n(2-5)","영어2","인공\n(2-1)","스생2","역학\n(2-3)","역학\n(2-3)"],"화":["독작","지시과\n(2-8)","미적1","영어2","물질\n(2-4)","동아리","동아리"],"수":["독작","영어2","융과탐\n(2-5)","독작","인공\n(2-1)","인공\n(2-1)",""],"목":["영어2","스생2","미적1","미적1","지시과\n(2-8)","지시과\n(2-8)","창체"],"금":["물질\n(2-4)","물질\n(2-4)","독작","미적1","역학\n(2-3)","",""]},"20819":{"월":["융과탐\n(2-5)","융과탐\n(2-5)","영어2","물질\n(2-9)","스생2","역학\n(2-3)","역학\n(2-3)"],"화":["독작","인공\n(2-7)","미적1","영어2","지시과\n(2-6)","동아리","동아리"],"수":["독작","영어2","융과탐\n(2-5)","독작","물질\n(2-9)","물질\n(2-9)",""],"목":["영어2","스생2","미적1","미적1","인공\n(2-7)","인공\n(2-7)","창체"],"금":["지시과\n(2-6)","지시과\n(2-6)","독작","미적1","역학\n(2-3)","",""]},"20820":{"월":["역학\n(다목1)","역학\n(다목1)","영어2","인공\n(2-1)","스생2","물질\n(2-2)","물질\n(2-2)"],"화":["독작","지시과\n(2-8)","미적1","영어2","인수\n(2-7)","동아리","동아리"],"수":["독작","영어2","역학\n(다목1)","독작","인공\n(2-1)","인공\n(2-1)",""],"목":["영어2","스생2","미적1","미적1","지시과\n(2-8)","지시과\n(2-8)","창체"],"금":["인수\n(2-7)","인수\n(2-7)","독작","미적1","물질\n(2-2)","",""]},"20821":{"월":["경제\n(2-1)","경제\n(2-1)","영어2","한지탐\n(2-7)","스생2","인공\n(2-9)","인공\n(2-9)"],"화":["독작","동역\n(2-2)","미적1","영어2","물질\n(2-4)","동아리","동아리"],"수":["독작","영어2","경제\n(2-1)","독작","한지탐\n(2-7)","한지탐\n(2-7)",""],"목":["영어2","스생2","미적1","미적1","동역\n(2-2)","동역\n(2-2)","창체"],"금":["물질\n(2-4)","물질\n(2-4)","독작","미적1","인공\n(2-9)","",""]},"20822":{"월":["역학\n(다목1)","역학\n(다목1)","영어2","인수\n(2-3)","스생2","물질\n(2-2)","물질\n(2-2)"],"화":["독작","인공\n(2-7)","미적1","영어2","지시과\n(2-6)","동아리","동아리"],"수":["독작","영어2","역학\n(다목1)","독작","인수\n(2-3)","인수\n(2-3)",""],"목":["영어2","스생2","미적1","미적1","인공\n(2-7)","인공\n(2-7)","창체"],"금":["지시과\n(2-6)","지시과\n(2-6)","독작","미적1","물질\n(2-2)","",""]},"20823":{"월":["역학\n(다목1)","역학\n(다목1)","영어2","인수\n(2-3)","스생2","물질\n(2-2)","물질\n(2-2)"],"화":["독작","지시과\n(2-8)","미적1","영어2","인공\n(2-3)","동아리","동아리"],"수":["독작","영어2","역학\n(다목1)","독작","인수\n(2-3)","인수\n(2-3)",""],"목":["영어2","스생2","미적1","미적1","지시과\n(2-8)","지시과\n(2-8)","창체"],"금":["인공\n(2-3)","인공\n(2-3)","독작","미적1","물질\n(2-2)","",""]},"20824":{"월":["융과탐\n(2-5)","융과탐\n(2-5)","영어2","물질\n(2-9)","스생2","인공\n(2-9)","인공\n(2-9)"],"화":["독작","역학\n(2-9)","미적1","영어2","지시과\n(2-6)","동아리","동아리"],"수":["독작","영어2","융과탐\n(2-5)","독작","물질\n(2-9)","물질\n(2-9)",""],"목":["영어2","스생2","미적1","미적1","역학\n(2-9)","역학\n(2-9)","창체"],"금":["지시과\n(2-6)","지시과\n(2-6)","독작","미적1","인공\n(2-9)","",""]}};
 async function applyImportedTimetables_20260831(){
   if(!confirm('업로드해주신 파일 기준으로 20801~20824 전체 시간표를 덮어씁니다. 계속할까요?')) return;
-  const next = Object.assign({}, state.timetables);
   let count = 0;
-  Object.keys(TT_IMPORT_20260831).forEach(no => {
-    next[no] = TT_IMPORT_20260831[no];
-    count++;
+  await mutateSharedTimetables(tts => {
+    Object.keys(TT_IMPORT_20260831).forEach(no => {
+      tts[no] = TT_IMPORT_20260831[no];
+      count++;
+    });
   });
-  state.timetables = next;
   if(state.ttEditor.open && state.ttEditor.no && TT_IMPORT_20260831[state.ttEditor.no]){
     state.ttEditor.grid = TT_IMPORT_20260831[state.ttEditor.no];
   }
-  await sSet('allthing-timetables', state.timetables, true);
   showToast(count + '명의 시간표를 새로 적용했어요.');
   render();
 }
 async function expandAllTimetableAbbrevs(){
   let changed = 0;
-  const next = {};
-  Object.keys(state.timetables).forEach(no => {
-    const grid = state.timetables[no] || {};
-    const newGrid = {};
-    Object.keys(grid).forEach(day => {
-      newGrid[day] = (grid[day] || []).map(cell => {
-        const out = expandSubjectCell(cell);
-        if(out !== cell) changed++;
-        return out;
+  await mutateSharedTimetables(tts => {
+    Object.keys(tts).forEach(no => {
+      const grid = tts[no] || {};
+      const newGrid = {};
+      Object.keys(grid).forEach(day => {
+        newGrid[day] = (grid[day] || []).map(cell => {
+          const out = expandSubjectCell(cell);
+          if(out !== cell) changed++;
+          return out;
+        });
       });
+      tts[no] = newGrid;
     });
-    next[no] = newGrid;
   });
   if(changed === 0){ showToast('바꿀 줄임말이 없어요.'); return; }
-  state.timetables = next;
   if(state.ttEditor.open && state.ttEditor.no){
     state.ttEditor.grid = state.timetables[state.ttEditor.no] || state.ttEditor.grid;
   }
-  await sSet('allthing-timetables', state.timetables, true);
   showToast(changed + '개 칸의 줄임말을 펼쳤어요.');
   render();
 }
