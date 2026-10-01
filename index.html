@@ -936,9 +936,30 @@ async function savePhotosForItem(itemId, photos){
   state.examPhotosCache = state.examPhotosCache || {};
   state.examPhotosCache[itemId] = photos || [];
 }
+// How many photos an item has, whichever storage scheme it was saved under.
+function examPhotoCount(item){
+  if(!item) return 0;
+  if(typeof item.photoCount === 'number') return item.photoCount;
+  if(Array.isArray(item.photos)) return item.photos.length;
+  return item.photo ? 1 : 0;
+}
+// Items created before photos moved to their own key still carry them inline as `photos`
+// (or a single `photo`). Fall back to those so older entries keep working untouched.
+function legacyInlinePhotos(itemId){
+  const item = state.exams.find(x => x.id === itemId);
+  if(!item) return [];
+  if(Array.isArray(item.photos) && item.photos.length) return item.photos;
+  if(item.photo) return [item.photo];
+  return [];
+}
 async function loadPhotosForItem(itemId){
   state.examPhotosCache = state.examPhotosCache || {};
   if(state.examPhotosCache[itemId]) return state.examPhotosCache[itemId];
+  const inline = legacyInlinePhotos(itemId);
+  if(inline.length){
+    state.examPhotosCache[itemId] = inline;
+    return inline;
+  }
   const fresh = await freshSharedValue('allthing-exam-photos', {});
   const photos = (fresh && fresh[itemId]) ? fresh[itemId] : [];
   state.examPhotosCache[itemId] = photos;
@@ -1044,7 +1065,7 @@ const SECTIONS = {
     rowHtml: (it) => {
       const dd = dDayInfo(it.date, it.endDate);
       const expanded = state.expandedExams.has(it.id);
-      const photoCount = it.photoCount || (it.photos ? it.photos.length : (it.photo ? 1 : 0));
+      const photoCount = examPhotoCount(it);
       const cachedPhotos = (state.examPhotosCache && state.examPhotosCache[it.id]) || null;
       const linkArr = Array.isArray(it.link) ? it.link : (it.link ? [it.link] : []);
       const sessions = Array.isArray(it.session) ? it.session : (it.session ? [it.session] : []);
@@ -1633,7 +1654,7 @@ async function openEditForm(section, id){
   render();
   const el = document.getElementById('sectionForm');
   if(el) el.scrollIntoView({ behavior:'smooth', block:'start' });
-  if(section === 'exams' && (item.photoCount || 0) > 0){
+  if(section === 'exams' && examPhotoCount(item) > 0){
     const photos = await withTimeout(loadPhotosForItem(id).catch(() => []), 6000, []);
     if(state.editing.section === section && state.editing.id === id){ // still editing this same item
       state.editing.data.photos = photos;
@@ -1657,7 +1678,7 @@ async function toggleExamExpand(id){
 }
 async function loadExamPhotosSafely(id){
   const item = state.exams.find(x => x.id === id);
-  const photoCount = item ? (item.photoCount || 0) : 0;
+  const photoCount = examPhotoCount(item);
   if(photoCount === 0 || (state.examPhotosCache && state.examPhotosCache[id])) return;
   state.examPhotoLoadFailed = state.examPhotoLoadFailed || {};
   delete state.examPhotoLoadFailed[id];
@@ -2152,7 +2173,9 @@ function renderSectionForm(section){
         <input id="field-${f.name}" type="file" accept="image/*" multiple>`;
     }
     if(f.type === 'multitext'){
-      const items = (val && val.length) ? val : [''];
+      // older records may hold a single string here (before this became a multi-entry field)
+      const arr = Array.isArray(val) ? val : (val ? [val] : []);
+      const items = arr.length ? arr : [''];
       return `<label class="field"><span>${f.label}</span></label>
         <div class="multitext-group" id="group-${f.name}">
           ${items.map(v => `
@@ -2953,7 +2976,10 @@ function bindEvents(){
       case 'goto': goto(el.dataset.view); break;
       case 'logout': handleLogout(); break;
       case 'openAdd': openAddForm(el.dataset.section, el.dataset.date); break;
-      case 'openEdit': openEditForm(el.dataset.section, el.dataset.id); break;
+      case 'openEdit': Promise.resolve(openEditForm(el.dataset.section, el.dataset.id)).catch(err => {
+        console.error('All thing: 수정 창을 여는 중 문제가 있었어요.', err);
+        showToast('수정 창을 열지 못했어요.', 'err');
+      }); break;
       case 'cancelForm': cancelForm(); break;
       case 'deleteItem': deleteSectionItem(el.dataset.section, el.dataset.id); break;
       case 'ttOpen': openTtEditor(); break;
