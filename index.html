@@ -600,6 +600,48 @@ html[data-layout="pc"] .split-cols{ grid-template-columns: 1fr 1fr !important; g
   }
 }
 
+/* ---------- stock game ---------- */
+.market-pill{ font-size:12px; font-weight:800; padding:5px 11px; border-radius:999px; }
+.market-pill.open{ background: var(--aqua-dim); color: var(--aqua-deep); }
+.market-pill.closed{ background: rgba(184,117,46,.16); color: var(--warm); }
+.wallet-card{ padding:16px 18px; }
+.wallet-total{ display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; }
+.wallet-total b{ font-size:24px; font-weight:800; letter-spacing:-.3px; }
+.wallet-split{ display:flex; gap:28px; margin-top:10px; }
+.wallet-split div{ display:flex; flex-direction:column; gap:2px; }
+.wallet-split b{ font-size:15px; }
+.wallet-note{ margin-top:10px; }
+.pl{ font-size:12.5px; font-weight:800; }
+.up{ color:#e5484d; } .down{ color:#3b82f6; } .flat{ color: var(--text-3); }
+.game-tabs{ display:flex; gap:6px; margin: 4px 0 14px; overflow-x:auto; scrollbar-width:none; }
+.game-tabs::-webkit-scrollbar{ display:none; }
+.game-tab{ flex:none; border:1px solid var(--border); background: var(--surface); color: var(--text-2); padding:8px 14px; border-radius:999px; font-size:13px; font-weight:700; }
+.game-tab.active{ background: var(--aqua); border-color: var(--aqua); color: var(--on-accent); }
+.stock-card{ background: var(--surface); border:1px solid var(--border); border-radius: var(--radius-sm); padding:14px 16px; }
+.stock-top{ display:flex; justify-content:space-between; gap:12px; align-items:center; }
+.stock-name{ font-size:14.5px; font-weight:800; display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+.stock-price{ font-size:19px; font-weight:800; margin-top:3px; letter-spacing:-.2px; }
+.stock-side{ display:flex; flex-direction:column; align-items:flex-end; gap:3px; flex:none; }
+.stock-chg{ font-size:12.5px; font-weight:800; }
+.spark{ width:90px; height:28px; display:block; }
+.stock-trade{ display:flex; align-items:center; gap:6px; margin-top:12px; flex-wrap:wrap; }
+.stock-have{ display:block; margin-top:3px; }
+.game-qty{ flex:1; min-width:56px; max-width:110px; background: var(--surface-2); border:1px solid var(--border); border-radius:10px; padding:8px 9px; font-size:14px; color: var(--text); }
+.game-qty:focus{ border-color: var(--aqua); outline:none; }
+.trade-buy, .trade-buy:hover{ background:#e5484d; color:#fff; border-color:transparent; }
+.trade-sell, .trade-sell:hover{ background:#3b82f6; color:#fff; border-color:transparent; }
+.trade-buy:hover:not(:disabled), .trade-sell:hover:not(:disabled){ filter: brightness(1.08); }
+.btn:disabled{ opacity:.4; cursor:not-allowed; transform:none; }
+.mine-value{ margin-top:6px; font-size:15px; font-weight:800; display:flex; align-items:center; gap:8px; }
+.item-actions{ display:flex; gap:8px; margin-top:10px; }
+.hint-banner{ background: rgba(184,117,46,.14); border-color: rgba(184,117,46,.35); color: var(--warm); }
+.hint-banner .ic{ color: var(--warm); }
+.rank-row{ align-items:center; }
+.rank-row.me{ border-color: var(--aqua); background: var(--aqua-dim); }
+.rank-no{ width:28px; font-weight:800; color: var(--aqua-deep); flex:none; }
+.rank-name{ flex:1; font-weight:700; }
+.rank-total{ font-weight:800; }
+
 /* ===================== responsive ===================== */
 @media (max-width: 879px){
   .sidebar{ display:none; }
@@ -1266,6 +1308,7 @@ const state = {
   examPhotosCache: {},
   examPhotoLoadFailed: {},
   usersConfirmed: false,
+  game: null,
   timetablesConfirmed: false,
   brandAnimPlayed: false,
   navAnim: 'view-enter',
@@ -1307,6 +1350,7 @@ const ICONS = {
   eye: '<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/>',
   'eye-off': '<path d="M3 3l18 18"/><path d="M10.6 5.2A10.6 10.6 0 0 1 12 5c6.4 0 10 7 10 7a17.7 17.7 0 0 1-3.2 4.2"/><path d="M6.5 6.7C3.9 8.4 2 12 2 12s3.6 7 10 7a9.6 9.6 0 0 0 4.4-1"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/>',
   users: '<circle cx="9" cy="8" r="3.2"/><path d="M2.5 20c1-3.3 3.6-5 6.5-5s5.5 1.7 6.5 5"/><circle cx="17.2" cy="8.4" r="2.6"/><path d="M16 15.4c2.3.4 4 1.9 4.8 4.6"/>',
+  chart: '<path d="M3 3v18h18"/><path d="m7 15 4-4 3 3 6-7"/>',
   rotate: '<path d="M3 12a9 9 0 0 1 15-6.7"/><path d="M21 3v6h-6"/><path d="M21 12a9 9 0 0 1-15 6.7"/><path d="M3 21v-6h6"/>'
 };
 function icon(name, cls){
@@ -1605,6 +1649,7 @@ async function handleLoginSubmit(){
   render();
 }
 async function handleLogout(){
+  if(state.game) stopGameSync();
   state.currentUser = null;
   state.view = 'home';
   state.splashPlayed = false;
@@ -2200,6 +2245,7 @@ const NAV = [
   { key:'exams', label:'수행평가·시험', icon:'exam' },
   { key:'events', label:'일정', icon:'event' },
   { key:'notices', label:'공지', icon:'notice' },
+  { key:'game', label:'주식게임', icon:'chart' },
   { key:'profile', label:'내 정보', icon:'profile' }
 ];
 const ACCOUNTS_NAV_ITEM = { key:'accounts', label:'계정 관리', icon:'users' };
@@ -2817,6 +2863,7 @@ function renderViewContent(){
     case 'exams': return renderSectionView('exams');
     case 'events': return renderSectionView('events');
     case 'notices': return renderSectionView('notices');
+    case 'game': return renderGameView();
     case 'profile': return renderProfileView();
     case 'accounts': return isAdmin() ? renderAccountsView() : renderHome();
     default: return renderHome();
@@ -3181,6 +3228,11 @@ function bindEvents(){
       case 'acctResetDefault': acctResetDefault(el.dataset.id); break;
       case 'acctSave': acctSave(el.dataset.id); break;
       case 'acctOpenAdd': acctOpenAdd(); break;
+      case 'gameTab': gameSwitchTab(el.dataset.tab); break;
+      case 'gameTrade': gameTrade(el.dataset.side, el.dataset.stock); break;
+      case 'gameMax': gameSetMax(el.dataset.side, el.dataset.stock); break;
+      case 'gameBuyItem': gameBuyItem(el.dataset.item); break;
+      case 'gameUseItem': gameUseItem(el.dataset.item); break;
       case 'applyClassNames': applyClassNames(); break;
       case 'acctCancelAdd': acctCancelAdd(); break;
       case 'acctDelete': acctDelete(el.dataset.id); break;
@@ -3209,6 +3261,17 @@ function bindEvents(){
   document.addEventListener('scroll', function(e){
     if(e.target && e.target.id === 'bottomNavScroll') updateBottomNavEdges(e.target);
   }, true);
+  document.addEventListener('input', function(e){
+    const t = e.target;
+    if(t && t.classList && t.classList.contains('game-qty') && state.game) state.game.qty[t.dataset.stock] = t.value;
+  });
+  document.addEventListener('focusout', function(e){
+    const t = e.target;
+    if(t && t.classList && t.classList.contains('game-qty') && state.game && state.game.pendingRender){
+      state.game.pendingRender = false;
+      setTimeout(() => { if(!(document.activeElement && document.activeElement.classList.contains('game-qty'))) render(); }, 0);
+    }
+  });
   document.addEventListener('change', function(e){
     if(e.target && e.target.id === 'mealJsonInput'){
       const file = e.target.files && e.target.files[0];
@@ -3362,6 +3425,491 @@ function renderInstallBanner(){
   document.addEventListener('click', armGuard, { once:true, capture:true });
 })();
 
+/* ===================== 주식 게임 =====================
+   Serverless design:
+   - Prices advance every 30 minutes. Whichever device first notices a new 30-minute slot
+     advances the market inside a Firebase transaction, so it happens exactly once even if
+     several people open the app at the same moment. Missed slots (e.g. overnight) are
+     caught up in one go, capped to the history length.
+   - Each player's wallet lives at its own path and is only ever changed through a
+     transaction on that path, so double-taps or two open tabs can't double-spend.
+   - The daily allowance is claimed lazily on the first visit of each day (no server cron).
+   - Nothing here is synced until someone actually opens the game tab, and the market node
+     stays tiny (a few numbers per stock), so this adds very little Firebase traffic.
+*/
+const GAME_PATH = 'allthing/allthing-game';
+const GAME_TICK_MS = 30 * 60 * 1000;
+const GAME_START_CASH = 1000000;
+const GAME_DAILY_CASH = 100000;
+const GAME_HISTORY_LEN = 48; // one day of 30-minute steps
+const GAME_STOCKS = [
+  { id:'meal',    name:'급식컴퍼니',     type:'안정형', vol:0.012, base:10000 },
+  { id:'library', name:'도서관미디어',   type:'안정형', vol:0.016, base:15000 },
+  { id:'store',   name:'매점전자',       type:'성장형', vol:0.026, base:20000 },
+  { id:'gym',     name:'체육관건설',     type:'고위험', vol:0.048, base:8000 },
+  { id:'break',   name:'쉬는시간게임즈', type:'테마형', vol:0.032, base:5000, jump:true }
+];
+const GAME_ITEMS = [
+  { id:'hintUp',   name:'상승 힌트', desc:'다음 변동에서 오를 가능성이 가장 높은 종목을 알려줘요.',     price:50000, dailyLimit:3 },
+  { id:'hintDown', name:'하락 경고', desc:'다음 변동에서 떨어질 가능성이 가장 높은 종목을 알려줘요.', price:50000, dailyLimit:3 }
+];
+// 50-minute periods (each starts at :40, ends at :30; lunch 12:30–13:40); trading is locked during these
+const CLASS_PERIODS = [['08:40','09:30'],['09:40','10:30'],['10:40','11:30'],['11:40','12:30'],['13:40','14:30'],['14:40','15:30'],['15:40','16:30']];
+// how many periods each weekday has (Mon/Tue/Thu end 16:30, Wed 15:30, Fri 14:30)
+const PERIODS_BY_WEEKDAY = { 1:7, 2:7, 3:6, 4:7, 5:5 };
+
+function gameTickNow(){ return Math.floor(Date.now() / GAME_TICK_MS); }
+function hmToMin(str){ const p = str.split(':').map(Number); return p[0]*60 + p[1]; }
+function marketStatus(d){
+  d = d || new Date();
+  const wd = d.getDay();
+  if(wd === 0 || wd === 6) return { open:true };
+  const mins = d.getHours()*60 + d.getMinutes();
+  const count = PERIODS_BY_WEEKDAY[wd] || 0;
+  for(let i = 0; i < count; i++){
+    if(mins >= hmToMin(CLASS_PERIODS[i][0]) && mins < hmToMin(CLASS_PERIODS[i][1])){
+      return { open:false, period:i+1, reopen:CLASS_PERIODS[i][1] };
+    }
+  }
+  return { open:true };
+}
+function nextTickLabel(){ const t = new Date((gameTickNow()+1) * GAME_TICK_MS); return pad2(t.getHours()) + ':' + pad2(t.getMinutes()); }
+function fmtWon(n){ return Math.round(n || 0).toLocaleString('ko-KR') + '원'; }
+function stockName(id){ const s = GAME_STOCKS.find(x => x.id === id); return s ? s.name : id; }
+
+/* ---- storage: real Firebase when configured, otherwise a localStorage stand-in with the same API ---- */
+const localGameDb = (function(){
+  const KEY = 'allthing:game-local';
+  let listeners = [];
+  function load(){ try{ return JSON.parse(localStorage.getItem(KEY)) || {}; }catch(e){ return {}; } }
+  function save(d){ try{ localStorage.setItem(KEY, JSON.stringify(d)); }catch(e){} }
+  function get(d, path){ return path.split('/').reduce((o,k) => (o == null ? undefined : o[k]), d); }
+  function put(d, path, v){
+    const ks = path.split('/'); let o = d;
+    for(let i = 0; i < ks.length-1; i++){ if(o[ks[i]] == null || typeof o[ks[i]] !== 'object') o[ks[i]] = {}; o = o[ks[i]]; }
+    const last = ks[ks.length-1];
+    if(v == null) delete o[last]; else o[last] = JSON.parse(JSON.stringify(v));
+  }
+  function snap(v){ return { val: () => (v === undefined ? null : v) }; }
+  function notify(){ const d = load(); listeners.forEach(x => x.cb(snap(get(d, x.path)))); }
+  function ref(path){
+    return {
+      once(){ return Promise.resolve(snap(get(load(), path))); },
+      on(evt, cb){ listeners.push({ path, cb }); cb(snap(get(load(), path))); },
+      off(){ listeners = listeners.filter(x => x.path !== path); },
+      update(ch){ const d = load(); Object.keys(ch).forEach(k => put(d, path+'/'+k, ch[k])); save(d); notify(); return Promise.resolve(); },
+      set(v){ const d = load(); put(d, path, v); save(d); notify(); return Promise.resolve(); },
+      push(v){ const k = 'k' + Date.now().toString(36) + Math.random().toString(36).slice(2,6); const d = load(); put(d, path+'/'+k, v); save(d); notify(); return Promise.resolve(); },
+      transaction(fn){
+        const d = load(); const cur = get(d, path);
+        const next = fn(cur === undefined ? null : JSON.parse(JSON.stringify(cur)));
+        if(next === undefined) return Promise.resolve({ committed:false, snapshot:snap(cur) });
+        put(d, path, next); save(d); notify();
+        return Promise.resolve({ committed:true, snapshot:snap(next) });
+      },
+      limitToLast(n){
+        return { once(){
+          const v = get(load(), path) || {};
+          const o = {}; Object.keys(v).sort().slice(-n).forEach(k => o[k] = v[k]);
+          return Promise.resolve(snap(o));
+        } };
+      }
+    };
+  }
+  return { ref };
+})();
+function gameDb(){ return (firebaseReady && fbDb) ? fbDb : localGameDb; }
+function gameRef(sub){ return gameDb().ref(GAME_PATH + (sub ? '/' + sub : '')); }
+
+/* ---- market engine ---- */
+function gaussRand(){ let u = 0, v = 0; while(!u) u = Math.random(); while(!v) v = Math.random(); return Math.sqrt(-2*Math.log(u)) * Math.cos(2*Math.PI*v); }
+function randomBiases(){ const b = {}; GAME_STOCKS.forEach(s => b[s.id] = Math.round((Math.random()*2 - 1) * 100) / 100); return b; }
+function stepPrice(stock, price, bias){
+  // random walk + the hidden "bias" chosen one step earlier (what the hint items reveal)
+  // + a gentle pull back toward the base price so nothing drifts off to infinity or zero
+  let r = gaussRand()*stock.vol + bias*stock.vol*0.9 + ((stock.base - price)/stock.base)*0.03;
+  if(stock.jump && Math.random() < 0.07) r += (Math.random() < 0.5 ? -1 : 1) * (0.08 + Math.random()*0.12);
+  const next = Math.max(stock.base * 0.1, price * (1 + r));
+  return Math.max(10, Math.round(next / 10) * 10);
+}
+function advanceMarket(m, target){
+  if(!m || !m.prices){
+    const prices = {}, history = {};
+    GAME_STOCKS.forEach(s => { prices[s.id] = s.base; history[s.id] = [s.base]; });
+    return { tick: target, prices, prev: Object.assign({}, prices), history, bias: randomBiases() };
+  }
+  if(m.tick >= target) return undefined; // already current — abort the transaction, nothing to write
+  const steps = Math.min(target - m.tick, GAME_HISTORY_LEN);
+  let prices = Object.assign({}, m.prices), prev = prices, bias = m.bias || randomBiases();
+  const history = {};
+  GAME_STOCKS.forEach(s => {
+    if(!prices[s.id]) prices[s.id] = s.base;
+    history[s.id] = (m.history && Array.isArray(m.history[s.id])) ? m.history[s.id].slice() : [prices[s.id]];
+  });
+  for(let i = 0; i < steps; i++){
+    prev = prices;
+    const next = {};
+    GAME_STOCKS.forEach(s => {
+      next[s.id] = stepPrice(s, prev[s.id], (bias && bias[s.id]) || 0);
+      history[s.id].push(next[s.id]);
+      if(history[s.id].length > GAME_HISTORY_LEN) history[s.id].shift();
+    });
+    prices = next;
+    bias = randomBiases();
+  }
+  return { tick: target, prices, prev, history, bias };
+}
+async function ensureMarketCurrent(){
+  const g = state.game, target = gameTickNow();
+  if(g.market && g.market.tick >= target) return;
+  if(g.advancing) return;
+  g.advancing = true;
+  try{ await withTimeout(gameRef('market').transaction(cur => advanceMarket(cur, target)), 8000, null); }catch(e){}
+  g.advancing = false;
+}
+
+/* ---- player wallet ---- */
+function playerDefaults(){
+  return { cash: GAME_START_CASH, holdings:{}, cost:{}, items:{}, lastAllowance: todayStr(), daily:{ date: todayStr() }, joined: Date.now() };
+}
+function playerTotals(p, prices){
+  p = p || {}; prices = prices || {};
+  let stockValue = 0;
+  Object.keys(p.holdings || {}).forEach(id => { stockValue += (p.holdings[id] || 0) * (prices[id] || 0); });
+  return { cash: p.cash || 0, stockValue, total: (p.cash || 0) + stockValue };
+}
+async function claimDailyAllowance(){
+  const id = state.currentUser; if(!id) return;
+  let created = false, granted = false;
+  const res = await withTimeout(gameRef('players/' + id).transaction(cur => {
+    created = false; granted = false;
+    if(!cur){ created = true; return playerDefaults(); }
+    if(cur.lastAllowance !== todayStr()){
+      cur.cash = (cur.cash || 0) + GAME_DAILY_CASH;
+      cur.lastAllowance = todayStr();
+      granted = true;
+      return cur;
+    }
+    return undefined;
+  }), 8000, null);
+  if(res && res.committed){
+    if(created) showToast('주식게임 시작! 시작 자금 ' + fmtWon(GAME_START_CASH) + '을 받았어요.');
+    else if(granted) showToast('오늘의 지원금 ' + fmtWon(GAME_DAILY_CASH) + '을 받았어요.');
+    gameLog({ type: created ? 'start' : 'allowance', amount: created ? GAME_START_CASH : GAME_DAILY_CASH });
+  }
+}
+function gameLog(entry){
+  try{ const r = gameRef('log').push(Object.assign({ uid: state.currentUser, at: Date.now() }, entry)); if(r && r.catch) r.catch(() => {}); }catch(e){}
+}
+
+/* ---- trading ---- */
+async function gameTrade(side, stockId){
+  const st = marketStatus();
+  if(!st.open){ showToast('수업 시간에는 거래할 수 없어요. ' + st.reopen + '에 다시 열려요.', 'err'); return; }
+  const g = state.game;
+  if(!g.market || !g.market.prices || !g.playerLoaded){ showToast('시장 정보를 불러오는 중이에요.', 'err'); return; }
+  if(g.market.tick < gameTickNow()) await ensureMarketCurrent();
+  const price = g.market.prices[stockId];
+  const qty = Math.floor(Number(g.qty[stockId] || 0));
+  if(!(qty > 0)){ showToast('수량을 입력해주세요.', 'err'); return; }
+  if(!(price > 0)){ showToast('시세를 확인할 수 없어요.', 'err'); return; }
+  let err = '';
+  const res = await withTimeout(gameRef('players/' + state.currentUser).transaction(cur => {
+    err = '';
+    if(!cur) cur = playerDefaults();
+    cur.holdings = cur.holdings || {}; cur.cost = cur.cost || {};
+    const have = cur.holdings[stockId] || 0;
+    if(side === 'buy'){
+      const total = price * qty;
+      if((cur.cash || 0) < total){ err = '현금이 부족해요.'; return undefined; }
+      cur.cash -= total;
+      cur.cost[stockId] = Math.round(((cur.cost[stockId] || 0) * have + total) / (have + qty));
+      cur.holdings[stockId] = have + qty;
+    } else {
+      if(have < qty){ err = '보유한 수량보다 많이 팔 수 없어요.'; return undefined; }
+      cur.cash = (cur.cash || 0) + price * qty;
+      cur.holdings[stockId] = have - qty;
+      if(cur.holdings[stockId] === 0){ delete cur.holdings[stockId]; delete cur.cost[stockId]; }
+    }
+    return cur;
+  }), 8000, null);
+  if(err){ showToast(err, 'err'); return; }
+  if(!res || !res.committed){ showToast('거래하지 못했어요. 잠시 후 다시 시도해주세요.', 'err'); return; }
+  g.qty[stockId] = '';
+  gameLog({ type: side, stock: stockId, qty, price });
+  showToast(stockName(stockId) + ' ' + qty + '주 ' + (side === 'buy' ? '매수' : '매도') + ' 완료');
+}
+function gameSetMax(side, stockId){
+  const g = state.game, price = g.market && g.market.prices ? g.market.prices[stockId] : 0, p = g.player || {};
+  g.qty[stockId] = side === 'buy' ? (price > 0 ? Math.floor((p.cash || 0) / price) : 0) : ((p.holdings || {})[stockId] || 0);
+  render();
+}
+
+/* ---- items ---- */
+async function gameBuyItem(itemId){
+  const item = GAME_ITEMS.find(x => x.id === itemId); if(!item) return;
+  let err = '';
+  const res = await withTimeout(gameRef('players/' + state.currentUser).transaction(cur => {
+    err = '';
+    if(!cur) cur = playerDefaults();
+    cur.items = cur.items || {};
+    if(!cur.daily || cur.daily.date !== todayStr()) cur.daily = { date: todayStr() };
+    const bought = cur.daily[itemId] || 0;
+    if(bought >= item.dailyLimit){ err = item.name + '은(는) 하루에 ' + item.dailyLimit + '개까지만 살 수 있어요.'; return undefined; }
+    if((cur.cash || 0) < item.price){ err = '현금이 부족해요.'; return undefined; }
+    cur.cash -= item.price;
+    cur.items[itemId] = (cur.items[itemId] || 0) + 1;
+    cur.daily[itemId] = bought + 1;
+    return cur;
+  }), 8000, null);
+  if(err){ showToast(err, 'err'); return; }
+  if(!res || !res.committed){ showToast('구매하지 못했어요. 잠시 후 다시 시도해주세요.', 'err'); return; }
+  gameLog({ type:'item', item: itemId, price: item.price });
+  showToast(item.name + '을(를) 샀어요.');
+}
+async function gameUseItem(itemId){
+  const item = GAME_ITEMS.find(x => x.id === itemId); if(!item) return;
+  await ensureMarketCurrent();
+  const m = state.game.market;
+  if(!m || !m.bias){ showToast('시장 정보를 불러오는 중이에요.', 'err'); return; }
+  let err = '';
+  const res = await withTimeout(gameRef('players/' + state.currentUser).transaction(cur => {
+    err = '';
+    if(!cur || !cur.items || !(cur.items[itemId] > 0)){ err = '가지고 있는 ' + item.name + '이(가) 없어요.'; return undefined; }
+    cur.items[itemId] -= 1;
+    return cur;
+  }), 8000, null);
+  if(err){ showToast(err, 'err'); return; }
+  if(!res || !res.committed){ showToast('아이템을 쓰지 못했어요. 잠시 후 다시 시도해주세요.', 'err'); return; }
+  const sorted = GAME_STOCKS.slice().sort((a,b) => (m.bias[b.id] || 0) - (m.bias[a.id] || 0));
+  const pick = itemId === 'hintUp' ? sorted[0] : sorted[sorted.length - 1];
+  state.game.hint = { type: itemId, stock: pick.id, tick: m.tick, until: nextTickLabel() };
+  gameLog({ type:'use', item: itemId });
+  render();
+}
+
+/* ---- ranking & history ---- */
+async function loadGameRanking(){
+  const g = state.game;
+  g.rankLoading = true; render();
+  const r = await withTimeout(gameRef('players').once('value').then(s => s.val()), 8000, null);
+  g.rankLoading = false;
+  const prices = (g.market || {}).prices || {};
+  g.ranking = r ? Object.keys(r).map(id => ({ id, total: playerTotals(r[id], prices).total })).sort((a,b) => b.total - a.total) : null;
+  render();
+}
+async function loadGameLog(){
+  const g = state.game;
+  g.logLoading = true; render();
+  const r = await withTimeout(gameRef('log').limitToLast(isAdmin() ? 150 : 300).once('value').then(s => s.val()), 8000, null);
+  g.logLoading = false;
+  let list = Object.values(r || {}).sort((a,b) => (b.at || 0) - (a.at || 0));
+  if(!isAdmin()) list = list.filter(x => x.uid === state.currentUser);
+  g.log = list.slice(0, 100);
+  render();
+}
+
+/* ---- sync lifecycle ---- */
+function renderGameSafe(){
+  // don't wipe out a number someone is in the middle of typing
+  const a = document.activeElement;
+  if(a && a.classList && a.classList.contains('game-qty')){ state.game.pendingRender = true; return; }
+  render();
+}
+function stopGameSync(){
+  const g = state.game;
+  (g.refs || []).forEach(r => { try{ r.off(); }catch(e){} });
+  if(g.timer) clearInterval(g.timer);
+  state.game = freshGameState();
+}
+function startGameSync(){
+  const g = state.game;
+  if(!state.currentUser || g.syncedFor === state.currentUser) return;
+  if(g.syncedFor) stopGameSync();
+  const gg = state.game;
+  gg.syncedFor = state.currentUser;
+  const marketRef = gameRef('market');
+  const playerRef = gameRef('players/' + state.currentUser);
+  gg.refs = [marketRef, playerRef];
+  marketRef.on('value', snap => { gg.market = snap.val(); gg.marketLoaded = true; if(state.view === 'game') renderGameSafe(); });
+  playerRef.on('value', snap => { gg.player = snap.val(); gg.playerLoaded = true; if(state.view === 'game') renderGameSafe(); });
+  ensureMarketCurrent().then(claimDailyAllowance);
+  gg.timer = setInterval(() => {
+    if(state.view !== 'game') return;
+    const key = gameTickNow() + '|' + todayStr() + '|' + JSON.stringify(marketStatus());
+    if(key !== gg.statusKey){
+      const dayChanged = gg.statusKey && gg.statusKey.split('|')[1] !== todayStr();
+      gg.statusKey = key;
+      ensureMarketCurrent();
+      if(dayChanged) claimDailyAllowance();
+      renderGameSafe();
+    }
+  }, 15000);
+}
+function freshGameState(){
+  return { tab:'market', market:null, player:null, marketLoaded:false, playerLoaded:false, qty:{}, hint:null,
+           ranking:null, log:null, syncedFor:null, refs:[], timer:null, statusKey:'', advancing:false };
+}
+
+/* ---- rendering ---- */
+function gameSparkline(arr){
+  if(!Array.isArray(arr) || arr.length < 2) return '';
+  const w = 90, h = 28, min = Math.min.apply(null, arr), max = Math.max.apply(null, arr), rng = (max - min) || 1;
+  const pts = arr.map((v,i) => (i/(arr.length-1)*w).toFixed(1) + ',' + (h - ((v-min)/rng)*(h-2) - 1).toFixed(1)).join(' ');
+  return `<svg class="spark" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none"><polyline points="${pts}" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" stroke-linecap="round"/></svg>`;
+}
+function changeInfo(now, before){
+  if(!before || !now) return { cls:'flat', text:'0.00%' };
+  const pct = (now - before) / before * 100;
+  if(Math.abs(pct) < 0.005) return { cls:'flat', text:'0.00%' };
+  return { cls: pct > 0 ? 'up' : 'down', text: (pct > 0 ? '▲ ' : '▼ ') + Math.abs(pct).toFixed(2) + '%' };
+}
+function renderGameMarket(){
+  const g = state.game, m = g.market, p = g.player || {}, open = marketStatus().open;
+  return `<div class="list">${GAME_STOCKS.map(s => {
+    const price = m.prices[s.id] || s.base;
+    const ch = changeInfo(price, (m.prev || {})[s.id]);
+    const have = (p.holdings || {})[s.id] || 0;
+    return `
+    <div class="stock-card">
+      <div class="stock-top">
+        <div>
+          <div class="stock-name">${esc(s.name)} <span class="badge badge-alt">${esc(s.type)}</span></div>
+          <div class="stock-price">${fmtWon(price)}</div>
+          <span class="text-3 small stock-have">보유 ${have}주</span>
+        </div>
+        <div class="stock-side ${ch.cls}">
+          ${gameSparkline((m.history || {})[s.id])}
+          <div class="stock-chg">${ch.text}</div>
+        </div>
+      </div>
+      <div class="stock-trade">
+        <input class="game-qty" type="number" min="1" step="1" inputmode="numeric" placeholder="수량" data-stock="${s.id}" value="${esc(g.qty[s.id] || '')}">
+        <button type="button" class="btn btn-ghost btn-sm" data-act="gameMax" data-side="buy" data-stock="${s.id}">최대</button>
+        ${have ? `<button type="button" class="btn btn-ghost btn-sm" data-act="gameMax" data-side="sell" data-stock="${s.id}">전량</button>` : ''}
+        <button type="button" class="btn btn-sm trade-buy" data-act="gameTrade" data-side="buy" data-stock="${s.id}" ${open ? '' : 'disabled'}>매수</button>
+        <button type="button" class="btn btn-sm trade-sell" data-act="gameTrade" data-side="sell" data-stock="${s.id}" ${open && have ? '' : 'disabled'}>매도</button>
+      </div>
+    </div>`;
+  }).join('')}</div>`;
+}
+function renderGameMine(){
+  const g = state.game, m = g.market, p = g.player || {}, ids = Object.keys(p.holdings || {}).filter(id => p.holdings[id] > 0);
+  if(!ids.length) return `<div class="empty-state">${icon('chart')}<p>아직 가진 주식이 없어요. 시장 탭에서 사보세요.</p></div>`;
+  return `<div class="list">${ids.map(id => {
+    const qty = p.holdings[id], price = m.prices[id] || 0, cost = (p.cost || {})[id] || price;
+    const value = qty * price, ch = changeInfo(price, cost);
+    return `
+    <div class="list-item"><div class="list-item-body">
+      <div class="row-head"><span class="row-title" style="margin:0;">${esc(stockName(id))}</span><span class="text-3 small">${qty}주</span></div>
+      <div class="row-sub">평균 ${fmtWon(cost)} → 현재 ${fmtWon(price)}</div>
+      <div class="mine-value">${fmtWon(value)} <span class="pl ${ch.cls}">${ch.text}</span></div>
+    </div></div>`;
+  }).join('')}</div>`;
+}
+function renderGameShop(){
+  const g = state.game, m = g.market, p = g.player || {};
+  const daily = (p.daily && p.daily.date === todayStr()) ? p.daily : {};
+  const hint = g.hint && m && g.hint.tick === m.tick ? g.hint : null;
+  return `
+  ${hint ? `
+  <div class="banner hint-banner">
+    ${icon(hint.type === 'hintUp' ? 'chart' : 'notice')}
+    <span><b>${hint.type === 'hintUp' ? '상승 힌트' : '하락 경고'}</b> · ${esc(stockName(hint.stock))}이(가) ${hint.until} 변동에서 ${hint.type === 'hintUp' ? '오를' : '떨어질'} 가능성이 가장 높아요. (확실하진 않아요!)</span>
+  </div>` : ''}
+  <p class="text-3 small" style="margin:0 0 10px;">지금은 게임 아이템만 팔아요. 실물 상점은 나중에 열릴 예정이에요.</p>
+  <div class="list">${GAME_ITEMS.map(it => {
+    const owned = (p.items || {})[it.id] || 0, bought = daily[it.id] || 0;
+    return `
+    <div class="list-item"><div class="list-item-body">
+      <div class="row-head"><span class="row-title" style="margin:0;">${esc(it.name)}</span><span class="badge">${fmtWon(it.price)}</span></div>
+      <div class="row-sub">${esc(it.desc)}</div>
+      <div class="row-sub" style="margin-top:4px;">보유 ${owned}개 · 오늘 구매 ${bought}/${it.dailyLimit}</div>
+      <div class="item-actions">
+        <button type="button" class="btn btn-primary btn-sm" data-act="gameBuyItem" data-item="${it.id}" ${bought >= it.dailyLimit ? 'disabled' : ''}>구매</button>
+        <button type="button" class="btn btn-ghost btn-sm" data-act="gameUseItem" data-item="${it.id}" ${owned ? '' : 'disabled'}>사용</button>
+      </div>
+    </div></div>`;
+  }).join('')}</div>`;
+}
+function renderGameRank(){
+  const g = state.game;
+  if(g.rankLoading) return `<p class="text-2">순위를 불러오는 중이에요…</p>`;
+  if(!g.ranking) return `<p class="text-2">순위를 불러오지 못했어요. <button type="button" class="link-btn" data-act="gameTab" data-tab="rank">다시 시도</button></p>`;
+  if(!g.ranking.length) return `<div class="empty-state">${icon('users')}<p>아직 참가한 사람이 없어요.</p></div>`;
+  return `
+  <div class="list">${g.ranking.map((r,i) => {
+    const u = state.users[r.id];
+    return `<div class="list-item rank-row ${r.id === state.currentUser ? 'me' : ''}">
+      <span class="rank-no">${i+1}</span>
+      <span class="rank-name">${esc(u ? u.displayName : r.id)}</span>
+      <span class="rank-total">${fmtWon(r.total)}</span>
+    </div>`;
+  }).join('')}</div>
+  <p class="footnote">순위는 탭을 열 때마다 새로 계산돼요 · 현금 + 보유 주식 현재가 기준</p>`;
+}
+function describeLog(x){
+  if(x.type === 'buy')  return esc(stockName(x.stock)) + ' ' + x.qty + '주 매수 · ' + fmtWon(x.price * x.qty);
+  if(x.type === 'sell') return esc(stockName(x.stock)) + ' ' + x.qty + '주 매도 · ' + fmtWon(x.price * x.qty);
+  if(x.type === 'item'){ const it = GAME_ITEMS.find(i => i.id === x.item); return esc(it ? it.name : x.item) + ' 구매 · ' + fmtWon(x.price); }
+  if(x.type === 'use'){ const it = GAME_ITEMS.find(i => i.id === x.item); return esc(it ? it.name : x.item) + ' 사용'; }
+  if(x.type === 'start') return '게임 시작 · ' + fmtWon(x.amount);
+  if(x.type === 'allowance') return '오늘의 지원금 · ' + fmtWon(x.amount);
+  return esc(x.type);
+}
+function renderGameLog(){
+  const g = state.game;
+  if(g.logLoading) return `<p class="text-2">거래 내역을 불러오는 중이에요…</p>`;
+  if(!g.log) return `<p class="text-2">거래 내역을 불러오지 못했어요. <button type="button" class="link-btn" data-act="gameTab" data-tab="log">다시 시도</button></p>`;
+  if(!g.log.length) return `<div class="empty-state">${icon('copy')}<p>아직 거래 내역이 없어요.</p></div>`;
+  return `<div class="list">${g.log.map(x => {
+    const d = new Date(x.at || 0);
+    const who = isAdmin() ? `<span class="badge badge-alt">${esc((state.users[x.uid] || {}).displayName || x.uid)}</span>` : '';
+    return `<div class="list-item"><div class="list-item-body">
+      <div class="row-head">${who}<span class="text-3 small">${d.getMonth()+1}/${d.getDate()} ${pad2(d.getHours())}:${pad2(d.getMinutes())}</span></div>
+      <div class="row-sub">${describeLog(x)}</div>
+    </div></div>`;
+  }).join('')}</div>`;
+}
+function renderGameView(){
+  startGameSync();
+  const g = state.game, st = marketStatus();
+  const tabs = [['market','시장'],['mine','내 주식'],['shop','상점'],['rank','순위'],['log', isAdmin() ? '전체 거래내역' : '거래내역']];
+  const head = `
+  <div class="view-header">
+    <h2>${icon('chart')} 주식게임</h2>
+    <span class="market-pill ${st.open ? 'open' : 'closed'}">${st.open ? '거래 가능' : st.period + '교시 수업 중 · ' + st.reopen + ' 재개'}</span>
+  </div>`;
+  if(!g.marketLoaded || !g.playerLoaded || !g.market || !g.market.prices){
+    return head + `<div class="empty-state">${icon('chart')}<p>시장 정보를 불러오는 중이에요…</p></div>`;
+  }
+  const t = playerTotals(g.player, g.market.prices);
+  const ch = changeInfo(t.total, GAME_START_CASH);
+  return head + `
+  <div class="card wallet-card">
+    <div class="wallet-total"><span class="text-3 small">총자산</span><b>${fmtWon(t.total)}</b><span class="pl ${ch.cls}">${ch.text}</span></div>
+    <div class="wallet-split">
+      <div><span class="text-3 small">현금</span><b>${fmtWon(t.cash)}</b></div>
+      <div><span class="text-3 small">주식</span><b>${fmtWon(t.stockValue)}</b></div>
+    </div>
+    <p class="text-3 small wallet-note">시세는 30분마다 바뀌어요 · 다음 변동 ${nextTickLabel()} · 매일 첫 접속 때 지원금 ${fmtWon(GAME_DAILY_CASH)}</p>
+  </div>
+  <div class="game-tabs">${tabs.map(tb => `<button type="button" class="game-tab ${g.tab === tb[0] ? 'active' : ''}" data-act="gameTab" data-tab="${tb[0]}">${tb[1]}</button>`).join('')}</div>
+  ${g.tab === 'market' ? renderGameMarket() : ''}
+  ${g.tab === 'mine' ? renderGameMine() : ''}
+  ${g.tab === 'shop' ? renderGameShop() : ''}
+  ${g.tab === 'rank' ? renderGameRank() : ''}
+  ${g.tab === 'log' ? renderGameLog() : ''}
+  `;
+}
+function gameSwitchTab(tab){
+  state.game.tab = tab;
+  if(tab === 'rank') loadGameRanking();
+  else if(tab === 'log') loadGameLog();
+  else render();
+}
+
+state.game = freshGameState();
 bindEvents();
 init();
 </script>
