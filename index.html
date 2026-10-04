@@ -983,21 +983,113 @@ async function deleteSectionItemSafe(section, id){
   await sSet(cfg.storageKey, list, true);
   if(section === 'exams'){ await deletePhotosForItem(id); }
 }
-async function mutateSharedUsers(mutateFn){
-  const fresh = await freshSharedValue('allthing-users', null);
-  const users = (fresh && typeof fresh === 'object') ? Object.assign({}, fresh) : Object.assign({}, state.users);
-  mutateFn(users);
-  state.users = users;
-  await sSet('allthing-users', users, true);
-  return users;
+/* ---------- accounts & timetables: confirmed, per-entry writes ----------
+   This is what was resetting accounts. Two things combined:
+   1) A device that couldn't actually read the server (offline, a hung Firebase read, blocked
+      rules, freshly cleared site data) fell back to the built-in default accounts — and then
+      WROTE those defaults back to the server, wiping every real nickname/password.
+   2) Every account change re-uploaded the ENTIRE accounts list from this device's copy, so a
+      device with a stale copy silently reverted everyone else's changes.
+   Fix: (a) a device never writes accounts/timetables until it has positively confirmed the
+   server's current data, and (b) each change only touches the specific account/field it's
+   about (Firebase multi-path update), so it can't clobber anyone else's entry.
+*/
+async function fbReadStrict(key, ms){
+  // tri-state: {ok:true,val} = server answered (val may be null = genuinely empty),
+  // {ok:false} = couldn't reach/read the server. Never confuses the two.
+  if(!(firebaseReady && fbDb)) return { ok:false };
+  const res = await withTimeout(
+    fbDb.ref('allthing/'+key).once('value').then(snap => ({ ok:true, val: snap.val() })),
+    ms || 5000,
+    { ok:false }
+  );
+  return res || { ok:false };
 }
-async function mutateSharedTimetables(mutateFn){
-  const fresh = await freshSharedValue('allthing-timetables', null);
-  const tts = (fresh && typeof fresh === 'object') ? Object.assign({}, fresh) : Object.assign({}, state.timetables);
-  mutateFn(tts);
-  state.timetables = tts;
-  await sSet('allthing-timetables', tts, true);
-  return tts;
+function applyPathChanges(base, changes){
+  const out = Object.assign({}, base || {});
+  Object.keys(changes).forEach(p => {
+    const slash = p.indexOf('/');
+    const v = changes[p];
+    if(slash === -1){
+      if(v === null) delete out[p]; else out[p] = v;
+    } else {
+      const id = p.slice(0, slash), field = p.slice(slash+1);
+      const rec = Object.assign({}, out[id] || {});
+      if(v === null) delete rec[field]; else rec[field] = v;
+      out[id] = rec;
+    }
+  });
+  return out;
+}
+async function ensureConfirmed(key, flag){
+  if(!(firebaseReady && fbDb) || state[flag]) return true;
+  const r = await fbReadStrict(key, 6000);
+  if(!r.ok){
+    showToast('서버와 연결이 확인되지 않아 저장하지 않았어요. 잠시 후 다시 시도해주세요.', 'err');
+    return false;
+  }
+  state[flag] = true;
+  if(r.val){
+    const sk = SYNC_KEY_MAP[key];
+    state[sk] = r.val;
+    lsSet(key, true, r.val);
+  }
+  return true;
+}
+async function updateSharedEntries(key, flag, changes){
+  if(!(await ensureConfirmed(key, flag))) throw new Error('NOT_CONFIRMED');
+  if(firebaseReady && fbDb){
+    // permission errors reject quickly; a plain timeout means "queued, will sync when online"
+    const res = await withTimeout(
+      fbDb.ref('allthing/'+key).update(changes).then(() => 'ok', () => 'denied'),
+      8000, 'queued'
+    );
+    if(res === 'denied'){
+      showToast('서버가 저장을 거부했어요. 데이터베이스 규칙을 확인해주세요.', 'err');
+      throw new Error('DENIED');
+    }
+  }
+  const sk = SYNC_KEY_MAP[key];
+  state[sk] = applyPathChanges(state[sk], changes);
+  lsSet(key, true, state[sk]);
+  if(!(firebaseReady && fbDb) && storageOK){
+    try{ await window.storage.set(key, JSON.stringify(state[sk]), true); }catch(e){}
+  }
+  return state[sk];
+}
+function updateUsers(changes){ return updateSharedEntries('allthing-users', 'usersConfirmed', changes); }
+function updateTimetables(changes){ return updateSharedEntries('allthing-timetables', 'timetablesConfirmed', changes); }
+
+/* ---------- password hashing ----------
+   Passwords used to sit in the database as plain text, readable by anyone who opened the
+   database URL. Now they're stored only as a salted PBKDF2 hash. Older plain-text entries
+   keep working and are upgraded to a hash automatically the next time that person logs in.
+*/
+function randomSalt(){
+  const a = new Uint8Array(16); crypto.getRandomValues(a);
+  return Array.from(a).map(b => b.toString(16).padStart(2,'0')).join('');
+}
+async function hashPassword(pw, salt){
+  const enc = new TextEncoder();
+  const keyMat = await crypto.subtle.importKey('raw', enc.encode(pw), 'PBKDF2', false, ['deriveBits']);
+  const bits = await crypto.subtle.deriveBits({ name:'PBKDF2', salt: enc.encode(salt), iterations: 100000, hash:'SHA-256' }, keyMat, 256);
+  return Array.from(new Uint8Array(bits)).map(b => b.toString(16).padStart(2,'0')).join('');
+}
+async function verifyPassword(user, pw){
+  if(!user) return false;
+  if(user.pwHash && user.pwSalt){
+    try{ return (await hashPassword(pw, user.pwSalt)) === user.pwHash; }catch(e){ return false; }
+  }
+  return user.password === pw;
+}
+async function passwordFieldChanges(id, pw, isDefault){
+  const salt = randomSalt();
+  const h = await hashPassword(pw, salt);
+  return { [id+'/pwHash']: h, [id+'/pwSalt']: salt, [id+'/password']: null, [id+'/pwDefault']: !!isDefault };
+}
+async function passwordRecordFields(pw, isDefault){
+  const salt = randomSalt();
+  return { pwHash: await hashPassword(pw, salt), pwSalt: salt, pwDefault: !!isDefault };
 }
 
 /* ---------- constants ---------- */
@@ -1165,6 +1257,8 @@ const state = {
   lightboxIndex: 0,
   examPhotosCache: {},
   examPhotoLoadFailed: {},
+  usersConfirmed: false,
+  timetablesConfirmed: false,
   brandAnimPlayed: false,
   navAnim: 'view-enter',
   forceLayout: lsGet('layout-pref', false, null),
@@ -1316,7 +1410,7 @@ async function init(){
   let users, timetables, meals, exams, events, notices, session;
   try{
     const results = await Promise.all([
-      loadField('allthing-users', true, null, 4000),
+      fbReadStrict('allthing-users', 5000),
       loadField('allthing-timetables', true, {}, 4000),
       loadField('allthing-meals', true, [], 4000),
       loadField('allthing-exams', true, [], 4000),
@@ -1326,6 +1420,22 @@ async function init(){
     ]);
     users = results[0]; timetables = results[1]; meals = results[2];
     exams = results[3]; events = results[4]; notices = results[5]; session = results[6];
+    // users came back as a strict tri-state result — resolve it without ever guessing
+    const ur = users;
+    if(ur && ur.ok){
+      state.usersConfirmed = true;
+      if(ur.val){ users = ur.val; lsSet('allthing-users', true, users); }
+      else {
+        // server genuinely has no accounts yet (brand-new database): seed it once
+        users = lsGet('allthing-users', true, null) || defaultUsers();
+        try{ fbDb.ref('allthing/allthing-users').set(users).catch(()=>{}); }catch(e){}
+        lsSet('allthing-users', true, users);
+      }
+    } else {
+      // couldn't read the server: show whatever this device last saw, but NEVER write it back
+      users = lsGet('allthing-users', true, null);
+      if(!users && !(firebaseReady && fbDb)){ users = defaultUsers(); lsSet('allthing-users', true, users); }
+    }
   }catch(err){
     console.error('All thing: 초기 데이터를 불러오는 중 문제가 있었어요.', err);
     // last resort if even the above somehow throws — read straight from the local mirror
@@ -1339,8 +1449,7 @@ async function init(){
     session = lsGet('allthing-session', false, null);
   }
 
-  state.users = users || defaultUsers();
-  if(!users){ sSet('allthing-users', state.users, true); }
+  state.users = users || defaultUsers(); // display-only fallback — intentionally NOT saved anywhere
   state.timetables = timetables || {};
   state.meals = meals || [];
   state.exams = exams || [];
@@ -1394,10 +1503,20 @@ function startRealtimeSync(){
   if(firebaseReady && fbDb){
     Object.keys(SYNC_KEY_MAP).forEach(key => {
       fbDb.ref('allthing/'+key).on('value', snap => {
-        if(!state.currentUser) return;
         const val = snap.val();
-        lsSet(key, true, val);
-        applyRemoteUpdate(SYNC_KEY_MAP[key], val);
+        if(key === 'allthing-users' || key === 'allthing-timetables'){
+          if(val === null || val === undefined) return; // never let an empty read erase accounts/timetables
+          state[key === 'allthing-users' ? 'usersConfirmed' : 'timetablesConfirmed'] = true;
+          lsSet(key, true, val);
+          if(key === 'allthing-users') state.users = val; // keep login data current even on the login screen
+          if(!state.currentUser) return;
+          applyRemoteUpdate(SYNC_KEY_MAP[key], val);
+          return;
+        }
+        if(!state.currentUser) return;
+        const list = (val === null || val === undefined) ? [] : val; // a deleted-last-item list is genuinely empty
+        lsSet(key, true, list);
+        applyRemoteUpdate(SYNC_KEY_MAP[key], list);
       });
     });
     return;
@@ -1432,11 +1551,30 @@ async function handleLoginSubmit(){
   const id = idEl.value.trim();
   const pw = pwEl.value.trim();
   const remember = rememberEl ? rememberEl.checked : true;
-  const user = state.users[id];
-  if(!user || user.password !== pw){
+  let user = state.users[id];
+  let ok = await verifyPassword(user, pw);
+  if(!ok && firebaseReady && fbDb){
+    // This device may be holding a stale/default copy of the accounts (e.g. it booted while
+    // the server was unreachable). Re-check against the server before saying "wrong password".
+    const r = await fbReadStrict('allthing-users', 6000);
+    if(r.ok && r.val){
+      state.users = r.val; state.usersConfirmed = true; lsSet('allthing-users', true, r.val);
+      user = state.users[id];
+      ok = await verifyPassword(user, pw);
+    } else if(!r.ok){
+      state.loginError = '서버와 연결이 확인되지 않아요. 인터넷 연결을 확인하고 다시 시도해주세요.';
+      render();
+      return;
+    }
+  }
+  if(!ok){
     state.loginError = '아이디 또는 비밀번호가 올바르지 않아요.';
     render();
     return;
+  }
+  if(!user.pwHash && (!(firebaseReady && fbDb) || state.usersConfirmed)){
+    // quietly upgrade this account's plain-text password to a hash (only touches this one account)
+    passwordFieldChanges(id, pw, pw === id).then(ch => updateUsers(ch)).catch(() => {});
   }
   state.loginError = '';
   state.currentUser = id;
@@ -1504,10 +1642,7 @@ async function saveDisplayName(){
   const val = document.getElementById('pfName').value.trim();
   if(!val){ showToast('표시 이름을 입력해주세요.', 'err'); return; }
   const myId = state.currentUser;
-  await mutateSharedUsers(users => {
-    if(!users[myId]) users[myId] = Object.assign({}, state.users[myId]);
-    users[myId].displayName = val;
-  });
+  try{ await updateUsers({ [myId+'/displayName']: val }); }catch(e){ return; }
   showToast('표시 이름을 저장했어요.');
   render();
 }
@@ -1517,10 +1652,7 @@ async function changePassword(){
   if(pw1.length < 6){ showToast('비밀번호는 6자 이상으로 입력해주세요.', 'err'); return; }
   if(pw1 !== pw2){ showToast('새 비밀번호가 서로 달라요.', 'err'); return; }
   const myId = state.currentUser;
-  await mutateSharedUsers(users => {
-    if(!users[myId]) users[myId] = Object.assign({}, state.users[myId]);
-    users[myId].password = pw1;
-  });
+  try{ await updateUsers(await passwordFieldChanges(myId, pw1, false)); }catch(e){ return; }
   showToast('비밀번호를 바꿨어요.');
   render();
 }
@@ -1528,10 +1660,7 @@ async function saveStudentNo(){
   const val = document.getElementById('pfNo').value.trim();
   if(!val){ showToast('학번을 입력해주세요.', 'err'); return; }
   const myId = state.currentUser;
-  await mutateSharedUsers(users => {
-    if(!users[myId]) users[myId] = Object.assign({}, state.users[myId]);
-    users[myId].studentNo = val;
-  });
+  try{ await updateUsers({ [myId+'/studentNo']: val }); }catch(e){ return; }
   showToast('학번을 저장했어요.');
   render();
 }
@@ -1549,9 +1678,7 @@ async function acctResetDefault(id){
   const u = state.users[id];
   if(!u) return;
   if(!confirm(`${u.displayName}(${id})의 비밀번호를 아이디와 같은 값으로 초기화할까요?`)) return;
-  await mutateSharedUsers(users => {
-    if(users[id]) users[id].password = id;
-  });
+  try{ await updateUsers(await passwordFieldChanges(id, id, true)); }catch(e){ return; }
   showToast('비밀번호를 초기화했어요.');
   state.acctEditing = null;
   render();
@@ -1574,21 +1701,20 @@ async function acctSave(id){
     return;
   }
 
-  let idTaken = false;
   const renaming = newId !== id;
-  await mutateSharedUsers(users => {
-    if(renaming && users[newId]){ idTaken = true; return; }
-    let record = users[id] ? Object.assign({}, users[id]) : Object.assign({}, state.users[id]);
+  try{
+    if(!(await ensureConfirmed('allthing-users', 'usersConfirmed'))) return;
+    if(renaming && state.users[newId]){ showToast('이미 사용 중인 아이디예요.', 'err'); return; }
     if(renaming){
-      delete users[id];
-      users[newId] = record;
+      const record = Object.assign({}, state.users[id], { displayName: newName, isAdmin: newIsAdmin });
+      if(newPw){ delete record.password; Object.assign(record, await passwordRecordFields(newPw, false)); }
+      await updateUsers({ [newId]: record, [id]: null }); // one atomic move, nobody else touched
+    } else {
+      const changes = { [id+'/displayName']: newName, [id+'/isAdmin']: newIsAdmin };
+      if(newPw) Object.assign(changes, await passwordFieldChanges(id, newPw, false));
+      await updateUsers(changes);
     }
-    record = users[newId];
-    record.displayName = newName;
-    record.isAdmin = newIsAdmin;
-    if(newPw) record.password = newPw;
-  });
-  if(idTaken){ showToast('이미 사용 중인 아이디예요.', 'err'); return; }
+  }catch(e){ return; }
   if(renaming && state.currentUser === id){
     state.currentUser = newId;
     const session = await sGet('allthing-session', false, null);
@@ -1617,12 +1743,12 @@ async function acctSubmitAdd(){
   if(!id){ showToast('아이디를 입력해주세요.', 'err'); return; }
   const name = nameEl.value.trim() || id;
   const no = noEl.value.trim() || id;
-  let idTaken = false;
-  await mutateSharedUsers(users => {
-    if(users[id]){ idTaken = true; return; }
-    users[id] = { password: id, displayName: name, studentNo: no, isAdmin: false };
-  });
-  if(idTaken){ showToast('이미 사용 중인 아이디예요.', 'err'); return; }
+  try{
+    if(!(await ensureConfirmed('allthing-users', 'usersConfirmed'))) return;
+    if(state.users[id]){ showToast('이미 사용 중인 아이디예요.', 'err'); return; }
+    const record = Object.assign({ displayName: name, studentNo: no, isAdmin: false }, await passwordRecordFields(id, true));
+    await updateUsers({ [id]: record });
+  }catch(e){ return; }
   showToast('계정을 추가했어요.');
   state.acctAdding = false;
   render();
@@ -1632,7 +1758,7 @@ async function acctDelete(id){
   if(!u) return;
   if(id === state.currentUser){ showToast('현재 로그인한 계정은 삭제할 수 없어요.', 'err'); return; }
   if(!confirm(`${u.displayName}(${id}) 계정을 정말 삭제할까요? 되돌릴 수 없어요.`)) return;
-  await mutateSharedUsers(users => { delete users[id]; });
+  try{ await updateUsers({ [id]: null }); }catch(e){ return; }
   showToast('계정을 삭제했어요.');
   render();
 }
@@ -2013,7 +2139,7 @@ async function saveTtGrid(){
       grid[day][i] = el ? el.value.trim() : '';
     });
   });
-  await mutateSharedTimetables(tts => { tts[no] = grid; });
+  try{ await updateTimetables({ [no]: grid }); }catch(e){ return; }
   state.ttEditor.grid = grid;
   showToast(no + ' 시간표를 저장했어요.');
   render();
@@ -2023,14 +2149,13 @@ async function copyTtFrom(){
   const to = state.ttEditor.no;
   if(!to){ showToast('먼저 학번을 선택해주세요.', 'err'); return; }
   if(!from){ showToast('복사할 학번을 입력해주세요.', 'err'); return; }
-  let missing = false;
   let copiedGrid = null;
-  await mutateSharedTimetables(tts => {
-    if(!tts[from]){ missing = true; return; }
-    copiedGrid = JSON.parse(JSON.stringify(tts[from]));
-    tts[to] = copiedGrid;
-  });
-  if(missing){ showToast(from + '의 시간표가 아직 없어요.', 'err'); return; }
+  try{
+    if(!(await ensureConfirmed('allthing-timetables', 'timetablesConfirmed'))) return;
+    if(!state.timetables[from]){ showToast(from + '의 시간표가 아직 없어요.', 'err'); return; }
+    copiedGrid = JSON.parse(JSON.stringify(state.timetables[from]));
+    await updateTimetables({ [to]: copiedGrid });
+  }catch(e){ return; }
   state.ttEditor.grid = copiedGrid;
   showToast(from + '의 시간표를 ' + to + '(으)로 복사했어요.');
   render();
@@ -2397,13 +2522,8 @@ function expandSubjectCell(cell){
 const TT_IMPORT_20260831 = {"20801":{"월":["지시과\n(2-7)","지시과\n(2-7)","영어2","인공\n(2-1)","스생2","역학\n(2-3)","역학\n(2-3)"],"화":["독작","융과탐\n(2-6)","미적1","영어2","물질\n(2-4)","동아리","동아리"],"수":["독작","영어2","지시과\n(2-7)","독작","인공\n(2-1)","인공\n(2-1)",""],"목":["영어2","스생2","미적1","미적1","융과탐\n(2-6)","융과탐\n(2-6)","창체"],"금":["물질\n(2-4)","물질\n(2-4)","독작","미적1","역학\n(2-3)","",""]},"20802":{"월":["지시과\n(2-7)","지시과\n(2-7)","영어2","세포\n(2-6)","스생2","인공\n(2-9)","인공\n(2-9)"],"화":["독작","융과탐\n(2-6)","미적1","영어2","물질\n(2-4)","동아리","동아리"],"수":["독작","영어2","지시과\n(2-7)","독작","세포\n(2-6)","세포\n(2-6)",""],"목":["영어2","스생2","미적1","미적1","융과탐\n(2-6)","융과탐\n(2-6)","창체"],"금":["물질\n(2-4)","물질\n(2-4)","독작","미적1","인공\n(2-9)","",""]},"20803":{"월":["융과탐\n(2-5)","융과탐\n(2-5)","영어2","윤사\n(2-5)","스생2","물질\n(2-2)","물질\n(2-2)"],"화":["독작","인공\n(2-7)","미적1","영어2","역학\n(다목1)","동아리","동아리"],"수":["독작","영어2","융과탐\n(2-5)","독작","윤사\n(2-5)","윤사\n(2-5)",""],"목":["영어2","스생2","미적1","미적1","인공\n(2-7)","인공\n(2-7)","창체"],"금":["역학\n(다목1)","역학\n(다목1)","독작","미적1","물질\n(2-2)","",""]},"20804":{"월":["역학\n(다목1)","역학\n(다목1)","영어2","인공\n(2-1)","스생2","물질\n(2-2)","물질\n(2-2)"],"화":["독작","융과탐\n(2-6)","미적1","영어2","지시과\n(2-6)","동아리","동아리"],"수":["독작","영어2","역학\n(다목1)","독작","인공\n(2-1)","인공\n(2-1)",""],"목":["영어2","스생2","미적1","미적1","융과탐\n(2-6)","융과탐\n(2-6)","창체"],"금":["지시과\n(2-6)","지시과\n(2-6)","독작","미적1","물질\n(2-2)","",""]},"20805":{"월":["융과탐\n(2-5)","융과탐\n(2-5)","영어2","인공\n(2-1)","스생2","역학\n(2-3)","역학\n(2-3)"],"화":["독작","지시과\n(2-8)","미적1","영어2","물질\n(2-4)","동아리","동아리"],"수":["독작","영어2","융과탐\n(2-5)","독작","인공\n(2-1)","인공\n(2-1)",""],"목":["영어2","스생2","미적1","미적1","지시과\n(2-8)","지시과\n(2-8)","창체"],"금":["물질\n(2-4)","물질\n(2-4)","독작","미적1","역학\n(2-3)","",""]},"20806":{"월":["지시과\n(2-7)","지시과\n(2-7)","영어2","인공\n(2-1)","스생2","역학\n(2-3)","역학\n(2-3)"],"화":["독작","물질\n(2-3)","미적1","영어2","인수\n(2-7)","동아리","동아리"],"수":["독작","영어2","지시과\n(2-7)","독작","인공\n(2-1)","인공\n(2-1)",""],"목":["영어2","스생2","미적1","미적1","물질\n(2-3)","물질\n(2-3)","창체"],"금":["인수\n(2-7)","인수\n(2-7)","독작","미적1","역학\n(2-3)","",""]},"20807":{"월":["지시과\n(2-7)","지시과\n(2-7)","영어2","물질\n(2-9)","스생2","인수\n(2-8)","인수\n(2-8)"],"화":["독작","역학\n(2-9)","미적1","영어2","인공\n(2-3)","동아리","동아리"],"수":["독작","영어2","지시과\n(2-7)","독작","물질\n(2-9)","물질\n(2-9)",""],"목":["영어2","스생2","미적1","미적1","역학\n(2-9)","역학\n(2-9)","창체"],"금":["인공\n(2-3)","인공\n(2-3)","독작","미적1","인수\n(2-8)","",""]},"20808":{"월":["지시과\n(2-7)","지시과\n(2-7)","영어2","인수\n(2-3)","스생2","인공\n(2-9)","인공\n(2-9)"],"화":["독작","물질\n(2-3)","미적1","영어2","역학\n(다목1)","동아리","동아리"],"수":["독작","영어2","지시과\n(2-7)","독작","인수\n(2-3)","인수\n(2-3)",""],"목":["영어2","스생2","미적1","미적1","물질\n(2-3)","물질\n(2-3)","창체"],"금":["역학\n(다목1)","역학\n(다목1)","독작","미적1","인공\n(2-9)","",""]},"20809":{"월":["물질\n(2-8)","물질\n(2-8)","영어2","인공\n(2-1)","스생2","역학\n(2-3)","역학\n(2-3)"],"화":["독작","융과탐\n(2-6)","미적1","영어2","지시과\n(2-6)","동아리","동아리"],"수":["독작","영어2","물질\n(2-8)","독작","인공\n(2-1)","인공\n(2-1)",""],"목":["영어2","스생2","미적1","미적1","융과탐\n(2-6)","융과탐\n(2-6)","창체"],"금":["지시과\n(2-6)","지시과\n(2-6)","독작","미적1","역학\n(2-3)","",""]},"20810":{"월":["지시과\n(2-7)","지시과\n(2-7)","영어2","일회\n(2-8)","스생2","물질\n(2-2)","물질\n(2-2)"],"화":["독작","역학\n(2-9)","미적1","영어2","인수\n(2-7)","동아리","동아리"],"수":["독작","영어2","지시과\n(2-7)","독작","일회\n(2-8)","일회\n(2-8)",""],"목":["영어2","스생2","미적1","미적1","역학\n(2-9)","역학\n(2-9)","창체"],"금":["인수\n(2-7)","인수\n(2-7)","독작","미적1","물질\n(2-2)","",""]},"20811":{"월":["윤사\n(2-2)","윤사\n(2-2)","영어2","한지탐\n(2-7)","스생2","일회\n(2-7)","일회\n(2-7)"],"화":["독작","사문탐\n(미래)","미적1","영어2","법사\n(2-9)","동아리","동아리"],"수":["독작","영어2","윤사\n(2-2)","독작","한지탐\n(2-7)","한지탐\n(2-7)",""],"목":["영어2","스생2","미적1","미적1","사문탐\n(미래)","사문탐\n(미래)","창체"],"금":["법사\n(2-9)","법사\n(2-9)","독작","미적1","일회\n(2-7)","",""]},"20812":{"월":["법사\n(2-3)","법사\n(2-3)","영어2","사문탐\n(2-2)","스생2","인공\n(2-9)","인공\n(2-9)"],"화":["독작","윤사\n(2-4)","미적1","영어2","동역\n(2-1)","동아리","동아리"],"수":["독작","영어2","법사\n(2-3)","독작","사문탐\n(2-2)","사문탐\n(2-2)",""],"목":["영어2","스생2","미적1","미적1","윤사\n(2-4)","윤사\n(2-4)","창체"],"금":["동역\n(2-1)","동역\n(2-1)","독작","미적1","인공\n(2-9)","",""]},"20813":{"월":["지시과\n(2-7)","지시과\n(2-7)","영어2","인공\n(2-1)","스생2","인수\n(2-8)","인수\n(2-8)"],"화":["독작","역학\n(2-9)","미적1","영어2","물질\n(2-4)","동아리","동아리"],"수":["독작","영어2","지시과\n(2-7)","독작","인공\n(2-1)","인공\n(2-1)",""],"목":["영어2","스생2","미적1","미적1","역학\n(2-9)","역학\n(2-9)","창체"],"금":["물질\n(2-4)","물질\n(2-4)","독작","미적1","인수\n(2-8)","",""]},"20814":{"월":["경제\n(2-1)","경제\n(2-1)","영어2","윤사\n(2-5)","스생2","한지탐\n(2-6)","한지탐\n(2-6)"],"화":["독작","일회\n(2-1)","미적1","영어2","동역\n(2-1)","동아리","동아리"],"수":["독작","영어2","경제\n(2-1)","독작","윤사\n(2-5)","윤사\n(2-5)",""],"목":["영어2","스생2","미적1","미적1","일회\n(2-1)","일회\n(2-1)","창체"],"금":["동역\n(2-1)","동역\n(2-1)","독작","미적1","한지탐\n(2-6)","",""]},"20815":{"월":["지시과\n(2-7)","지시과\n(2-7)","영어2","인공\n(2-1)","스생2","인수\n(2-8)","인수\n(2-8)"],"화":["독작","물질\n(2-3)","미적1","영어2","역학\n(다목1)","동아리","동아리"],"수":["독작","영어2","지시과\n(2-7)","독작","인공\n(2-1)","인공\n(2-1)",""],"목":["영어2","스생2","미적1","미적1","물질\n(2-3)","물질\n(2-3)","창체"],"금":["역학\n(다목1)","역학\n(다목1)","독작","미적1","인수\n(2-8)","",""]},"20816":{"월":["지시과\n(2-7)","지시과\n(2-7)","영어2","인수\n(2-3)","스생2","물질\n(2-2)","물질\n(2-2)"],"화":["독작","역학\n(2-9)","미적1","영어2","인공\n(2-3)","동아리","동아리"],"수":["독작","영어2","지시과\n(2-7)","독작","인수\n(2-3)","인수\n(2-3)",""],"목":["영어2","스생2","미적1","미적1","역학\n(2-9)","역학\n(2-9)","창체"],"금":["인공\n(2-3)","인공\n(2-3)","독작","미적1","물질\n(2-2)","",""]},"20817":{"월":["지시과\n(2-7)","지시과\n(2-7)","영어2","인공\n(2-1)","스생2","물질\n(2-2)","물질\n(2-2)"],"화":["독작","역학\n(2-9)","미적1","영어2","인수\n(2-7)","동아리","동아리"],"수":["독작","영어2","지시과\n(2-7)","독작","인공\n(2-1)","인공\n(2-1)",""],"목":["영어2","스생2","미적1","미적1","역학\n(2-9)","역학\n(2-9)","창체"],"금":["인수\n(2-7)","인수\n(2-7)","독작","미적1","물질\n(2-2)","",""]},"20818":{"월":["융과탐\n(2-5)","융과탐\n(2-5)","영어2","인공\n(2-1)","스생2","역학\n(2-3)","역학\n(2-3)"],"화":["독작","지시과\n(2-8)","미적1","영어2","물질\n(2-4)","동아리","동아리"],"수":["독작","영어2","융과탐\n(2-5)","독작","인공\n(2-1)","인공\n(2-1)",""],"목":["영어2","스생2","미적1","미적1","지시과\n(2-8)","지시과\n(2-8)","창체"],"금":["물질\n(2-4)","물질\n(2-4)","독작","미적1","역학\n(2-3)","",""]},"20819":{"월":["융과탐\n(2-5)","융과탐\n(2-5)","영어2","물질\n(2-9)","스생2","역학\n(2-3)","역학\n(2-3)"],"화":["독작","인공\n(2-7)","미적1","영어2","지시과\n(2-6)","동아리","동아리"],"수":["독작","영어2","융과탐\n(2-5)","독작","물질\n(2-9)","물질\n(2-9)",""],"목":["영어2","스생2","미적1","미적1","인공\n(2-7)","인공\n(2-7)","창체"],"금":["지시과\n(2-6)","지시과\n(2-6)","독작","미적1","역학\n(2-3)","",""]},"20820":{"월":["역학\n(다목1)","역학\n(다목1)","영어2","인공\n(2-1)","스생2","물질\n(2-2)","물질\n(2-2)"],"화":["독작","지시과\n(2-8)","미적1","영어2","인수\n(2-7)","동아리","동아리"],"수":["독작","영어2","역학\n(다목1)","독작","인공\n(2-1)","인공\n(2-1)",""],"목":["영어2","스생2","미적1","미적1","지시과\n(2-8)","지시과\n(2-8)","창체"],"금":["인수\n(2-7)","인수\n(2-7)","독작","미적1","물질\n(2-2)","",""]},"20821":{"월":["경제\n(2-1)","경제\n(2-1)","영어2","한지탐\n(2-7)","스생2","인공\n(2-9)","인공\n(2-9)"],"화":["독작","동역\n(2-2)","미적1","영어2","물질\n(2-4)","동아리","동아리"],"수":["독작","영어2","경제\n(2-1)","독작","한지탐\n(2-7)","한지탐\n(2-7)",""],"목":["영어2","스생2","미적1","미적1","동역\n(2-2)","동역\n(2-2)","창체"],"금":["물질\n(2-4)","물질\n(2-4)","독작","미적1","인공\n(2-9)","",""]},"20822":{"월":["역학\n(다목1)","역학\n(다목1)","영어2","인수\n(2-3)","스생2","물질\n(2-2)","물질\n(2-2)"],"화":["독작","인공\n(2-7)","미적1","영어2","지시과\n(2-6)","동아리","동아리"],"수":["독작","영어2","역학\n(다목1)","독작","인수\n(2-3)","인수\n(2-3)",""],"목":["영어2","스생2","미적1","미적1","인공\n(2-7)","인공\n(2-7)","창체"],"금":["지시과\n(2-6)","지시과\n(2-6)","독작","미적1","물질\n(2-2)","",""]},"20823":{"월":["역학\n(다목1)","역학\n(다목1)","영어2","인수\n(2-3)","스생2","물질\n(2-2)","물질\n(2-2)"],"화":["독작","지시과\n(2-8)","미적1","영어2","인공\n(2-3)","동아리","동아리"],"수":["독작","영어2","역학\n(다목1)","독작","인수\n(2-3)","인수\n(2-3)",""],"목":["영어2","스생2","미적1","미적1","지시과\n(2-8)","지시과\n(2-8)","창체"],"금":["인공\n(2-3)","인공\n(2-3)","독작","미적1","물질\n(2-2)","",""]},"20824":{"월":["융과탐\n(2-5)","융과탐\n(2-5)","영어2","물질\n(2-9)","스생2","인공\n(2-9)","인공\n(2-9)"],"화":["독작","역학\n(2-9)","미적1","영어2","지시과\n(2-6)","동아리","동아리"],"수":["독작","영어2","융과탐\n(2-5)","독작","물질\n(2-9)","물질\n(2-9)",""],"목":["영어2","스생2","미적1","미적1","역학\n(2-9)","역학\n(2-9)","창체"],"금":["지시과\n(2-6)","지시과\n(2-6)","독작","미적1","인공\n(2-9)","",""]}};
 async function applyImportedTimetables_20260831(){
   if(!confirm('업로드해주신 파일 기준으로 20801~20824 전체 시간표를 덮어씁니다. 계속할까요?')) return;
-  let count = 0;
-  await mutateSharedTimetables(tts => {
-    Object.keys(TT_IMPORT_20260831).forEach(no => {
-      tts[no] = TT_IMPORT_20260831[no];
-      count++;
-    });
-  });
+  const count = Object.keys(TT_IMPORT_20260831).length;
+  try{ await updateTimetables(Object.assign({}, TT_IMPORT_20260831)); }catch(e){ return; }
   if(state.ttEditor.open && state.ttEditor.no && TT_IMPORT_20260831[state.ttEditor.no]){
     state.ttEditor.grid = TT_IMPORT_20260831[state.ttEditor.no];
   }
@@ -2412,20 +2532,24 @@ async function applyImportedTimetables_20260831(){
 }
 async function expandAllTimetableAbbrevs(){
   let changed = 0;
-  await mutateSharedTimetables(tts => {
-    Object.keys(tts).forEach(no => {
-      const grid = tts[no] || {};
+  const updates = {};
+  try{
+    if(!(await ensureConfirmed('allthing-timetables', 'timetablesConfirmed'))) return;
+    Object.keys(state.timetables).forEach(no => {
+      const grid = state.timetables[no] || {};
       const newGrid = {};
+      let touched = false;
       Object.keys(grid).forEach(day => {
         newGrid[day] = (grid[day] || []).map(cell => {
           const out = expandSubjectCell(cell);
-          if(out !== cell) changed++;
+          if(out !== cell){ changed++; touched = true; }
           return out;
         });
       });
-      tts[no] = newGrid;
+      if(touched) updates[no] = newGrid; // only students whose timetable actually changed
     });
-  });
+    if(changed > 0) await updateTimetables(updates);
+  }catch(e){ return; }
   if(changed === 0){ showToast('바꿀 줄임말이 없어요.'); return; }
   if(state.ttEditor.open && state.ttEditor.no){
     state.ttEditor.grid = state.timetables[state.ttEditor.no] || state.ttEditor.grid;
@@ -2471,7 +2595,7 @@ function renderHome(){
   const u = me();
   const now = new Date();
   const dateLabel = `${now.getFullYear()}년 ${now.getMonth()+1}월 ${now.getDate()}일 (${WEEKDAY_KO[now.getDay()]})`;
-  const showDefaultPwHint = u.password === state.currentUser;
+  const showDefaultPwHint = u.pwHash ? !!u.pwDefault : (u.password === state.currentUser);
   return `
   <div class="home-greeting">
     <h2>안녕, ${esc(u.displayName)}님 👋</h2>
