@@ -1100,8 +1100,16 @@ function emptyGrid(){
   DAYS.forEach(d => g[d] = PERIODS.map(()=> ''));
   return g;
 }
+const CLASS_NAMES = ['건희','경록','동유','제하','현교','희택','민서','서우','예준','치현','진호','영빈','경민','동희','상결','하민','명한','제준','현준','서훈','지호','진원','정환','종하'];
+// names that an earlier version filled in by mistake — safe to correct, nobody chose them
+const WRONG_DEFAULT_NAMES = { '20816': '하면' };
+function classNameForId(id){
+  const m = /^208(\d{2})$/.exec(id);
+  if(!m) return null;
+  return CLASS_NAMES[parseInt(m[1], 10) - 1] || null;
+}
 function defaultUsers(){
-  const names = ['건희','경록','동유','제하','현교','희택','민서','서우','예준','치현','진호','영빈','경민','동희','상결','하면','명한','제준','현준','서훈','지호','진원','정환','종하'];
+  const names = CLASS_NAMES;
   const users = {};
   for(let n = 1; n <= 24; n++){
     const id = '208' + pad2(n);
@@ -1723,6 +1731,26 @@ async function acctSave(id){
   showToast('계정 정보를 저장했어요.');
   state.acctEditing = null;
   render();
+}
+async function applyClassNames(){
+  try{
+    if(!(await ensureConfirmed('allthing-users', 'usersConfirmed'))) return;
+    const changes = {};
+    Object.keys(state.users).forEach(id => {
+      const u = state.users[id];
+      const name = classNameForId(id);
+      if(!name || !u) return;
+      const current = String(u.displayName || '').trim();
+      // touch only nicknames nobody has customized yet (still the ID, or empty)
+      if(current === '' || current === id || WRONG_DEFAULT_NAMES[id] === current) changes[id + '/displayName'] = name;
+    });
+    const n = Object.keys(changes).length;
+    if(n === 0){ showToast('바꿀 닉네임이 없어요. 이미 모두 이름으로 되어 있어요.'); return; }
+    if(!confirm(n + '명의 닉네임을 이름으로 바꿀까요? (직접 바꾼 닉네임은 그대로 둬요)')) return;
+    await updateUsers(changes);
+    showToast(n + '명의 닉네임을 이름으로 바꿨어요.');
+    render();
+  }catch(e){ /* the specific error toast was already shown */ }
 }
 function acctOpenAdd(){
   state.acctAdding = true;
@@ -2710,7 +2738,10 @@ function renderAccountsView(){
   return `
   <div class="view-header">
     <h2>${icon('users')} 계정 관리</h2>
-    <button class="btn btn-primary btn-sm" data-act="acctOpenAdd">${icon('plus')} 계정 추가</button>
+    <div style="display:flex; gap:8px; flex-wrap:wrap;">
+      <button class="btn btn-ghost btn-sm" data-act="applyClassNames">${icon('users')} 닉네임을 이름으로</button>
+      <button class="btn btn-primary btn-sm" data-act="acctOpenAdd">${icon('plus')} 계정 추가</button>
+    </div>
   </div>
   <p class="text-2" style="margin:-6px 0 14px;">비밀번호를 잊어버린 친구는 여기서 초기화하거나 새 비밀번호를 정해줄 수 있어요. 로그인 아이디도 바꿀 수 있고, 새 계정을 추가하거나 삭제할 수도 있어요.</p>
   ${state.acctAdding ? renderAccountAddForm() : ''}
@@ -3150,6 +3181,7 @@ function bindEvents(){
       case 'acctResetDefault': acctResetDefault(el.dataset.id); break;
       case 'acctSave': acctSave(el.dataset.id); break;
       case 'acctOpenAdd': acctOpenAdd(); break;
+      case 'applyClassNames': applyClassNames(); break;
       case 'acctCancelAdd': acctCancelAdd(); break;
       case 'acctDelete': acctDelete(el.dataset.id); break;
       default: break;
