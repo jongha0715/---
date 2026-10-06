@@ -620,6 +620,8 @@ html[data-layout="pc"] .split-cols{ grid-template-columns: 1fr 1fr !important; g
 .tester-chip{ border:1px solid var(--border); background: var(--surface); color: var(--text-2); padding:6px 11px; border-radius:999px; font-size:12.5px; font-weight:700; }
 .tester-chip.on{ background: rgba(124,92,232,.14); border-color:#6a4fd6; color:#6a4fd6; }
 .ga-danger{ margin-top:14px; padding-top:12px; border-top:1px dashed var(--border); display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+.reset-prompt{ display:flex; gap:6px; align-items:center; flex-wrap:wrap; }
+.reset-prompt input{ background: var(--surface-2); border:1px solid var(--border); border-radius:10px; padding:8px 10px; font-size:13.5px; color: var(--text); width:160px; }
 .btn-danger, .btn-danger:hover{ background:#e5484d; color:#fff; border-color:transparent; }
 .btn.danger{ color:#e5484d; }
 .market-pill.night{ background: var(--surface-3); color: var(--text-2); }
@@ -2024,7 +2026,12 @@ function renderGameAdminCard(){
       ${people.map(id => `<button type="button" class="tester-chip ${testers[id] ? 'on' : ''}" data-act="gameToggleTester" data-id="${esc(id)}">${testers[id] ? '✓ ' : ''}${esc(state.users[id].displayName)}</button>`).join('')}
     </div>`}
     <div class="ga-danger">
-      <button type="button" class="btn btn-sm btn-ghost danger" data-act="gameReset">🔄 게임 초기화 (새 시즌)</button>
+      ${state.resetPrompt ? `
+      <form class="reset-prompt" data-form="resetPw" autocomplete="off">
+        <input id="resetPw" type="password" placeholder="초기화 비밀번호" autocomplete="new-password">
+        <button type="submit" class="btn btn-sm btn-danger">확인</button>
+        <button type="button" class="btn btn-sm btn-ghost" data-act="resetPromptClose">취소</button>
+      </form>` : `<button type="button" class="btn btn-sm btn-ghost danger" data-act="resetPromptOpen">🔒 게임 초기화 (새 시즌)</button>`}
       <span class="text-3 small">모든 친구의 돈·주식·아이템과 시세·뉴스를 처음으로 되돌려요. 이전 시즌 거래내역은 따로 보관돼요.</span>
     </div>
   </div>`;
@@ -2073,9 +2080,30 @@ function gameToggleTester(id){
   setGameControl(x => { x.testers = Object.assign({}, x.testers || {}); if(x.testers[id]) delete x.testers[id]; else x.testers[id] = true; },
     (gameCtrl().testers || {})[id] ? '테스터에서 뺐어요.' : '테스터로 지정했어요.');
 }
-async function gameReset(){
-  if(!confirm('주식게임을 초기화할까요?\n모든 친구의 돈·주식·아이템, 그리고 시세·뉴스가 처음 상태로 돌아가요.')) return;
-  if(!confirm('정말 초기화할까요? 되돌릴 수 없어요.')) return;
+// The reset password itself is NOT in this code — only a one-way PBKDF2 hash of it (same settings
+// as account passwords), so reading the source doesn't reveal it.
+const GAME_RESET_KEY = { salt:'allthing-game-reset-7f3a91c2', hash:'9395d43da3e9079583b03489fee56475f9711a7a4cb752e4044824fe9996d31c' };
+function openResetPrompt(){
+  if(!confirm('정말 주식게임을 초기화하겠습니까?\n모든 친구의 돈·주식·아이템, 그리고 시세·뉴스가 처음 상태로 돌아가요.')) return;
+  state.resetPrompt = true; render();
+  const el = document.getElementById('resetPw'); if(el) el.focus();
+}
+function closeResetPrompt(){ state.resetPrompt = false; render(); }
+async function submitResetPrompt(){
+  const el = document.getElementById('resetPw');
+  const pw = el ? el.value : '';
+  if(!pw){ showToast('비밀번호를 입력해주세요.', 'err'); return; }
+  let ok = false;
+  try{ ok = (await hashPassword(pw, GAME_RESET_KEY.salt)) === GAME_RESET_KEY.hash; }catch(e){}
+  if(el) el.value = '';
+  if(!ok){ await new Promise(r => setTimeout(r, 1200)); showToast('비밀번호가 맞지 않아요.', 'err'); return; } // small delay slows down guessing
+  state.resetPrompt = false;
+  render();
+  await gameReset(true);
+}
+async function gameReset(passwordChecked){
+  if(!passwordChecked) return; // only reachable through the password prompt
+  if(!confirm('마지막 확인이에요. 지금 초기화하면 되돌릴 수 없어요. 진행할까요?')) return;
   const n = parseInt(String(gameCtrl().season || 's1').replace(/\D/g, ''), 10) || 1;
   await withTimeout(gameRef('players').set(null), 8000, null);
   await withTimeout(gameRef('market').set(null), 8000, null);
@@ -3549,7 +3577,8 @@ function bindEvents(){
       case 'gameToggleOpen': gameToggleOpen(); break;
       case 'gameToggleTest': gameToggleTest(); break;
       case 'gameToggleTester': gameToggleTester(el.dataset.id); break;
-      case 'gameReset': gameReset(); break;
+      case 'resetPromptOpen': openResetPrompt(); break;
+      case 'resetPromptClose': closeResetPrompt(); break;
       default: break;
     }
   });
@@ -3562,6 +3591,9 @@ function bindEvents(){
     } else if(form.matches('[data-form="section"]')){
       e.preventDefault();
       submitSectionForm(form.dataset.section);
+    } else if(form.matches('[data-form="resetPw"]')){
+      e.preventDefault();
+      submitResetPrompt();
     } else if(form.matches('[data-form="acctAdd"]')){
       e.preventDefault();
       acctSubmitAdd();
