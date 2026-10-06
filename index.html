@@ -1053,7 +1053,17 @@ async function saveSectionItem(section, id, data){
    through the Firebase free-tier bandwidth. Photos now live in their own key, fetched only
    when someone actually opens them, never pushed automatically to everyone.
 */
+/* Photos are stored per exam at allthing-exam-photos/<examId> and always read/written at THAT
+   path. Reading the parent node instead (as before) downloaded every exam's photos each time one
+   card was opened — that alone was most of the Firebase download bill. */
+function photosRef(itemId){ return fbDb.ref('allthing/allthing-exam-photos/' + itemId); }
 async function savePhotosForItem(itemId, photos){
+  if(firebaseReady && fbDb){
+    await withTimeout(photosRef(itemId).set(photos && photos.length ? photos : null), 20000, null);
+    state.examPhotosCache = state.examPhotosCache || {};
+    state.examPhotosCache[itemId] = photos || [];
+    return;
+  }
   const key = 'allthing-exam-photos';
   const fresh = await freshSharedValue(key, {});
   const map = (fresh && typeof fresh === 'object') ? Object.assign({}, fresh) : {};
@@ -1087,12 +1097,51 @@ async function loadPhotosForItem(itemId){
     state.examPhotosCache[itemId] = inline;
     return inline;
   }
+  if(firebaseReady && fbDb){
+    const v = await withTimeout(photosRef(itemId).once('value').then(snap => snap.val()), 15000, undefined);
+    if(v === undefined) throw new Error('photo load timeout'); // shows "다시 시도" instead of caching nothing
+    const photos = Array.isArray(v) ? v : (v ? Object.values(v) : []);
+    state.examPhotosCache[itemId] = photos;
+    return photos;
+  }
   const fresh = await freshSharedValue('allthing-exam-photos', {});
   const photos = (fresh && fresh[itemId]) ? fresh[itemId] : [];
   state.examPhotosCache[itemId] = photos;
   return photos;
 }
+// One-time move of photos still embedded inside the exams list (from before photos had their own
+// place). While they sit there, every exam add/edit re-sends them to every open device.
+async function migrateInlinePhotos(){
+  if(!(firebaseReady && fbDb) || !isAdmin() || state.photoMigrationDone) return;
+  state.photoMigrationDone = true;
+  const list = await freshSharedValue('allthing-exams', []);
+  if(!Array.isArray(list)) return;
+  const heavy = list.filter(x => x && ((Array.isArray(x.photos) && x.photos.length) || x.photo));
+  if(!heavy.length) return;
+  for(const x of heavy){
+    const arr = Array.isArray(x.photos) && x.photos.length ? x.photos : [x.photo];
+    const ok = await withTimeout(photosRef(x.id).set(arr).then(() => true), 30000, false);
+    if(!ok) return; // try again next time rather than risk dropping photos
+  }
+  const ids = new Set(heavy.map(x => x.id));
+  const fresh = await freshSharedValue('allthing-exams', []);
+  const slim = (Array.isArray(fresh) ? fresh : []).map(x => {
+    if(!x || !ids.has(x.id)) return x;
+    const y = Object.assign({}, x);
+    const n = Array.isArray(y.photos) && y.photos.length ? y.photos.length : (y.photo ? 1 : 0);
+    delete y.photos; delete y.photo; y.photoCount = n;
+    return y;
+  });
+  state.exams = slim;
+  await sSet('allthing-exams', slim, true);
+  console.log('All thing: moved photos out of ' + heavy.length + ' exam(s).');
+}
 async function deletePhotosForItem(itemId){
+  if(firebaseReady && fbDb){
+    await withTimeout(photosRef(itemId).set(null), 10000, null);
+    if(state.examPhotosCache) delete state.examPhotosCache[itemId];
+    return;
+  }
   const key = 'allthing-exam-photos';
   const fresh = await freshSharedValue(key, {});
   const map = (fresh && typeof fresh === 'object') ? Object.assign({}, fresh) : {};
@@ -1612,6 +1661,7 @@ async function init(){
   render();
   if(!state.currentUser) playSplash();
   startRealtimeSync();
+  setTimeout(() => { migrateInlinePhotos().catch(() => {}); }, 4000);
 }
 
 /* ---------- near-real-time sync ----------
@@ -1729,6 +1779,7 @@ async function handleLoginSubmit(){
   }catch(e){}
   state.brandAnimPlayed = false;
   state.navAnim = 'view-enter';
+  setTimeout(() => { migrateInlinePhotos().catch(() => {}); }, 4000);
   if(remember){
     await sSet('allthing-session', { id, ts: Date.now() }, false);
   } else {
@@ -2025,6 +2076,7 @@ async function gameReset(){
   const n = parseInt(String(gameCtrl().season || 's1').replace(/\D/g, ''), 10) || 1;
   await withTimeout(gameRef('players').set(null), 8000, null);
   await withTimeout(gameRef('market').set(null), 8000, null);
+  await withTimeout(gameRef('flow').set(null), 8000, null);
   await setGameControl(x => { x.season = 's' + (n + 1); }, '새 시즌(' + (n + 1) + ')으로 초기화했어요.');
   if(state.game){ state.game.ranking = null; state.game.log = null; }
 }
@@ -4018,7 +4070,7 @@ function stepPrice(stock, price, trend, flowR){
   if(stock.jump && !trend && Math.random() < 0.07) r += (Math.random() < 0.5 ? -1 : 1) * (0.08 + Math.random()*0.12);
   return clampPrice(stock, price * (1 + r));
 }
-function advanceMarket(m, target){
+function advanceMarket(m, target, extFlow){
   if(!m || !m.prices){
     const prices = {}, history = {};
     GAME_STOCKS.forEach(s => { prices[s.id] = s.base; history[s.id] = [s.base]; });
@@ -4035,7 +4087,8 @@ function advanceMarket(m, target){
   const trend = {};
   Object.keys(m.trend || {}).forEach(k => { const t = m.trend[k]; if(t && typeof t.d === 'number') trend[k] = Object.assign({}, t); });
   let news = Array.isArray(m.news) ? m.news.slice() : [];
-  let flow = Object.assign({}, m.flow || {}), lastFlow = Object.assign({}, m.lastFlow || {});
+  const flow = Object.assign({}, m.flow || {}), lastFlow = {};
+  Object.keys(extFlow || {}).forEach(id => { flow[id] = (flow[id] || 0) + (extFlow[id] || 0); });
   let arcs = Object.assign({}, m.arcs || {});
   const base = target - steps;
   for(let i = 0; i < steps; i++){
@@ -4048,7 +4101,7 @@ function advanceMarket(m, target){
     prev = prices;
     const next = {};
     GAME_STOCKS.forEach(s => { next[s.id] = stepPrice(s, prev[s.id], trend[s.id], flowImpact(flow[s.id])); });
-    lastFlow = flow; flow = {};
+    Object.keys(flow).forEach(k => delete flow[k]);
     Object.keys(trend).forEach(k => { trend[k].left -= 1; trend[k].k *= 0.8; if(trend[k].left <= 0) delete trend[k]; });
     if(isNewsSlot(tickNo) && Math.random() < GAME_NEWS_PROB){
       const ev = makeNewsEvent(tickNo, arcs);
@@ -4067,7 +4120,7 @@ function advanceMarket(m, target){
     });
     prices = next;
   }
-  return { tick: target, prices, prev, history, trend, news, flow, lastFlow, arcs };
+  return { tick: target, prices, prev, history, trend, news, flow, arcs };
 }
 /* ---- game control: open / shutdown / test mode ----
    open: everyone plays. shutdown (open:false): prices and news stop entirely. test (open:false,
@@ -4087,7 +4140,14 @@ async function ensureMarketCurrent(){
   if(g.market && g.market.tick >= target) return;
   if(g.advancing) return;
   g.advancing = true;
-  try{ await withTimeout(gameRef('market').transaction(cur => advanceMarket(cur, target)), 8000, null); }catch(e){}
+  try{
+    const flow = (await withTimeout(gameRef('flow').once('value').then(s => s.val()), 4000, null)) || {};
+    const res = await withTimeout(gameRef('market').transaction(cur => advanceMarket(cur, target, flow)), 8000, null);
+    if(res && res.committed){
+      // this step used up the flow it read; leave anything that arrived meanwhile for the next step
+      Object.keys(flow).forEach(id => { gameRef('flow/' + id).transaction(c => { const v = (c || 0) - flow[id]; return Math.abs(v) < 1 ? null : v; }); });
+    }
+  }catch(e){}
   g.advancing = false;
 }
 
@@ -4163,7 +4223,8 @@ function execPrice(side, price, qty){
   return Math.max(10, Math.round(price * (side === 'buy' ? 1 + half : 1 - half) / 10) * 10);
 }
 function recordFlow(stockId, won){
-  try{ const r = gameRef('market/flow/' + stockId).transaction(cur => (cur || 0) + won); if(r && r.catch) r.catch(() => {}); }catch(e){}
+  // stored OUTSIDE the market node: anything written inside it is pushed to every open game screen
+  try{ const r = gameRef('flow/' + stockId).transaction(cur => (cur || 0) + Math.round(won)); if(r && r.catch) r.catch(() => {}); }catch(e){}
 }
 async function gameTrade(side, stockId){
   const st = marketStatus();
