@@ -603,6 +603,25 @@ html[data-layout="pc"] .split-cols{ grid-template-columns: 1fr 1fr !important; g
 /* ---------- stock game ---------- */
 .market-pill{ font-size:12px; font-weight:800; padding:5px 11px; border-radius:999px; }
 .market-pill.open{ background: var(--aqua-dim); color: var(--aqua-deep); }
+.market-pill.test{ background: rgba(124,92,232,.14); color:#6a4fd6; margin-left:6px; }
+.game-locked{ position:relative; min-height:420px; }
+.game-locked-bg{ filter: blur(7px); opacity:.55; pointer-events:none; user-select:none; }
+.game-locked-msg{ position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; text-align:center; padding:20px; }
+.game-locked-msg b{ font-size:19px; font-weight:800; }
+.game-locked-msg .lock-ic{ font-size:38px; }
+.game-admin{ padding:16px 18px; margin-bottom:14px; }
+.game-admin h3{ margin:0 0 8px; }
+.ga-status{ font-weight:800; font-size:14px; padding:8px 12px; border-radius:10px; margin-bottom:10px; }
+.ga-status.on{ background: var(--aqua-dim); color: var(--aqua-deep); }
+.ga-status.test{ background: rgba(124,92,232,.12); color:#6a4fd6; }
+.ga-status.off{ background: rgba(229,72,77,.12); color:#e5484d; }
+.ga-testers{ margin-top:10px; display:flex; flex-wrap:wrap; gap:6px; align-items:center; }
+.ga-testers > div{ width:100%; }
+.tester-chip{ border:1px solid var(--border); background: var(--surface); color: var(--text-2); padding:6px 11px; border-radius:999px; font-size:12.5px; font-weight:700; }
+.tester-chip.on{ background: rgba(124,92,232,.14); border-color:#6a4fd6; color:#6a4fd6; }
+.ga-danger{ margin-top:14px; padding-top:12px; border-top:1px dashed var(--border); display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+.btn-danger, .btn-danger:hover{ background:#e5484d; color:#fff; border-color:transparent; }
+.btn.danger{ color:#e5484d; }
 .market-pill.night{ background: var(--surface-3); color: var(--text-2); }
 .holiday-badge{ background: rgba(229,72,77,.12); color:#e5484d; }
 .market-pill.closed{ background: rgba(184,117,46,.16); color: var(--warm); }
@@ -1928,6 +1947,87 @@ async function acctDelete(id){
   render();
 }
 // one-off sweep for leftovers from before this fix (e.g. a deleted 20825 still in the ranking)
+/* ---- 주식게임 관리 (admins only — lives in the admin-only 계정 관리 tab) ---- */
+function renderGameAdminCard(){
+  startGameSync();
+  const g = state.game, c = gameCtrl();
+  if(!g.controlLoaded) return `<div class="card game-admin"><h3>📈 주식게임 관리</h3><p class="text-3 small">상태를 불러오는 중이에요…</p></div>`;
+  const testers = c.testers || {};
+  const people = Object.keys(state.users).filter(id => !state.users[id].isAdmin).sort();
+  const status = c.open ? '🟢 운영 중 · 모두 참여' : c.test ? '🧪 테스트 중 · 운영자와 테스터만' : '⛔ 셧다운 · 시세와 뉴스 모두 멈춤';
+  return `
+  <div class="card game-admin">
+    <h3>📈 주식게임 관리</h3>
+    <div class="ga-status ${c.open ? 'on' : c.test ? 'test' : 'off'}">${status}</div>
+    <div class="item-actions">
+      <button type="button" class="btn btn-sm ${c.open ? 'btn-danger' : 'btn-primary'}" data-act="gameToggleOpen">${c.open ? '⛔ 게임 셧다운' : '🟢 게임 다시 열기'}</button>
+      <button type="button" class="btn btn-sm btn-ghost" data-act="gameToggleTest" ${c.open ? 'disabled' : ''}>${c.test ? '🧪 테스트 끄기' : '🧪 테스트 켜기'}</button>
+    </div>
+    <p class="text-3 small">테스트는 셧다운 상태에서만 켤 수 있어요. 테스트 중엔 시세와 뉴스가 움직이고, 운영자와 아래에서 고른 테스터만 들어갈 수 있어요.</p>
+    ${c.open ? '' : `
+    <div class="ga-testers">
+      <div class="text-2 small" style="margin-bottom:6px;">테스터 (${Object.keys(testers).length}명)</div>
+      ${people.map(id => `<button type="button" class="tester-chip ${testers[id] ? 'on' : ''}" data-act="gameToggleTester" data-id="${esc(id)}">${testers[id] ? '✓ ' : ''}${esc(state.users[id].displayName)}</button>`).join('')}
+    </div>`}
+    <div class="ga-danger">
+      <button type="button" class="btn btn-sm btn-ghost danger" data-act="gameReset">🔄 게임 초기화 (새 시즌)</button>
+      <span class="text-3 small">모든 친구의 돈·주식·아이템과 시세·뉴스를 처음으로 되돌려요. 이전 시즌 거래내역은 따로 보관돼요.</span>
+    </div>
+  </div>`;
+}
+async function setGameControl(mutate, okMsg){
+  const before = gameCtrl();
+  const res = await withTimeout(gameRef('control').transaction(cur => { const c = Object.assign({}, GAME_CTRL_DEFAULT, cur || {}); mutate(c); return c; }), 8000, null);
+  if(!res || !res.committed){ showToast('변경하지 못했어요. 잠시 후 다시 시도해주세요.', 'err'); return; }
+  const after = Object.assign({}, GAME_CTRL_DEFAULT, res.snapshot.val() || {});
+  state.game.control = after;
+  // coming back from a full shutdown: skip the paused time instead of replaying it as price moves
+  if(!marketRunning(before) && marketRunning(after)) await fastForwardMarket();
+  showToast(okMsg);
+  render();
+}
+async function fastForwardMarket(){
+  await withTimeout(gameRef('market').transaction(cur => {
+    if(!cur || !cur.prices) return undefined;
+    const now = gameTickNow();
+    if(cur.tick >= now) return undefined;
+    const pad = Math.min(now - cur.tick, GAME_HISTORY_LEN), history = {};
+    GAME_STOCKS.forEach(s => {
+      const h = ((cur.history || {})[s.id] || [cur.prices[s.id]]).slice();
+      for(let i = 0; i < pad; i++){ h.push(cur.prices[s.id]); if(h.length > GAME_HISTORY_LEN) h.shift(); }
+      history[s.id] = h;
+    });
+    return Object.assign({}, cur, { tick: now, history, prev: cur.prices, trend: {}, flow: {} });
+  }), 8000, null);
+}
+function gameToggleOpen(){
+  const c = gameCtrl();
+  if(c.open){
+    if(!confirm('주식게임을 셧다운할까요? 시세와 뉴스가 모두 멈추고, 친구들은 게임 탭에서 "게임이 잠겼습니다"를 보게 돼요.')) return;
+    setGameControl(x => { x.open = false; }, '게임을 셧다운했어요.');
+  } else {
+    if(!confirm('주식게임을 모두에게 다시 열까요?')) return;
+    setGameControl(x => { x.open = true; x.test = false; }, '게임을 다시 열었어요.');
+  }
+}
+function gameToggleTest(){
+  const c = gameCtrl();
+  if(c.open) return;
+  setGameControl(x => { x.test = !c.test; }, c.test ? '테스트를 껐어요.' : '테스트를 켰어요. 운영자와 테스터만 들어갈 수 있어요.');
+}
+function gameToggleTester(id){
+  setGameControl(x => { x.testers = Object.assign({}, x.testers || {}); if(x.testers[id]) delete x.testers[id]; else x.testers[id] = true; },
+    (gameCtrl().testers || {})[id] ? '테스터에서 뺐어요.' : '테스터로 지정했어요.');
+}
+async function gameReset(){
+  if(!confirm('주식게임을 초기화할까요?\n모든 친구의 돈·주식·아이템, 그리고 시세·뉴스가 처음 상태로 돌아가요.')) return;
+  if(!confirm('정말 초기화할까요? 되돌릴 수 없어요.')) return;
+  const n = parseInt(String(gameCtrl().season || 's1').replace(/\D/g, ''), 10) || 1;
+  await withTimeout(gameRef('players').set(null), 8000, null);
+  await withTimeout(gameRef('market').set(null), 8000, null);
+  await setGameControl(x => { x.season = 's' + (n + 1); }, '새 시즌(' + (n + 1) + ')으로 초기화했어요.');
+  if(state.game){ state.game.ranking = null; state.game.log = null; }
+}
 async function cleanupOrphanGameData(){
   try{ if(!(await ensureConfirmed('allthing-users', 'usersConfirmed'))) return; }catch(e){ return; }
   const ids = Object.keys(state.users || {});
@@ -2905,6 +3005,7 @@ function renderAccountsView(){
     </div>
   </div>
   <p class="text-2" style="margin:-6px 0 14px;">비밀번호를 잊어버린 친구는 여기서 초기화하거나 새 비밀번호를 정해줄 수 있어요. 로그인 아이디도 바꿀 수 있고, 새 계정을 추가하거나 삭제할 수도 있어요.</p>
+  ${renderGameAdminCard()}
   ${state.acctAdding ? renderAccountAddForm() : ''}
   <div class="list">
     ${ids.map(id => renderAccountRow(id)).join('')}
@@ -3390,6 +3491,10 @@ function bindEvents(){
       case 'acctCancelAdd': acctCancelAdd(); break;
       case 'acctDelete': acctDelete(el.dataset.id); break;
       case 'cleanupOrphans': cleanupOrphanGameData(); break;
+      case 'gameToggleOpen': gameToggleOpen(); break;
+      case 'gameToggleTest': gameToggleTest(); break;
+      case 'gameToggleTester': gameToggleTester(el.dataset.id); break;
+      case 'gameReset': gameReset(); break;
       default: break;
     }
   });
@@ -3896,12 +4001,15 @@ function gameRef(sub){ return gameDb().ref(GAME_PATH + (sub ? '/' + sub : '')); 
    - supply & demand: net money that flowed in (buys) or out (sells) since the last step
    - theme stocks only: rare surprise jumps (not while a trend is running) */
 const GAME_TREND_STEPS = 6;          // news after-effect length in moving 30-min steps (~3h)
-const FLOW_DEPTH = 5000000;          // net 5,000,000원 of buying in one step ⇒ +10% (the cap)
+const FLOW_DEPTH = 50000000;         // see flowImpact()
 const TREND_K = 0.6;                 // news drift per step as a share of the stock's own volatility (fades 20%/step)
 const TREND_NOISE = 0.9;             // noise is only slightly calmed during a trend — so news usually, not always, plays out
 function gaussRand(){ let u = 0, v = 0; while(!u) u = Math.random(); while(!v) v = Math.random(); return Math.sqrt(-2*Math.log(u)) * Math.cos(2*Math.PI*v); }
 function clampPrice(stock, v){ return Math.max(10, Math.round(Math.max(stock.base * 0.1, v) / 10) * 10); }
-function flowImpact(won){ return Math.max(-0.1, Math.min(0.1, (won || 0) / FLOW_DEPTH * 0.1)); }
+// Kept deliberately small and invisible: when it was big and shown on screen, everyone piled into
+// the same stock and the crowd itself pushed prices up — a self-fulfilling pump. Now 1,000,000원 of
+// net buying nudges the next step by about +0.1%, capped at ±2% even if the whole class piles in.
+function flowImpact(won){ return Math.max(-0.02, Math.min(0.02, (won || 0) / FLOW_DEPTH * 0.05)); }
 function stepPrice(stock, price, trend, flowR){
   const drift = trend ? trend.d * trend.k * stock.vol : 0;
   const noise = gaussRand() * stock.vol * (trend ? TREND_NOISE : 1);
@@ -3961,13 +4069,56 @@ function advanceMarket(m, target){
   }
   return { tick: target, prices, prev, history, trend, news, flow, lastFlow, arcs };
 }
+/* ---- game control: open / shutdown / test mode ----
+   open: everyone plays. shutdown (open:false): prices and news stop entirely. test (open:false,
+   test:true): the market runs, but only admins and chosen testers can get in. */
+const GAME_CTRL_DEFAULT = { open:true, test:false, testers:{}, season:'s1' };
+function gameCtrl(){ return Object.assign({}, GAME_CTRL_DEFAULT, (state.game && state.game.control) || {}); }
+function marketRunning(c){ c = c || gameCtrl(); return !!(c.open || c.test); }
+function canPlayGame(){
+  const c = gameCtrl();
+  if(c.open) return true;
+  return !!c.test && (isAdmin() || !!(c.testers || {})[state.currentUser]);
+}
+function logPath(){ return 'log/' + (gameCtrl().season || 's1'); }
 async function ensureMarketCurrent(){
+  if(!marketRunning()) return;
   const g = state.game, target = gameTickNow();
   if(g.market && g.market.tick >= target) return;
   if(g.advancing) return;
   g.advancing = true;
   try{ await withTimeout(gameRef('market').transaction(cur => advanceMarket(cur, target)), 8000, null); }catch(e){}
   g.advancing = false;
+}
+
+/* ---- scheduled one-off news (published by whoever has the game open after the time) ---- */
+const SCHEDULED_NEWS = [
+  { id:'sched-20261006-2225', at: new Date(2026, 9, 6, 22, 25).getTime(), until: new Date(2026, 9, 7, 1, 0).getTime() }
+];
+async function publishScheduledNews(){
+  if(!marketRunning()) return;
+  const now = Date.now(), m = state.game.market;
+  for(const x of SCHEDULED_NEWS){
+    if(now < x.at || now > x.until) continue;
+    if(m && (m.published || {})[x.id]) continue;
+    await withTimeout(gameRef('market').transaction(cur => {
+      if(!cur || !cur.prices || (cur.published || {})[x.id]) return undefined;
+      const ev = makeNewsEvent(cur.tick, cur.arcs || {});
+      const prices = Object.assign({}, cur.prices), history = {}, trend = Object.assign({}, cur.trend || {});
+      GAME_STOCKS.forEach(s => { history[s.id] = ((cur.history || {})[s.id] || [prices[s.id]]).slice(); });
+      ev.effects.forEach(ef => {
+        const st = stockInfo(ef.stock);
+        prices[ef.stock] = clampPrice(st, prices[ef.stock] * (1 + ef.shock));
+        history[ef.stock][history[ef.stock].length - 1] = prices[ef.stock];
+        trend[ef.stock] = { d: ef.dir, k: ef.k, left: GAME_TREND_STEPS, n: x.id };
+      });
+      const rec = Object.assign({}, ev.record, { id: x.id, at: x.at });
+      cur.prev = cur.prices; cur.prices = prices; cur.history = history; cur.trend = trend; cur.arcs = ev.arcs;
+      cur.news = (Array.isArray(cur.news) ? cur.news : []).concat([rec]).slice(-GAME_NEWS_KEEP);
+      cur.published = Object.assign({}, cur.published || {}, { [x.id]: true });
+      return cur;
+    }), 8000, null);
+  }
 }
 
 /* ---- player wallet ---- */
@@ -4001,7 +4152,7 @@ async function claimDailyAllowance(){
   }
 }
 function gameLog(entry){
-  try{ const r = gameRef('log').push(Object.assign({ uid: state.currentUser, at: Date.now() }, entry)); if(r && r.catch) r.catch(() => {}); }catch(e){}
+  try{ const r = gameRef(logPath()).push(Object.assign({ uid: state.currentUser, at: Date.now() }, entry)); if(r && r.catch) r.catch(() => {}); }catch(e){}
 }
 
 /* ---- trading ---- */
@@ -4253,7 +4404,7 @@ async function loadGameRanking(){
 async function loadGameLog(){
   const g = state.game;
   g.logLoading = true; render();
-  const r = await withTimeout(gameRef('log').limitToLast(isAdmin() ? 150 : 300).once('value').then(s => s.val()), 8000, null);
+  const r = await withTimeout(gameRef(logPath()).limitToLast(isAdmin() ? 150 : 300).once('value').then(s => s.val()), 8000, null);
   g.logLoading = false;
   let list = Object.values(r || {}).sort((a,b) => (b.at || 0) - (a.at || 0));
   if(!isAdmin()) list = list.filter(x => x.uid === state.currentUser);
@@ -4268,38 +4419,70 @@ function renderGameSafe(){
   if(a && a.classList && (a.classList.contains('game-qty') || a.classList.contains('order-input'))){ state.game.pendingRender = true; return; }
   render();
 }
+function detachPlay(){
+  const gg = state.game;
+  (gg.playRefs || []).forEach(r => { try{ r.off(); }catch(e){} });
+  if(gg.timer) clearInterval(gg.timer);
+  Object.assign(gg, { playRefs:[], timer:null, playAttached:false, market:null, player:null, marketLoaded:false, playerLoaded:false });
+}
 function stopGameSync(){
   const g = state.game;
-  (g.refs || []).forEach(r => { try{ r.off(); }catch(e){} });
-  if(g.timer) clearInterval(g.timer);
+  detachPlay();
+  if(g.ctrlRef){ try{ g.ctrlRef.off(); }catch(e){} }
   state.game = freshGameState();
 }
 function startGameSync(){
+  // only the tiny control node is watched for everyone; the market and wallets are loaded
+  // only once someone who is allowed in actually opens the game tab
   const g = state.game;
   if(!state.currentUser || g.syncedFor === state.currentUser) return;
   if(g.syncedFor) stopGameSync();
   const gg = state.game;
   gg.syncedFor = state.currentUser;
+  gg.ctrlRef = gameRef('control');
+  gg.ctrlRef.on('value', snap => {
+    const was = gameCtrl();
+    gg.control = snap.val() || null; gg.controlLoaded = true;
+    if(!canPlayGame()) detachPlay();
+    else if(gg.wantPlay) attachPlay();
+    if(gg.playAttached && !marketRunning(was) && marketRunning()) ensureMarketCurrent();
+    if(state.view === 'game' || state.view === 'accounts') renderGameSafe();
+  });
+}
+function attachPlay(){
+  const gg = state.game;
+  if(gg.playAttached || !state.currentUser || !canPlayGame()) return;
+  gg.playAttached = true;
   const marketRef = gameRef('market');
   const playerRef = gameRef('players/' + state.currentUser);
-  gg.refs = [marketRef, playerRef];
+  gg.playRefs = [marketRef, playerRef];
   marketRef.on('value', snap => {
+    if(!gg.playAttached || state.game !== gg) return; // arrived after we disconnected (locked / logged out)
     gg.market = snap.val(); gg.marketLoaded = true;
+    if(!gg.market && marketRunning()) ensureMarketCurrent(); // e.g. right after a reset
     const news = (gg.market && gg.market.news) || [], latest = news.length ? news[news.length-1] : null;
     if(latest && gg.lastNewsId !== null && latest.id !== gg.lastNewsId && state.view === 'game'){
       showToast('📰 새 소식: ' + latest.title);
     }
     gg.lastNewsId = latest ? latest.id : '';
     processAutoOrders();
+    publishScheduledNews();
     if(state.view === 'game'){
       if(gg.tab === 'news' && latest) lsSet('game-news-seen', false, latest.id);
       renderGameSafe();
     }
   });
-  playerRef.on('value', snap => { gg.player = snap.val(); gg.playerLoaded = true; processAutoOrders(); if(state.view === 'game') renderGameSafe(); });
-  ensureMarketCurrent().then(claimDailyAllowance).then(refundLegacyItems).then(processAutoOrders);
+  playerRef.on('value', snap => {
+    if(!gg.playAttached || state.game !== gg) return;
+    gg.player = snap.val(); gg.playerLoaded = true;
+    if(!gg.player && marketRunning()) claimDailyAllowance(); // wallet wiped by a reset → start again
+    processAutoOrders();
+    if(state.view === 'game') renderGameSafe();
+  });
+  ensureMarketCurrent().then(claimDailyAllowance).then(refundLegacyItems).then(processAutoOrders).then(publishScheduledNews);
   gg.timer = setInterval(() => {
     if(state.view !== 'game') return;
+    publishScheduledNews();
     const key = gameTickNow() + '|' + todayStr() + '|' + JSON.stringify(marketStatus());
     if(key !== gg.statusKey){
       const dayChanged = gg.statusKey && gg.statusKey.split('|')[1] !== todayStr();
@@ -4312,7 +4495,8 @@ function startGameSync(){
 }
 function freshGameState(){
   return { tab:'market', chartOpen:null, orderForm:null, lottoResult:null, processingOrders:false, lastNewsId:null, market:null, player:null, marketLoaded:false, playerLoaded:false, qty:{}, hint:null,
-           ranking:null, log:null, syncedFor:null, refs:[], timer:null, statusKey:'', advancing:false };
+           ranking:null, log:null, syncedFor:null, playRefs:[], ctrlRef:null, timer:null, statusKey:'', advancing:false,
+           control:null, controlLoaded:false, wantPlay:false, playAttached:false };
 }
 
 /* ---- rendering ---- */
@@ -4322,6 +4506,7 @@ function gameSparkline(arr){
   const pts = arr.map((v,i) => (i/(arr.length-1)*w).toFixed(1) + ',' + (h - ((v-min)/rng)*(h-2) - 1).toFixed(1)).join(' ');
   return `<svg class="spark" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none"><polyline points="${pts}" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" stroke-linecap="round"/></svg>`;
 }
+function timeLabel(ms){ const d = new Date(ms); return (d.getMonth()+1) + '/' + d.getDate() + ' ' + pad2(d.getHours()) + ':' + pad2(d.getMinutes()); }
 function tickLabel(tickNo){
   const d = new Date(tickNo * GAME_TICK_MS);
   return (d.getMonth()+1) + '/' + d.getDate() + ' ' + pad2(d.getHours()) + ':' + pad2(d.getMinutes());
@@ -4392,7 +4577,6 @@ function renderGameMarket(){
           <div class="stock-chg">${ch.text}</div>
         </div>
       </div>
-      ${flowLine(m, s.id)}
       ${g.chartOpen === s.id ? renderStockChart(s, m) : ''}
       <div class="stock-trade">
         <input class="game-qty" type="number" min="1" step="1" inputmode="numeric" placeholder="수량" data-stock="${s.id}" value="${esc(g.qty[s.id] || '')}">
@@ -4487,7 +4671,7 @@ function renderGameNews(){
     const active = activeIds.has(n.id), open = !!unlocked[n.id], legacy = !n.node;
     return `
     <div class="list-item news-item ${active ? 'active' : 'past'}"><div class="list-item-body">
-      <div class="row-head"><span class="text-3 small">${tickLabel(n.tick)}</span>${active ? '<span class="badge news-live">🔥 영향 진행 중</span>' : '<span class="badge badge-alt">지난 뉴스</span>'}</div>
+      <div class="row-head"><span class="text-3 small">${timeLabel(n.at || n.tick * GAME_TICK_MS)}</span>${active ? '<span class="badge news-live">🔥 영향 진행 중</span>' : '<span class="badge badge-alt">지난 뉴스</span>'}</div>
       ${n.arc ? `<div class="news-serial">📚 연재 · ${esc(ARC_NAMES[n.arc] || '')} ${n.part}편</div>` : ''}
       <div class="news-title">${esc(n.emoji)} ${esc(n.title)}</div>
       <div class="row-sub news-body">${esc(n.body)}</div>
@@ -4567,9 +4751,29 @@ function renderGameLog(){
     </div></div>`;
   }).join('')}</div>`;
 }
+function renderGameLocked(){
+  const c = gameCtrl();
+  const fake = [1,2,3].map(() => `<div class="stock-card"><div class="stock-top"><div><div class="stock-name">██████ <span class="badge badge-alt">███</span></div><div class="stock-price">██,███원</div></div><div class="stock-side">${gameSparkline([5,6,5,7,6,8,7,9,8])}</div></div></div>`).join('');
+  return `
+  <div class="view-header"><h2>${icon('chart')} 주식게임</h2></div>
+  <div class="game-locked">
+    <div class="game-locked-bg" aria-hidden="true"><div class="card wallet-card"><div class="wallet-total"><b>█,███,███원</b></div></div><div class="list">${fake}</div></div>
+    <div class="game-locked-msg">
+      <div class="lock-ic">🔒</div>
+      <b>게임이 잠겼습니다.</b>
+      <span>${c.test ? '지금은 테스트 중이에요. 곧 다시 열릴 거예요.' : '잠시 쉬어가요. 다시 열리면 알려드릴게요.'}</span>
+      ${isAdmin() ? '<span class="text-3 small">운영자는 계정 관리 탭의 "주식게임 관리"에서 열 수 있어요.</span>' : ''}
+    </div>
+  </div>`;
+}
 function renderGameView(){
   startGameSync();
   const g = state.game, st = marketStatus();
+  if(!g.controlLoaded) return `<div class="view-header"><h2>${icon('chart')} 주식게임</h2></div><div class="empty-state">${icon('chart')}<p>게임 정보를 불러오는 중이에요…</p></div>`;
+  if(!canPlayGame()) return renderGameLocked();
+  g.wantPlay = true;
+  attachPlay();
+  const testing = !gameCtrl().open;
   const tabs = [['market','시장'],['mine','내 주식'],['news','뉴스'],['shop','상점'],['rank','순위'],['log', isAdmin() ? '전체 거래내역' : '거래내역']];
   const head = `
   <div class="view-header">
@@ -4580,6 +4784,7 @@ function renderGameView(){
       : st.dayKind === 'holiday' ? '휴일 · 거래 가능'
       : st.dayKind === 'weekend' ? '주말 · 거래 가능'
       : '거래 가능'}</span>
+    ${testing ? '<span class="market-pill test">🧪 테스트 모드</span>' : ''}
   </div>`;
   if(!g.marketLoaded || !g.playerLoaded || !g.market || !g.market.prices){
     return head + `<div class="empty-state">${icon('chart')}<p>시장 정보를 불러오는 중이에요…</p></div>`;
