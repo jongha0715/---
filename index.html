@@ -603,6 +603,8 @@ html[data-layout="pc"] .split-cols{ grid-template-columns: 1fr 1fr !important; g
 /* ---------- stock game ---------- */
 .market-pill{ font-size:12px; font-weight:800; padding:5px 11px; border-radius:999px; }
 .market-pill.open{ background: var(--aqua-dim); color: var(--aqua-deep); }
+.market-pill.night{ background: var(--surface-3); color: var(--text-2); }
+.holiday-badge{ background: rgba(229,72,77,.12); color:#e5484d; }
 .market-pill.closed{ background: rgba(184,117,46,.16); color: var(--warm); }
 .wallet-card{ padding:16px 18px; }
 .wallet-total{ display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; }
@@ -638,9 +640,44 @@ html[data-layout="pc"] .split-cols{ grid-template-columns: 1fr 1fr !important; g
 .hint-banner .ic{ color: var(--warm); }
 .rank-row{ align-items:center; }
 .rank-row.me{ border-color: var(--aqua); background: var(--aqua-dim); }
+.rank-row.gold{ background: linear-gradient(135deg, #fff6c7, #ffe57a); border:2px solid #e8b400; color:#4a3a00; box-shadow: 0 6px 18px rgba(232,180,0,.28); }
+.rank-row.silver{ background: linear-gradient(135deg, #eef8ff, #c9e8fb); border:2px solid #7cc4ef; color:#173a52; }
+.rank-row.bronze{ background: linear-gradient(135deg, #fff1e3, #ffd2a6); border:2px solid #e8893a; color:#4f2a08; }
+.rank-row.gold .rank-no, .rank-row.silver .rank-no, .rank-row.bronze .rank-no{ font-size:20px; }
+.rank-row.gold .rank-total, .rank-row.silver .rank-total, .rank-row.bronze .rank-total{ color: inherit; }
+.flow-line{ margin-top:8px; font-size:12px; font-weight:700; }
+.flow-line.up{ color:#e5484d; } .flow-line.down{ color:#3b82f6; } .flow-line.flat{ color: var(--text-3); font-weight:600; }
+.mine-summary{ padding:14px 16px; display:flex; flex-direction:column; gap:4px; }
+.mine-flow{ font-size:15px; font-weight:700; }
+.mine-flow b{ font-size:19px; font-weight:800; }
+.arrow{ color: var(--text-3); margin:0 2px; }
+.news-item.past{ opacity:.6; }
+.news-item.active{ border-color: #e8893a; }
+.news-live{ background: rgba(232,137,58,.16); color:#d06f1f; }
+.lotto-table{ display:flex; flex-wrap:wrap; gap:4px 12px; margin-top:6px; font-size:11.5px; color: var(--text-2); }
+.lotto-result{ text-align:center; padding:18px 12px; border-radius:16px; margin-bottom:12px; animation: lottoPop .45s cubic-bezier(.34,1.56,.64,1); border:2px solid var(--border); background: var(--surface); }
+.lotto-result.jackpot{ background: linear-gradient(135deg,#fff6c7,#ffd84d); border-color:#e8b400; color:#4a3a00; }
+.lotto-result.big{ background: linear-gradient(135deg,#ffe9f0,#ffc2d4); border-color:#e8507a; color:#5a1026; }
+.lotto-result.mid{ background: linear-gradient(135deg,#eef8ff,#c9e8fb); border-color:#7cc4ef; color:#173a52; }
+.lotto-result.small{ background: var(--aqua-dim); border-color: var(--aqua); }
+.lotto-label{ font-size:16px; font-weight:800; }
+.lotto-amount{ font-size:24px; font-weight:800; margin-top:4px; }
+@keyframes lottoPop{ from{ transform: scale(.8); opacity:0; } to{ transform: scale(1); opacity:1; } }
 .rank-no{ width:28px; font-weight:800; color: var(--aqua-deep); flex:none; }
 .rank-name{ flex:1; font-weight:700; }
 .rank-total{ font-weight:800; }
+.item-actions{ align-items:center; flex-wrap:wrap; }
+.order-chip{ display:flex; justify-content:space-between; align-items:center; gap:8px; margin-top:8px; padding:7px 10px; border-radius:10px; font-size:12.5px; font-weight:700; }
+.order-chip.stop{ background: rgba(59,130,246,.10); color:#3b82f6; }
+.order-chip.take{ background: rgba(229,72,77,.10); color:#e5484d; }
+.order-chip .link-btn{ color: inherit; text-decoration: underline; }
+.order-form{ margin-top:10px; padding:12px; border-radius:12px; background: var(--surface-2); }
+.seg-mini{ display:flex; gap:6px; }
+.seg-mini button{ flex:1; border:1px solid var(--border); background: var(--surface); color: var(--text-2); padding:8px 6px; border-radius:10px; font-size:12.5px; font-weight:700; }
+.seg-mini button.active{ background: var(--aqua); border-color: var(--aqua); color: var(--on-accent); }
+.order-row{ display:flex; align-items:center; gap:8px; margin-top:8px; font-size:13px; color: var(--text-2); }
+.order-input{ flex:1; min-width:0; background: var(--surface); border:1px solid var(--border); border-radius:10px; padding:9px 10px; font-size:14px; color: var(--text); }
+.order-input:focus{ border-color: var(--aqua); outline:none; }
 .chart-toggle{ padding:4px 0 0; }
 .chart-toggle .ic{ transform: rotate(90deg); }
 .stock-chart{ margin-top:12px; padding:10px 10px 6px; border-radius:12px; background: var(--surface-2); }
@@ -1270,15 +1307,17 @@ const SECTIONS = {
       { name:'title', label:'일정명', type:'text', required:true, placeholder:'예: 현장체험학습' },
       { name:'date', label:'날짜', type:'date', required:true },
       { name:'endDate', label:'종료일 (선택)', type:'date', required:false },
-      { name:'memo', label:'메모 (선택)', type:'text', required:false }
+      { name:'memo', label:'메모 (선택)', type:'text', required:false },
+      { name:'holiday', label:'휴일 (학교 안 가는 날 — 재량휴업·개교기념일·방학 등)', type:'checkbox', required:false }
     ],
-    blank: () => ({ title:'', date: todayStr(), endDate:'', memo:'' }),
+    blank: () => ({ title:'', date: todayStr(), endDate:'', memo:'', holiday:false }),
     rowHtml: (it) => {
       const dd = dDayInfo(it.date, it.endDate);
       const range = it.endDate ? `${esc(fmtDate(it.date))} ~ ${esc(fmtDate(it.endDate))}` : esc(fmtDate(it.date));
       return `
       <div class="row-head">
         <span class="dday ${dd.cls}">${dd.label}</span>
+        ${it.holiday ? '<span class="badge holiday-badge">휴일</span>' : ''}
       </div>
       <div class="row-title">${esc(it.title)}</div>
       <div class="row-sub">${range}${it.memo ? ' · '+esc(it.memo) : ''}</div>
@@ -1664,6 +1703,7 @@ async function handleLoginSubmit(){
     }
   }catch(e){}
   state.brandAnimPlayed = false;
+  state.navAnim = 'view-enter';
   if(remember){
     await sSet('allthing-session', { id, ts: Date.now() }, false);
   } else {
@@ -1694,7 +1734,8 @@ function goto(view, animClass){
   state.editing = { section:null, id:null, data:null };
   render();
   const main = document.getElementById('mainScroll');
-  if(main) main.scrollTop = 0;
+  if(main){ main.style.scrollBehavior = 'auto'; main.scrollTop = 0; main.style.scrollBehavior = ''; }
+  { const html = document.documentElement, old = html.style.scrollBehavior; html.style.scrollBehavior = 'auto'; window.scrollTo(0, 0); html.style.scrollBehavior = old; }
   // Skip the nav bar's own auto-scroll animation during a swipe — running two independently-timed
   // animations (this scroll + the content slide) at once is what was producing the "bounce" feel.
   if(!animClass || animClass === 'view-enter'){
@@ -1791,6 +1832,10 @@ async function acctSave(id){
       await updateUsers(changes);
     }
   }catch(e){ return; }
+  if(renaming){
+    await moveGamePlayer(id, newId);
+    if(state.game && state.game.syncedFor === id) stopGameSync();
+  }
   if(renaming && state.currentUser === id){
     state.currentUser = newId;
     const session = await sGet('allthing-session', false, null);
@@ -1849,14 +1894,46 @@ async function acctSubmitAdd(){
   state.acctAdding = false;
   render();
 }
+function gamePlayerRef(id){ return gameDb().ref('allthing/allthing-game/players/' + id); }
+async function deleteAccountData(id, studentNo){
+  // the account itself is already gone at this point; this removes what hung off it
+  try{ await withTimeout(gamePlayerRef(id).set(null), 8000, null); }catch(e){}
+  // a timetable is keyed by 학번 — only drop it if no remaining account still uses that 학번
+  if(studentNo && state.timetables[studentNo] && !Object.keys(state.users).some(k => (state.users[k] || {}).studentNo === studentNo)){
+    try{ await updateTimetables({ [studentNo]: null }); }catch(e){}
+  }
+}
+async function moveGamePlayer(oldId, newId){
+  const val = await withTimeout(gamePlayerRef(oldId).once('value').then(s => s.val()), 8000, undefined);
+  if(!val) return;
+  const existing = await withTimeout(gamePlayerRef(newId).once('value').then(s => s.val()), 8000, undefined);
+  if(existing === undefined) return; // couldn't confirm the target is free — leave everything as is
+  if(!existing) await withTimeout(gamePlayerRef(newId).set(val), 8000, null);
+  await withTimeout(gamePlayerRef(oldId).set(null), 8000, null);
+}
 async function acctDelete(id){
   const u = state.users[id];
   if(!u) return;
   if(id === state.currentUser){ showToast('현재 로그인한 계정은 삭제할 수 없어요.', 'err'); return; }
-  if(!confirm(`${u.displayName}(${id}) 계정을 정말 삭제할까요? 되돌릴 수 없어요.`)) return;
+  if(!confirm(`${u.displayName}(${id}) 계정을 정말 삭제할까요? 주식게임 기록과 시간표도 함께 지워지고, 되돌릴 수 없어요.`)) return;
   try{ await updateUsers({ [id]: null }); }catch(e){ return; }
-  showToast('계정을 삭제했어요.');
+  await deleteAccountData(id, u.studentNo);
+  showToast('계정과 관련 데이터를 삭제했어요.');
   render();
+}
+// one-off sweep for leftovers from before this fix (e.g. a deleted 20825 still in the ranking)
+async function cleanupOrphanGameData(){
+  try{ if(!(await ensureConfirmed('allthing-users', 'usersConfirmed'))) return; }catch(e){ return; }
+  const ids = Object.keys(state.users || {});
+  if(!ids.length){ showToast('계정 목록을 확인할 수 없어 정리하지 않았어요.', 'err'); return; }
+  const players = await withTimeout(gameDb().ref('allthing/allthing-game/players').once('value').then(s => s.val()), 8000, undefined);
+  if(players === undefined){ showToast('주식게임 데이터를 불러오지 못했어요. 잠시 후 다시 시도해주세요.', 'err'); return; }
+  const orphans = Object.keys(players || {}).filter(id => !state.users[id]);
+  if(!orphans.length){ showToast('정리할 데이터가 없어요. 이미 깨끗해요.'); return; }
+  if(!confirm('지금은 없는 계정의 주식게임 기록 ' + orphans.length + '개를 지울까요?\n(' + orphans.join(', ') + ')')) return;
+  for(const id of orphans){ try{ await withTimeout(gamePlayerRef(id).set(null), 8000, null); }catch(e){} }
+  if(state.game) state.game.ranking = null;
+  showToast(orphans.length + '개 계정의 남은 기록을 정리했어요.');
 }
 
 /* ---------- generic section CRUD (meals / exams / events / notices) ---------- */
@@ -2168,6 +2245,11 @@ async function submitSectionForm(section){
         }
         continue; // the actual bytes are kept out of `data` entirely — never goes into the live-synced record
       }
+    } else if(f.type === 'checkbox'){
+      const el = document.getElementById('field-'+f.name);
+      val = !!(el && el.checked);
+      data[f.name] = val;
+      continue;
     } else if(f.type === 'select'){
       const checked = document.querySelector('input[name="field-'+f.name+'"]:checked');
       val = checked ? checked.value : ((f.options && f.options[0]) ? f.options[0].value : '');
@@ -2356,6 +2438,9 @@ function renderSectionForm(section){
     const val = data[f.name];
     if(f.type === 'lines'){
       return `<label class="field"><span>${f.label}</span><textarea id="field-${f.name}" rows="4" placeholder="${esc(f.placeholder||'')}">${esc((val||[]).join('\n'))}</textarea></label>`;
+    }
+    if(f.type === 'checkbox'){
+      return `<label class="checkline"><input type="checkbox" id="field-${f.name}" ${val ? 'checked' : ''}> ${esc(f.label)}</label>`;
     }
     if(f.type === 'select'){
       const cur = val || (f.options && f.options[0] ? f.options[0].value : '');
@@ -2809,6 +2894,7 @@ function renderAccountsView(){
     <h2>${icon('users')} 계정 관리</h2>
     <div style="display:flex; gap:8px; flex-wrap:wrap;">
       <button class="btn btn-ghost btn-sm" data-act="applyClassNames">${icon('users')} 닉네임을 이름으로</button>
+      <button class="btn btn-ghost btn-sm" data-act="cleanupOrphans">${icon('trash')} 삭제된 계정 기록 정리</button>
       <button class="btn btn-primary btn-sm" data-act="acctOpenAdd">${icon('plus')} 계정 추가</button>
     </div>
   </div>
@@ -2956,7 +3042,7 @@ function renderShell(){
     <div class="main-col">
       ${renderTopbar()}
       <main class="main-scroll" id="mainScroll">
-        <div class="main-inner ${esc(state.navAnim || 'view-enter')}">${renderViewContent()}</div>
+        <div class="main-inner ${esc(state.navAnim || '')}">${renderViewContent()}</div>
       </main>
       ${renderBottomNav()}
     </div>
@@ -3180,10 +3266,43 @@ function renderLightboxHtml(){
     <img src="${esc(state.lightboxSrc)}" class="lightbox-img" alt="첨부 사진 크게 보기">
   </div>`;
 }
+function snapshotScroll(){
+  const q = sel => document.querySelector(sel);
+  return {
+    win: window.scrollY,
+    main: q('#mainScroll') ? q('#mainScroll').scrollTop : 0,
+    nav: q('#bottomNavScroll') ? q('#bottomNavScroll').scrollLeft : 0,
+    side: q('.side-nav') ? q('.side-nav').scrollTop : 0,
+    tabs: q('.game-tabs') ? q('.game-tabs').scrollLeft : 0,
+    modal: q('.modal') ? q('.modal').scrollTop : 0
+  };
+}
+function restoreScroll(k){
+  const set = (el, prop, v) => { if(!el || !v) return; const old = el.style.scrollBehavior; el.style.scrollBehavior = 'auto'; el[prop] = v; el.style.scrollBehavior = old; };
+  set(document.getElementById('mainScroll'), 'scrollTop', k.main);
+  set(document.getElementById('bottomNavScroll'), 'scrollLeft', k.nav);
+  set(document.querySelector('.side-nav'), 'scrollTop', k.side);
+  set(document.querySelector('.game-tabs'), 'scrollLeft', k.tabs);
+  set(document.querySelector('.modal'), 'scrollTop', k.modal);
+  if(k.win && Math.abs(window.scrollY - k.win) > 1){
+    const html = document.documentElement, old = html.style.scrollBehavior;
+    html.style.scrollBehavior = 'auto'; window.scrollTo(0, k.win); html.style.scrollBehavior = old;
+  }
+}
 function render(){
   const app = document.getElementById('app');
   if(!state.booted){ app.innerHTML = `<div class="boot">불러오는 중…</div>`; return; }
+  // an account deleted (by an admin, on another device) while still logged in here
+  if(state.currentUser && !state.users[state.currentUser]){
+    if(state.game && state.game.syncedFor) stopGameSync();
+    state.currentUser = null;
+    try{ localStorage.removeItem(lsKey('allthing-session', false)); }catch(e){}
+    state.toast = { msg:'이 계정이 삭제되어 로그아웃됐어요.', type:'err' };
+  }
+  const keep = snapshotScroll();
   app.innerHTML = (state.currentUser ? renderShell() : renderLogin()) + renderToastHtml() + renderLightboxHtml();
+  restoreScroll(keep);
+  state.navAnim = ''; // the page-entrance animation plays once per navigation, not on every button press
   document.documentElement.setAttribute('data-layout', state.forceLayout || 'auto');
   if(state.currentUser) applySidebarWidth(sidebarWidthPref());
   updateBottomNavEdges(document.getElementById('bottomNavScroll'));
@@ -3256,10 +3375,14 @@ function bindEvents(){
       case 'gameMax': gameSetMax(el.dataset.side, el.dataset.stock); break;
       case 'gameChart': state.game.chartOpen = state.game.chartOpen === el.dataset.stock ? null : el.dataset.stock; render(); break;
       case 'gameBuyItem': gameBuyItem(el.dataset.item); break;
-      case 'gameUseItem': gameUseItem(el.dataset.item); break;
+      case 'orderForm': openOrderForm(el.dataset.stock); break;
+      case 'orderKind': if(state.game.orderForm){ state.game.orderForm.kind = el.dataset.kind; render(); } break;
+      case 'orderPlace': placeAutoOrder(el.dataset.stock); break;
+      case 'orderCancel': cancelAutoOrder(el.dataset.id); break;
       case 'applyClassNames': applyClassNames(); break;
       case 'acctCancelAdd': acctCancelAdd(); break;
       case 'acctDelete': acctDelete(el.dataset.id); break;
+      case 'cleanupOrphans': cleanupOrphanGameData(); break;
       default: break;
     }
   });
@@ -3288,12 +3411,14 @@ function bindEvents(){
   document.addEventListener('input', function(e){
     const t = e.target;
     if(t && t.classList && t.classList.contains('game-qty') && state.game) state.game.qty[t.dataset.stock] = t.value;
+    if(t && t.classList && t.classList.contains('order-input') && state.game && state.game.orderForm) state.game.orderForm[t.dataset.field] = t.value;
   });
   document.addEventListener('focusout', function(e){
     const t = e.target;
-    if(t && t.classList && t.classList.contains('game-qty') && state.game && state.game.pendingRender){
+    const typing = el => el && el.classList && (el.classList.contains('game-qty') || el.classList.contains('order-input'));
+    if(typing(t) && state.game && state.game.pendingRender){
       state.game.pendingRender = false;
-      setTimeout(() => { if(!(document.activeElement && document.activeElement.classList.contains('game-qty'))) render(); }, 0);
+      setTimeout(() => { if(!typing(document.activeElement)) render(); }, 0);
     }
   });
   document.addEventListener('change', function(e){
@@ -3474,9 +3599,26 @@ const GAME_STOCKS = [
   { id:'break',   name:'쉬는시간게임즈', type:'테마형', sector:'게임',   vol:0.032, base:5000, jump:true }
 ];
 const GAME_ITEMS = [
-  { id:'hintUp',   name:'상승 힌트', desc:'다음 변동에서 오를 가능성이 가장 높은 종목을 알려줘요.',     price:50000, dailyLimit:3 },
-  { id:'hintDown', name:'하락 경고', desc:'다음 변동에서 떨어질 가능성이 가장 높은 종목을 알려줘요.', price:50000, dailyLimit:3 }
+  { id:'autoOrder', name:'자동 손절·익절 예약권', price:30000, dailyLimit:3,
+    desc:'가진 주식에 "이 가격 아래로 떨어지면 팔기(손절)" 또는 "이 가격 위로 오르면 팔기(익절)"를 걸어둘 수 있어요. 수업 중이나 밤에도 작동해요.' },
+  { id:'lotto', name:'로또', price:30000, dailyLimit:3, instant:true,
+    desc:'사자마자 바로 긁어서 결과가 나와요. 운이 좋으면 최대 100만원!' }
 ];
+// average payout ≈ 27,100원 per 30,000원 ticket (90%) — fun, but not a money printer
+const LOTTO_PRIZES = [
+  { tier:'jackpot', label:'🎉 대박!!',    amount:1000000, p:0.005 },
+  { tier:'big',     label:'💰 거액 당첨', amount:300000,  p:0.035 },
+  { tier:'mid',     label:'✨ 중액 당첨', amount:60000,   p:0.11 },
+  { tier:'small',   label:'🙂 소액 당첨', amount:20000,   p:0.25 },
+  { tier:'lose',    label:'😢 꽝',        amount:0,       p:0.60 }
+];
+function drawLotto(){
+  let r = Math.random();
+  for(const pz of LOTTO_PRIZES){ if(r < pz.p) return pz; r -= pz.p; }
+  return LOTTO_PRIZES[LOTTO_PRIZES.length - 1];
+}
+// retired items — kept only so old log lines still read nicely and leftovers can be refunded
+const LEGACY_ITEMS = { hintUp:{ name:'상승 힌트', price:50000 }, hintDown:{ name:'하락 경고', price:50000 } };
 // 50-minute periods (each starts at :40, ends at :30; lunch 12:30–13:40); trading is locked during these
 const CLASS_PERIODS = [['08:40','09:30'],['09:40','10:30'],['10:40','11:30'],['11:40','12:30'],['13:40','14:30'],['14:40','15:30'],['15:40','16:30']];
 // how many periods each weekday has (Mon/Tue/Thu end 16:30, Wed 15:30, Fri 14:30)
@@ -3513,28 +3655,83 @@ const NEWS_TEMPLATES = [
   { stock:'*', dir: 1, emoji:'📈', title:'경기 회복 기대감 확산' },
   { stock:'*', dir:-1, emoji:'📉', title:'글로벌 경기 침체 우려' }
 ];
-function newsSlotTimes(wd){
-  const count = PERIODS_BY_WEEKDAY[wd] || 0;
-  const end = count ? CLASS_PERIODS[count - 1][1] : '16:30'; // weekends: treat 16:30 as "after school"
+// 공휴일·대체공휴일 (2026년 남은 날 + 2027년, 정부 월력요항 기준). School-specific days off
+// (재량휴업일, 개교기념일, 방학 …) are added by ticking "휴일" on an event in the 일정 tab.
+const KR_PUBLIC_HOLIDAYS = new Set([
+  '2026-10-05','2026-10-09','2026-12-25',
+  '2027-01-01','2027-02-06','2027-02-07','2027-02-08','2027-02-09','2027-03-01',
+  '2027-05-01','2027-05-03','2027-05-05','2027-05-13','2027-06-06','2027-07-17','2027-07-19',
+  '2027-08-15','2027-08-16','2027-09-14','2027-09-15','2027-09-16','2027-10-03','2027-10-04',
+  '2027-10-09','2027-10-11','2027-12-25','2027-12-27'
+]);
+function dateKey(d){ return d.getFullYear() + '-' + pad2(d.getMonth()+1) + '-' + pad2(d.getDate()); }
+function holidayInfo(d){
+  const key = dateKey(d);
+  if(KR_PUBLIC_HOLIDAYS.has(key)) return { kind:'holiday' };
+  const ev = (state.events || []).find(e => e && e.holiday && e.date && e.date <= key && key <= (e.endDate || e.date));
+  if(ev) return { kind:'holiday', title: ev.title };
+  const wd = d.getDay();
+  if(wd === 0 || wd === 6) return { kind:'weekend' };
+  return null;
+}
+// prices rest overnight (every day): ticks from 23:00 up to 06:30 don't move anything
+const NIGHT_START = 23*60, NIGHT_END = 7*60;
+function isNightMinute(mins){ return mins >= NIGHT_START || mins < NIGHT_END; }
+function isFrozenTick(tickNo){ const d = new Date(tickNo * GAME_TICK_MS); return isNightMinute(d.getHours()*60 + d.getMinutes()); }
+function newsSlotTimes(d){
+  const wd = d.getDay();
+  const count = holidayInfo(d) ? 0 : (PERIODS_BY_WEEKDAY[wd] || 0);
+  const end = count ? CLASS_PERIODS[count - 1][1] : '16:30'; // no school that day: treat 16:30 as "after school"
   return [hmToMin('12:30'), hmToMin(end)];
 }
 function isNewsSlot(tickNo){
   const d = new Date(tickNo * GAME_TICK_MS);
-  return newsSlotTimes(d.getDay()).indexOf(d.getHours()*60 + d.getMinutes()) !== -1;
+  return newsSlotTimes(d).indexOf(d.getHours()*60 + d.getMinutes()) !== -1;
 }
+// How sectors pull on each other: negative = rivals (move opposite), positive = partners (move together)
+const STOCK_LINKS = {
+  meal:    { store:-0.6, gym: 0.4 },              // 급식 vs 매점: 같은 점심값을 두고 경쟁 / 체육활동 늘면 급식 수요↑
+  store:   { meal:-0.6, break: 0.5 },             // 전자기기가 잘 팔리면 게임도 잘 됨
+  library: { break:-0.6 },                        // 공부 vs 게임: 관심을 두고 경쟁
+  break:   { library:-0.6, store: 0.5, gym:-0.3 },
+  gym:     { meal: 0.4, break:-0.3 }              // 밖에서 운동 vs 실내 게임
+};
+// how hard each personality reacts to news
+const TYPE_IMPACT = { '안정형':0.6, '성장형':1.0, '고위험':1.6, '테마형':1.3 };
+function stockInfo(id){ return GAME_STOCKS.find(s => s.id === id); }
 function makeNewsEvent(tickNo){
   const t = NEWS_TEMPLATES[Math.floor(Math.random() * NEWS_TEMPLATES.length)];
-  const all = t.stock === '*';
-  const targets = all ? GAME_STOCKS.map(s => s.id) : [t.stock];
-  const mag = all ? 0.03 + Math.random()*0.03 : 0.05 + Math.random()*0.07;
-  const pct = Math.round(t.dir * mag * 1000) / 10;
-  const word = t.dir > 0 ? '상승' : '하락', mood = t.dir > 0 ? '강세' : '약세';
-  const body = all
-    ? `시장 전체가 평균 ${Math.abs(pct)}% ${word}했습니다. 당분간 ${mood}가 이어질 수 있어요.`
-    : `${GAME_STOCKS.find(s => s.id === t.stock).sector}산업 주식(${stockName(t.stock)})이 ${Math.abs(pct)}% ${word}했습니다. 당분간 ${mood}가 이어질 수 있어요.`;
+  const effects = [];
+  let body;
+  if(t.stock === '*'){
+    GAME_STOCKS.forEach(s => {
+      const shock = t.dir * (0.02 + Math.random()*0.03) * TYPE_IMPACT[s.type];
+      effects.push({ stock:s.id, dir:t.dir, shock, k: TREND_K * 0.6 });
+    });
+    const avg = Math.round(effects.reduce((a,e) => a + Math.abs(e.shock), 0) / effects.length * 1000) / 10;
+    body = `시장 전체가 평균 ${avg}% ${t.dir > 0 ? '상승' : '하락'}했습니다. 당분간 ${t.dir > 0 ? '강세' : '약세'}가 이어질 수 있어요.`;
+  } else {
+    const main = stockInfo(t.stock);
+    const mainShock = t.dir * (0.06 + Math.random()*0.05) * TYPE_IMPACT[main.type];
+    effects.push({ stock:main.id, dir:t.dir, shock:mainShock, k: TREND_K });
+    const rivals = [], partners = [];
+    Object.keys(STOCK_LINKS[main.id] || {}).forEach(id => {
+      const c = STOCK_LINKS[main.id][id], d = t.dir * Math.sign(c);
+      effects.push({ stock:id, dir:d, shock: mainShock * c * 0.6, k: TREND_K * Math.abs(c) * 0.8 });
+      (c < 0 ? rivals : partners).push(stockName(id));
+    });
+    const pct = Math.round(Math.abs(mainShock) * 1000) / 10;
+    body = `${main.sector}산업 주식(${main.name})이 ${pct}% ${t.dir > 0 ? '상승' : '하락'}했습니다. 당분간 ${t.dir > 0 ? '강세' : '약세'}가 이어질 수 있어요.`;
+    if(rivals.length) body += ` 경쟁 관계인 ${rivals.join('·')}은(는) 반대로 움직이고,`;
+    if(partners.length) body += ` 협력 관계인 ${partners.join('·')}은(는) 같은 방향으로 움직일 수 있어요.`;
+    else if(rivals.length) body = body.replace(/,$/, '일 수 있어요.');
+  }
+  const id = 'n' + tickNo;
   return {
-    effects: targets.map(id => ({ stock:id, shock: t.dir * mag, trend: t.dir * (all ? 0.006 : 0.012) })),
-    record: { id: 'n' + tickNo, tick: tickNo, at: tickNo * GAME_TICK_MS, emoji: t.emoji, title: t.title, body, stocks: targets, dir: t.dir, pct }
+    effects,
+    record: { id, tick: tickNo, at: tickNo * GAME_TICK_MS, emoji: t.emoji, title: t.title, body,
+              stocks: effects.map(e => e.stock), dir: t.dir,
+              fx: effects.map(e => ({ s: e.stock, d: e.dir, p: Math.round(e.shock * 1000) / 10 })) }
   };
 }
 function gameTickNow(){ return Math.floor(Date.now() / GAME_TICK_MS); }
@@ -3542,17 +3739,20 @@ function hmToMin(str){ const p = str.split(':').map(Number); return p[0]*60 + p[
 function marketStatus(d){
   d = d || new Date();
   const wd = d.getDay();
-  if(wd === 0 || wd === 6) return { open:true };
   const mins = d.getHours()*60 + d.getMinutes();
+  const night = isNightMinute(mins);
+  const hol = holidayInfo(d);
+  if(hol) return { open:true, night, dayKind: hol.kind, holidayTitle: hol.title };
   const count = PERIODS_BY_WEEKDAY[wd] || 0;
   for(let i = 0; i < count; i++){
     if(mins >= hmToMin(CLASS_PERIODS[i][0]) && mins < hmToMin(CLASS_PERIODS[i][1])){
       return { open:false, period:i+1, reopen:CLASS_PERIODS[i][1] };
     }
   }
-  return { open:true };
+  return { open:true, night };
 }
-function nextTickLabel(){ const t = new Date((gameTickNow()+1) * GAME_TICK_MS); return pad2(t.getHours()) + ':' + pad2(t.getMinutes()); }
+function nextMovingTick(){ let t = gameTickNow() + 1; for(let i = 0; i < 48 && isFrozenTick(t); i++) t++; return t; }
+function nextTickLabel(){ const t = new Date(nextMovingTick() * GAME_TICK_MS); return pad2(t.getHours()) + ':' + pad2(t.getMinutes()); }
 function fmtWon(n){ return Math.round(n || 0).toLocaleString('ko-KR') + '원'; }
 function stockName(id){ const s = GAME_STOCKS.find(x => x.id === id); return s ? s.name : id; }
 
@@ -3600,50 +3800,66 @@ const localGameDb = (function(){
 function gameDb(){ return (firebaseReady && fbDb) ? fbDb : localGameDb; }
 function gameRef(sub){ return gameDb().ref(GAME_PATH + (sub ? '/' + sub : '')); }
 
-/* ---- market engine ---- */
+/* ---- market engine ----
+   Each 30-minute step, a stock's move is the sum of:
+   - random noise sized by its personality (vol)
+   - a gentle pull back toward its base price (weak while a news trend is running)
+   - the news trend: a drift in the story's direction worth ~1×vol per step, fading over ~3h,
+     with the noise also calmed so the trend actually shows instead of drowning in randomness
+   - supply & demand: net money that flowed in (buys) or out (sells) since the last step
+   - theme stocks only: rare surprise jumps (not while a trend is running) */
+const GAME_TREND_STEPS = 6;          // news after-effect length in moving 30-min steps (~3h)
+const FLOW_DEPTH = 5000000;          // net 5,000,000원 of buying in one step ⇒ +10% (the cap)
+const TREND_K = 0.6;                 // news drift per step as a share of the stock's own volatility (fades 20%/step)
+const TREND_NOISE = 0.9;             // noise is only slightly calmed during a trend — so news usually, not always, plays out
 function gaussRand(){ let u = 0, v = 0; while(!u) u = Math.random(); while(!v) v = Math.random(); return Math.sqrt(-2*Math.log(u)) * Math.cos(2*Math.PI*v); }
-function randomBiases(){ const b = {}; GAME_STOCKS.forEach(s => b[s.id] = Math.round((Math.random()*2 - 1) * 100) / 100); return b; }
 function clampPrice(stock, v){ return Math.max(10, Math.round(Math.max(stock.base * 0.1, v) / 10) * 10); }
-function stepPrice(stock, price, bias, trend){
-  // random walk + the hidden "bias" chosen one step earlier (what the hint items reveal)
-  // + a gentle pull back toward the base price so nothing drifts off to infinity or zero
-  let r = gaussRand()*stock.vol + bias*stock.vol*0.9 + ((stock.base - price)/stock.base)*0.03 + (trend || 0);
-  if(stock.jump && Math.random() < 0.07) r += (Math.random() < 0.5 ? -1 : 1) * (0.08 + Math.random()*0.12);
-  const next = Math.max(stock.base * 0.1, price * (1 + r));
-  return Math.max(10, Math.round(next / 10) * 10);
+function flowImpact(won){ return Math.max(-0.1, Math.min(0.1, (won || 0) / FLOW_DEPTH * 0.1)); }
+function stepPrice(stock, price, trend, flowR){
+  const drift = trend ? trend.d * trend.k * stock.vol : 0;
+  const noise = gaussRand() * stock.vol * (trend ? TREND_NOISE : 1);
+  const revert = ((stock.base - price) / stock.base) * (trend ? 0.004 : 0.02);
+  let r = noise + drift + revert + (flowR || 0);
+  if(stock.jump && !trend && Math.random() < 0.07) r += (Math.random() < 0.5 ? -1 : 1) * (0.08 + Math.random()*0.12);
+  return clampPrice(stock, price * (1 + r));
 }
 function advanceMarket(m, target){
   if(!m || !m.prices){
     const prices = {}, history = {};
     GAME_STOCKS.forEach(s => { prices[s.id] = s.base; history[s.id] = [s.base]; });
-    return { tick: target, prices, prev: Object.assign({}, prices), history, bias: randomBiases(), trend: {}, news: [] };
+    return { tick: target, prices, prev: Object.assign({}, prices), history, trend: {}, news: [], flow: {}, lastFlow: {} };
   }
   if(m.tick >= target) return undefined; // already current — abort the transaction, nothing to write
   const steps = Math.min(target - m.tick, GAME_HISTORY_LEN);
-  let prices = Object.assign({}, m.prices), prev = prices, bias = m.bias || randomBiases();
+  let prices = Object.assign({}, m.prices), prev = Object.assign({}, m.prev || m.prices);
   const history = {};
   GAME_STOCKS.forEach(s => {
     if(!prices[s.id]) prices[s.id] = s.base;
     history[s.id] = (m.history && Array.isArray(m.history[s.id])) ? m.history[s.id].slice() : [prices[s.id]];
   });
   const trend = {};
-  Object.keys(m.trend || {}).forEach(k => { trend[k] = Object.assign({}, m.trend[k]); });
+  Object.keys(m.trend || {}).forEach(k => { const t = m.trend[k]; if(t && typeof t.d === 'number') trend[k] = Object.assign({}, t); });
   let news = Array.isArray(m.news) ? m.news.slice() : [];
+  let flow = Object.assign({}, m.flow || {}), lastFlow = Object.assign({}, m.lastFlow || {});
   const base = target - steps;
   for(let i = 0; i < steps; i++){
     const tickNo = base + i + 1;
+    if(isFrozenTick(tickNo)){
+      // night: nothing moves (orders placed overnight are applied at 07:00). Flat point keeps the time axis honest.
+      GAME_STOCKS.forEach(s => { history[s.id].push(prices[s.id]); if(history[s.id].length > GAME_HISTORY_LEN) history[s.id].shift(); });
+      continue;
+    }
     prev = prices;
     const next = {};
-    GAME_STOCKS.forEach(s => {
-      next[s.id] = stepPrice(s, prev[s.id], (bias && bias[s.id]) || 0, trend[s.id] ? trend[s.id].s : 0);
-    });
-    Object.keys(trend).forEach(k => { trend[k].left -= 1; trend[k].s *= 0.75; if(trend[k].left <= 0) delete trend[k]; });
+    GAME_STOCKS.forEach(s => { next[s.id] = stepPrice(s, prev[s.id], trend[s.id], flowImpact(flow[s.id])); });
+    lastFlow = flow; flow = {};
+    Object.keys(trend).forEach(k => { trend[k].left -= 1; trend[k].k *= 0.8; if(trend[k].left <= 0) delete trend[k]; });
     if(isNewsSlot(tickNo) && Math.random() < GAME_NEWS_PROB){
       const ev = makeNewsEvent(tickNo);
       ev.effects.forEach(ef => {
-        const st = GAME_STOCKS.find(x => x.id === ef.stock);
+        const st = stockInfo(ef.stock);
         next[ef.stock] = clampPrice(st, next[ef.stock] * (1 + ef.shock));
-        trend[ef.stock] = { s: ef.trend, left: GAME_TREND_TICKS };
+        trend[ef.stock] = { d: ef.dir, k: ef.k, left: GAME_TREND_STEPS, n: ev.record.id };
       });
       news.push(ev.record);
       if(news.length > GAME_NEWS_KEEP) news = news.slice(-GAME_NEWS_KEEP);
@@ -3653,9 +3869,8 @@ function advanceMarket(m, target){
       if(history[s.id].length > GAME_HISTORY_LEN) history[s.id].shift();
     });
     prices = next;
-    bias = randomBiases();
   }
-  return { tick: target, prices, prev, history, bias, trend, news };
+  return { tick: target, prices, prev, history, trend, news, flow, lastFlow };
 }
 async function ensureMarketCurrent(){
   const g = state.game, target = gameTickNow();
@@ -3701,9 +3916,18 @@ function gameLog(entry){
 }
 
 /* ---- trading ---- */
+// Big orders move the price against you while they fill (half of their own supply/demand impact).
+// This also stops "buy a lot, let my own buying lift the price, sell" from being free money.
+function execPrice(side, price, qty){
+  const half = Math.abs(flowImpact(price * qty)) / 2;
+  return Math.max(10, Math.round(price * (side === 'buy' ? 1 + half : 1 - half) / 10) * 10);
+}
+function recordFlow(stockId, won){
+  try{ const r = gameRef('market/flow/' + stockId).transaction(cur => (cur || 0) + won); if(r && r.catch) r.catch(() => {}); }catch(e){}
+}
 async function gameTrade(side, stockId){
   const st = marketStatus();
-  if(!st.open){ showToast('수업 시간에는 거래할 수 없어요. ' + st.reopen + '에 다시 열려요.', 'err'); return; }
+  if(!st.open && side === 'buy'){ showToast('수업 시간에는 매수할 수 없어요 (매도는 가능해요). ' + st.reopen + '에 다시 열려요.', 'err'); return; }
   const g = state.game;
   if(!g.market || !g.market.prices || !g.playerLoaded){ showToast('시장 정보를 불러오는 중이에요.', 'err'); return; }
   if(g.market.tick < gameTickNow()) await ensureMarketCurrent();
@@ -3711,6 +3935,7 @@ async function gameTrade(side, stockId){
   const qty = Math.floor(Number(g.qty[stockId] || 0));
   if(!(qty > 0)){ showToast('수량을 입력해주세요.', 'err'); return; }
   if(!(price > 0)){ showToast('시세를 확인할 수 없어요.', 'err'); return; }
+  const fill = execPrice(side, price, qty);
   let err = '';
   const res = await withTimeout(gameRef('players/' + state.currentUser).transaction(cur => {
     err = '';
@@ -3718,35 +3943,45 @@ async function gameTrade(side, stockId){
     cur.holdings = cur.holdings || {}; cur.cost = cur.cost || {};
     const have = cur.holdings[stockId] || 0;
     if(side === 'buy'){
-      const total = price * qty;
+      const total = fill * qty;
       if((cur.cash || 0) < total){ err = '현금이 부족해요.'; return undefined; }
       cur.cash -= total;
       cur.cost[stockId] = Math.round(((cur.cost[stockId] || 0) * have + total) / (have + qty));
       cur.holdings[stockId] = have + qty;
     } else {
       if(have < qty){ err = '보유한 수량보다 많이 팔 수 없어요.'; return undefined; }
-      cur.cash = (cur.cash || 0) + price * qty;
+      cur.cash = (cur.cash || 0) + fill * qty;
       cur.holdings[stockId] = have - qty;
-      if(cur.holdings[stockId] === 0){ delete cur.holdings[stockId]; delete cur.cost[stockId]; }
+      if(cur.holdings[stockId] === 0){
+        delete cur.holdings[stockId]; delete cur.cost[stockId];
+        Object.keys(cur.orders || {}).forEach(oid => {
+          if(cur.orders[oid].stock === stockId){ delete cur.orders[oid]; cur.items = cur.items || {}; cur.items.autoOrder = (cur.items.autoOrder || 0) + 1; }
+        });
+      }
     }
     return cur;
   }), 8000, null);
   if(err){ showToast(err, 'err'); return; }
   if(!res || !res.committed){ showToast('거래하지 못했어요. 잠시 후 다시 시도해주세요.', 'err'); return; }
   g.qty[stockId] = '';
-  gameLog({ type: side, stock: stockId, qty, price });
-  showToast(stockName(stockId) + ' ' + qty + '주 ' + (side === 'buy' ? '매수' : '매도') + ' 완료');
+  recordFlow(stockId, (side === 'buy' ? 1 : -1) * fill * qty);
+  gameLog({ type: side, stock: stockId, qty, price: fill });
+  showToast(stockName(stockId) + ' ' + qty + '주 ' + (side === 'buy' ? '매수' : '매도') + ' 완료 · 체결가 ' + fmtWon(fill));
 }
 function gameSetMax(side, stockId){
   const g = state.game, price = g.market && g.market.prices ? g.market.prices[stockId] : 0, p = g.player || {};
-  g.qty[stockId] = side === 'buy' ? (price > 0 ? Math.floor((p.cash || 0) / price) : 0) : ((p.holdings || {})[stockId] || 0);
+  if(side === 'buy'){
+    let q = price > 0 ? Math.floor((p.cash || 0) / price) : 0;
+    while(q > 0 && execPrice('buy', price, q) * q > (p.cash || 0)) q = Math.max(0, Math.floor(q * 0.995) - (q < 200 ? 1 : 0)); // account for slippage
+    g.qty[stockId] = q;
+  } else g.qty[stockId] = (p.holdings || {})[stockId] || 0;
   render();
 }
 
 /* ---- items ---- */
 async function gameBuyItem(itemId){
   const item = GAME_ITEMS.find(x => x.id === itemId); if(!item) return;
-  let err = '';
+  let err = '', won = null;
   const res = await withTimeout(gameRef('players/' + state.currentUser).transaction(cur => {
     err = '';
     if(!cur) cur = playerDefaults();
@@ -3756,34 +3991,144 @@ async function gameBuyItem(itemId){
     if(bought >= item.dailyLimit){ err = item.name + '은(는) 하루에 ' + item.dailyLimit + '개까지만 살 수 있어요.'; return undefined; }
     if((cur.cash || 0) < item.price){ err = '현금이 부족해요.'; return undefined; }
     cur.cash -= item.price;
-    cur.items[itemId] = (cur.items[itemId] || 0) + 1;
     cur.daily[itemId] = bought + 1;
+    if(item.instant){
+      won = drawLotto();          // re-drawn if Firebase retries; whatever commits is what's shown
+      cur.cash += won.amount;
+    } else {
+      cur.items[itemId] = (cur.items[itemId] || 0) + 1;
+    }
     return cur;
   }), 8000, null);
   if(err){ showToast(err, 'err'); return; }
   if(!res || !res.committed){ showToast('구매하지 못했어요. 잠시 후 다시 시도해주세요.', 'err'); return; }
+  if(item.instant && won){
+    gameLog({ type:'lotto', price: item.price, prize: won.amount, tier: won.tier });
+    state.game.lottoResult = { tier: won.tier, label: won.label, amount: won.amount, at: Date.now() };
+    render();
+    return;
+  }
   gameLog({ type:'item', item: itemId, price: item.price });
   showToast(item.name + '을(를) 샀어요.');
 }
-async function gameUseItem(itemId){
-  const item = GAME_ITEMS.find(x => x.id === itemId); if(!item) return;
-  await ensureMarketCurrent();
-  const m = state.game.market;
-  if(!m || !m.bias){ showToast('시장 정보를 불러오는 중이에요.', 'err'); return; }
-  let err = '';
-  const res = await withTimeout(gameRef('players/' + state.currentUser).transaction(cur => {
-    err = '';
-    if(!cur || !cur.items || !(cur.items[itemId] > 0)){ err = '가지고 있는 ' + item.name + '이(가) 없어요.'; return undefined; }
-    cur.items[itemId] -= 1;
+/* ---- auto stop-loss / take-profit orders ----
+   Orders live in the player's own wallet node. There's no server to watch prices, so the
+   owner's app checks them whenever the market updates — but it sells at the price of the
+   30-minute step where the condition was FIRST met (read from the price history), so opening
+   the app late never changes the outcome. A transaction makes sure each order runs once. */
+function playerTxn(fn){ return withTimeout(gameRef('players/' + state.currentUser).transaction(fn), 8000, null); }
+function findOrderTriggers(orders, m){
+  const out = [];
+  if(!orders || !m || !m.history) return out;
+  Object.keys(orders).forEach(id => {
+    const o = orders[id], arr = m.history[o.stock];
+    if(!arr || !arr.length) return;
+    const first = m.tick - (arr.length - 1);
+    for(let t = Math.max((o.tick || 0) + 1, first); t <= m.tick; t++){
+      const price = arr[arr.length - 1 - (m.tick - t)];
+      if((o.kind === 'stop' && price <= o.trigger) || (o.kind === 'take' && price >= o.trigger)){ out.push({ id, price, tick: t }); break; }
+    }
+  });
+  return out;
+}
+async function processAutoOrders(){
+  const g = state.game, m = g.market, p = g.player;
+  if(!state.currentUser || !m || !p || !p.orders || g.processingOrders) return;
+  if(!findOrderTriggers(p.orders, m).length) return;
+  g.processingOrders = true;
+  const done = [];
+  const res = await playerTxn(cur => {
+    done.length = 0;
+    if(!cur || !cur.orders) return undefined;
+    const hits = findOrderTriggers(cur.orders, m);
+    if(!hits.length) return undefined;
+    cur.holdings = cur.holdings || {}; cur.cost = cur.cost || {}; cur.items = cur.items || {};
+    hits.forEach(h => {
+      const o = cur.orders[h.id]; delete cur.orders[h.id];
+      const have = cur.holdings[o.stock] || 0, q = Math.min(o.qty, have);
+      if(q <= 0){ cur.items.autoOrder = (cur.items.autoOrder || 0) + 1; done.push({ stock:o.stock, kind:o.kind, qty:0 }); return; }
+      cur.cash = (cur.cash || 0) + h.price * q;
+      cur.holdings[o.stock] = have - q;
+      if(cur.holdings[o.stock] === 0){ delete cur.holdings[o.stock]; delete cur.cost[o.stock]; }
+      done.push({ stock:o.stock, kind:o.kind, qty:q, price:h.price, tick:h.tick });
+    });
     return cur;
-  }), 8000, null);
-  if(err){ showToast(err, 'err'); return; }
-  if(!res || !res.committed){ showToast('아이템을 쓰지 못했어요. 잠시 후 다시 시도해주세요.', 'err'); return; }
-  const sorted = GAME_STOCKS.slice().sort((a,b) => (m.bias[b.id] || 0) - (m.bias[a.id] || 0));
-  const pick = itemId === 'hintUp' ? sorted[0] : sorted[sorted.length - 1];
-  state.game.hint = { type: itemId, stock: pick.id, tick: m.tick, until: nextTickLabel() };
-  gameLog({ type:'use', item: itemId });
+  });
+  g.processingOrders = false;
+  if(res && res.committed){
+    done.forEach(d => {
+      if(d.qty > 0){
+        recordFlow(d.stock, -d.price * d.qty);
+        gameLog({ type:'auto', stock:d.stock, kind:d.kind, qty:d.qty, price:d.price, tick:d.tick });
+        showToast('⚡ 자동 ' + (d.kind === 'stop' ? '손절' : '익절') + ': ' + stockName(d.stock) + ' ' + d.qty + '주를 ' + fmtWon(d.price) + '에 팔았어요.');
+      } else {
+        showToast(stockName(d.stock) + '을(를) 더 이상 갖고 있지 않아 예약이 취소됐어요. 예약권은 돌려드렸어요.');
+      }
+    });
+  }
+}
+function openOrderForm(stockId){
+  const g = state.game;
+  g.orderForm = (g.orderForm && g.orderForm.stock === stockId) ? null : { stock: stockId, kind:'stop', trigger:'', qty:'' };
   render();
+}
+async function placeAutoOrder(stockId){
+  const g = state.game, f = g.orderForm || {}, m = g.market, p = g.player || {};
+  if(!m || !m.prices){ showToast('시장 정보를 불러오는 중이에요.', 'err'); return; }
+  const now = m.prices[stockId], have = (p.holdings || {})[stockId] || 0;
+  const kind = f.kind === 'take' ? 'take' : 'stop';
+  const trigger = Math.round(Number(f.trigger || 0) / 10) * 10;
+  const sellAll = !String(f.qty || '').trim(); // blank = "everything I hold", resolved against the real wallet at save time
+  const qty = sellAll ? null : Math.floor(Number(f.qty));
+  if(!(trigger > 0)){ showToast('가격을 입력해주세요.', 'err'); return; }
+  if(kind === 'stop' && trigger >= now){ showToast('손절 가격은 지금 가격(' + fmtWon(now) + ')보다 낮아야 해요.', 'err'); return; }
+  if(kind === 'take' && trigger <= now){ showToast('익절 가격은 지금 가격(' + fmtWon(now) + ')보다 높아야 해요.', 'err'); return; }
+  if(!sellAll && (!(qty > 0) || qty > have)){ showToast('수량은 1주부터 보유한 ' + have + '주까지 정할 수 있어요.', 'err'); return; }
+  let err = '', placedQty = 0;
+  const res = await playerTxn(cur => {
+    err = '';
+    if(!cur || !cur.items || !(cur.items.autoOrder > 0)){ err = '예약권이 없어요. 상점에서 살 수 있어요.'; return undefined; }
+    const held = (cur.holdings || {})[stockId] || 0, q = sellAll ? held : qty;
+    if(!(q > 0) || q > held){ err = held ? '보유한 수량(' + held + '주)보다 많이 걸 수 없어요.' : '이 주식을 더 이상 갖고 있지 않아요.'; return undefined; }
+    placedQty = q;
+    cur.items.autoOrder -= 1;
+    cur.orders = cur.orders || {};
+    cur.orders['o' + Date.now().toString(36) + Math.random().toString(36).slice(2,6)] = { stock: stockId, kind, trigger, qty: q, tick: m.tick, at: Date.now() };
+    return cur;
+  });
+  if(err){ showToast(err, 'err'); return; }
+  if(!res || !res.committed){ showToast('예약하지 못했어요. 잠시 후 다시 시도해주세요.', 'err'); return; }
+  gameLog({ type:'orderSet', stock: stockId, kind, trigger, qty: placedQty });
+  g.orderForm = null;
+  showToast(stockName(stockId) + ' ' + (kind === 'stop' ? '손절' : '익절') + ' 예약 완료 · ' + fmtWon(trigger) + (kind === 'stop' ? ' 이하' : ' 이상'));
+}
+async function cancelAutoOrder(orderId){
+  let stock = '';
+  const res = await playerTxn(cur => {
+    if(!cur || !cur.orders || !cur.orders[orderId]) return undefined;
+    stock = cur.orders[orderId].stock;
+    delete cur.orders[orderId];
+    cur.items = cur.items || {}; cur.items.autoOrder = (cur.items.autoOrder || 0) + 1;
+    return cur;
+  });
+  if(res && res.committed){ gameLog({ type:'orderCancel', stock }); showToast('예약을 취소했어요. 예약권은 돌려드렸어요.'); }
+}
+async function refundLegacyItems(){
+  let refund = 0;
+  const res = await playerTxn(cur => {
+    refund = 0;
+    if(!cur || !cur.items) return undefined;
+    Object.keys(LEGACY_ITEMS).forEach(k => {
+      if(k in cur.items){ refund += (cur.items[k] || 0) * LEGACY_ITEMS[k].price; delete cur.items[k]; }
+    });
+    if(!refund) return undefined;
+    cur.cash = (cur.cash || 0) + refund;
+    return cur;
+  });
+  if(res && res.committed && refund){
+    gameLog({ type:'refund', amount: refund });
+    showToast('힌트 아이템이 사라져서, 안 쓴 힌트 값 ' + fmtWon(refund) + '을 돌려드렸어요.');
+  }
 }
 
 /* ---- ranking & history ---- */
@@ -3793,7 +4138,8 @@ async function loadGameRanking(){
   const r = await withTimeout(gameRef('players').once('value').then(s => s.val()), 8000, null);
   g.rankLoading = false;
   const prices = (g.market || {}).prices || {};
-  g.ranking = r ? Object.keys(r).map(id => ({ id, total: playerTotals(r[id], prices).total })).sort((a,b) => b.total - a.total) : null;
+  const known = Object.keys(state.users || {}).length > 0;
+  g.ranking = r ? Object.keys(r).filter(id => !known || state.users[id]).map(id => ({ id, total: playerTotals(r[id], prices).total })).sort((a,b) => b.total - a.total) : null;
   render();
 }
 async function loadGameLog(){
@@ -3811,7 +4157,7 @@ async function loadGameLog(){
 function renderGameSafe(){
   // don't wipe out a number someone is in the middle of typing
   const a = document.activeElement;
-  if(a && a.classList && a.classList.contains('game-qty')){ state.game.pendingRender = true; return; }
+  if(a && a.classList && (a.classList.contains('game-qty') || a.classList.contains('order-input'))){ state.game.pendingRender = true; return; }
   render();
 }
 function stopGameSync(){
@@ -3836,13 +4182,14 @@ function startGameSync(){
       showToast('📰 새 뉴스: ' + latest.title);
     }
     gg.lastNewsId = latest ? latest.id : '';
+    processAutoOrders();
     if(state.view === 'game'){
       if(gg.tab === 'news' && latest) lsSet('game-news-seen', false, latest.id);
       renderGameSafe();
     }
   });
-  playerRef.on('value', snap => { gg.player = snap.val(); gg.playerLoaded = true; if(state.view === 'game') renderGameSafe(); });
-  ensureMarketCurrent().then(claimDailyAllowance);
+  playerRef.on('value', snap => { gg.player = snap.val(); gg.playerLoaded = true; processAutoOrders(); if(state.view === 'game') renderGameSafe(); });
+  ensureMarketCurrent().then(claimDailyAllowance).then(refundLegacyItems).then(processAutoOrders);
   gg.timer = setInterval(() => {
     if(state.view !== 'game') return;
     const key = gameTickNow() + '|' + todayStr() + '|' + JSON.stringify(marketStatus());
@@ -3856,7 +4203,7 @@ function startGameSync(){
   }, 15000);
 }
 function freshGameState(){
-  return { tab:'market', chartOpen:null, lastNewsId:null, market:null, player:null, marketLoaded:false, playerLoaded:false, qty:{}, hint:null,
+  return { tab:'market', chartOpen:null, orderForm:null, lottoResult:null, processingOrders:false, lastNewsId:null, market:null, player:null, marketLoaded:false, playerLoaded:false, qty:{}, hint:null,
            ranking:null, log:null, syncedFor:null, refs:[], timer:null, statusKey:'', advancing:false };
 }
 
@@ -3882,10 +4229,10 @@ function renderStockChart(s, m){
   const area = line + ` L ${x(arr.length-1).toFixed(1)} ${H - P} L ${x(0).toFixed(1)} ${H - P} Z`;
   const ch = changeInfo(arr[arr.length-1], arr[0]);
   // where each news story about this stock landed on the chart
-  const marks = (m.news || []).filter(n => (n.stocks || []).indexOf(s.id) !== -1).map(n => {
+  const marks = (m.news || []).map(n => ({ n, e: newsEffects(n).find(e => e.s === s.id) })).filter(x => x.e).map(({ n, e }) => {
     const idx = arr.length - 1 - (m.tick - n.tick);
     if(idx < 0 || idx >= arr.length) return '';
-    return `<circle cx="${x(idx).toFixed(1)}" cy="${y(arr[idx]).toFixed(1)}" r="4.2" class="news-mark ${n.dir > 0 ? 'up' : 'down'}"><title>${esc(n.title)}</title></circle>`;
+    return `<circle cx="${x(idx).toFixed(1)}" cy="${y(arr[idx]).toFixed(1)}" r="4.2" class="news-mark ${e.d > 0 ? 'up' : 'down'}"><title>${esc(n.title)}</title></circle>`;
   }).join('');
   const firstTick = m.tick - (arr.length - 1);
   return `
@@ -3909,6 +4256,14 @@ function changeInfo(now, before){
   if(Math.abs(pct) < 0.005) return { cls:'flat', text:'0.00%' };
   return { cls: pct > 0 ? 'up' : 'down', text: (pct > 0 ? '▲ ' : '▼ ') + Math.abs(pct).toFixed(2) + '%' };
 }
+function fmtMan(won){ const a = Math.abs(won); return a >= 10000 ? (Math.round(a / 1000) / 10) + '만원' : Math.round(a).toLocaleString('ko-KR') + '원'; }
+function flowLine(m, id){
+  const now = (m.flow || {})[id] || 0;
+  if(Math.abs(now) < 1000) return `<div class="flow-line flat">수급 · 이번 30분 거래 적음</div>`;
+  const pct = flowImpact(now) * 100;
+  return `<div class="flow-line ${now > 0 ? 'up' : 'down'}">수급 · 이번 30분 ${now > 0 ? '매수세 우세' : '매도세 우세'} ${now > 0 ? '+' : '−'}${fmtMan(now)}
+    <span class="text-3">(다음 변동에 약 ${pct > 0 ? '+' : ''}${pct.toFixed(1)}% 영향)</span></div>`;
+}
 function renderGameMarket(){
   const g = state.game, m = g.market, p = g.player || {}, open = marketStatus().open;
   return `<div class="list">${GAME_STOCKS.map(s => {
@@ -3929,55 +4284,93 @@ function renderGameMarket(){
           <div class="stock-chg">${ch.text}</div>
         </div>
       </div>
+      ${flowLine(m, s.id)}
       ${g.chartOpen === s.id ? renderStockChart(s, m) : ''}
       <div class="stock-trade">
         <input class="game-qty" type="number" min="1" step="1" inputmode="numeric" placeholder="수량" data-stock="${s.id}" value="${esc(g.qty[s.id] || '')}">
         <button type="button" class="btn btn-ghost btn-sm" data-act="gameMax" data-side="buy" data-stock="${s.id}">최대</button>
         ${have ? `<button type="button" class="btn btn-ghost btn-sm" data-act="gameMax" data-side="sell" data-stock="${s.id}">전량</button>` : ''}
         <button type="button" class="btn btn-sm trade-buy" data-act="gameTrade" data-side="buy" data-stock="${s.id}" ${open ? '' : 'disabled'}>매수</button>
-        <button type="button" class="btn btn-sm trade-sell" data-act="gameTrade" data-side="sell" data-stock="${s.id}" ${open && have ? '' : 'disabled'}>매도</button>
+        <button type="button" class="btn btn-sm trade-sell" data-act="gameTrade" data-side="sell" data-stock="${s.id}" ${have ? '' : 'disabled'}>매도</button>
       </div>
     </div>`;
   }).join('')}</div>`;
 }
+function plText(diff){ return (diff > 0 ? '+' : diff < 0 ? '−' : '') + Math.abs(Math.round(diff)).toLocaleString('ko-KR') + '원'; }
 function renderGameMine(){
   const g = state.game, m = g.market, p = g.player || {}, ids = Object.keys(p.holdings || {}).filter(id => p.holdings[id] > 0);
   if(!ids.length) return `<div class="empty-state">${icon('chart')}<p>아직 가진 주식이 없어요. 시장 탭에서 사보세요.</p></div>`;
-  return `<div class="list">${ids.map(id => {
+  let paidAll = 0, nowAll = 0;
+  ids.forEach(id => { const q = p.holdings[id], pr = m.prices[id] || 0; paidAll += q * (((p.cost || {})[id]) || pr); nowAll += q * pr; });
+  const chAll = changeInfo(nowAll, paidAll);
+  return `
+  <div class="card mine-summary">
+    <span class="text-3 small">내 주식 전체 (산 금액 → 지금 가치)</span>
+    <div class="mine-flow">${fmtWon(paidAll)} <span class="arrow">→</span> <b>${fmtWon(nowAll)}</b></div>
+    <span class="pl ${chAll.cls}">${plText(nowAll - paidAll)} · ${chAll.text}</span>
+  </div>
+  <div class="list">${ids.map(id => {
     const qty = p.holdings[id], price = m.prices[id] || 0, cost = (p.cost || {})[id] || price;
-    const value = qty * price, ch = changeInfo(price, cost);
+    const value = qty * price, ch = changeInfo(price, cost), paid = qty * cost;
+    const orders = Object.keys(p.orders || {}).map(oid => Object.assign({ id: oid }, p.orders[oid])).filter(o => o.stock === id);
+    const tickets = (p.items || {}).autoOrder || 0;
+    const f = g.orderForm && g.orderForm.stock === id ? g.orderForm : null;
     return `
     <div class="list-item"><div class="list-item-body">
       <div class="row-head"><span class="row-title" style="margin:0;">${esc(stockName(id))}</span><span class="text-3 small">${qty}주</span></div>
-      <div class="row-sub">평균 ${fmtWon(cost)} → 현재 ${fmtWon(price)}</div>
-      <div class="mine-value">${fmtWon(value)} <span class="pl ${ch.cls}">${ch.text}</span></div>
+      <div class="row-sub">1주 평균 ${fmtWon(cost)} → 지금 ${fmtWon(price)}</div>
+      <div class="mine-value">${fmtWon(paid)} <span class="arrow">→</span> ${fmtWon(value)} <span class="pl ${ch.cls}">${plText(value - paid)} · ${ch.text}</span></div>
+      ${orders.map(o => `
+      <div class="order-chip ${o.kind}">
+        <span>${o.kind === 'stop' ? '🛡️ 손절' : '🎯 익절'} · ${fmtWon(o.trigger)} ${o.kind === 'stop' ? '이하' : '이상'} · ${o.qty}주</span>
+        <button type="button" class="link-btn" data-act="orderCancel" data-id="${esc(o.id)}">취소</button>
+      </div>`).join('')}
+      ${f ? `
+      <div class="order-form">
+        <div class="seg-mini">
+          <button type="button" class="${f.kind === 'stop' ? 'active' : ''}" data-act="orderKind" data-kind="stop">🛡️ 손절 (떨어지면 팔기)</button>
+          <button type="button" class="${f.kind === 'take' ? 'active' : ''}" data-act="orderKind" data-kind="take">🎯 익절 (오르면 팔기)</button>
+        </div>
+        <div class="order-row"><input class="order-input" data-field="trigger" type="number" inputmode="numeric" placeholder="가격 (지금 ${fmtWon(price)})" value="${esc(f.trigger)}"><span>원 ${f.kind === 'stop' ? '이하가 되면' : '이상이 되면'}</span></div>
+        <div class="order-row"><input class="order-input" data-field="qty" type="number" inputmode="numeric" placeholder="비우면 전부 (${qty}주)" value="${esc(f.qty)}"><span>주 팔기</span></div>
+        <p class="text-3 small">뉴스 등으로 시세가 한 번에 크게 움직이면, 정한 가격과 조금 다른 가격에 팔릴 수 있어요.</p>
+        <div class="item-actions">
+          <button type="button" class="btn btn-ghost btn-sm" data-act="orderForm" data-stock="${id}">닫기</button>
+          <button type="button" class="btn btn-primary btn-sm" data-act="orderPlace" data-stock="${id}">예약 걸기 (예약권 1장)</button>
+        </div>
+      </div>` : `
+      <div class="item-actions">
+        <button type="button" class="btn btn-ghost btn-sm" data-act="orderForm" data-stock="${id}" ${tickets ? '' : 'disabled'}>⚡ 자동 매도 걸기</button>
+        <span class="text-3 small">${tickets ? '예약권 ' + tickets + '장' : '예약권이 없어요 · 상점에서 구매'}</span>
+      </div>`}
     </div></div>`;
   }).join('')}</div>`;
 }
+function newsEffects(n){ return Array.isArray(n.fx) ? n.fx : (n.stocks || []).map(id => ({ s:id, d:n.dir, p:0 })); }
 function latestNewsId(){ const n = ((state.game.market || {}).news || []); return n.length ? n[n.length-1].id : ''; }
 function hasUnreadNews(){ const id = latestNewsId(); return !!id && lsGet('game-news-seen', false, '') !== id; }
 function renderGameNews(){
   const m = state.game.market, list = (m.news || []).slice().reverse();
-  const intro = `<p class="text-3 small" style="margin:0 0 10px;">점심시간(12:30)과 하교 시각에 가끔 뉴스가 들어와요. 뉴스가 나오면 주가가 바로 움직이고, 한동안 같은 방향 흐름이 이어질 수 있어요.</p>`;
+  const intro = `<p class="text-3 small" style="margin:0 0 10px;">점심시간(12:30)과 하교 시각에 가끔 뉴스가 들어와요. 뉴스가 나오면 관련 종목이 바로 움직이고, 약 3시간 동안 같은 방향 흐름이 이어져요. 경쟁·협력 관계인 종목도 함께 움직여요.</p>`;
   if(!list.length) return intro + `<div class="empty-state">${icon('notice')}<p>아직 들어온 뉴스가 없어요.</p></div>`;
-  return intro + `<div class="list">${list.map((n, i) => `
-    <div class="list-item news-item ${i === 0 ? 'latest' : ''}"><div class="list-item-body">
-      <div class="row-head"><span class="text-3 small">${tickLabel(n.tick)}</span>${i === 0 ? '<span class="badge">최신</span>' : ''}</div>
+  const activeIds = new Set(Object.values(m.trend || {}).map(t => t && t.n).filter(Boolean));
+  return intro + `<div class="list">${list.map(n => {
+    const active = activeIds.has(n.id);
+    return `
+    <div class="list-item news-item ${active ? 'active' : 'past'}"><div class="list-item-body">
+      <div class="row-head"><span class="text-3 small">${tickLabel(n.tick)}</span>${active ? '<span class="badge news-live">🔥 영향 진행 중</span>' : '<span class="badge badge-alt">지난 뉴스</span>'}</div>
       <div class="news-title">${esc(n.emoji)} ${esc(n.title)}</div>
       <div class="row-sub">${esc(n.body)}</div>
-      <div class="news-stocks">${(n.stocks || []).map(id => `<span class="news-chip ${n.dir > 0 ? 'up' : 'down'}">${esc(stockName(id))} ${n.dir > 0 ? '▲' : '▼'}</span>`).join('')}</div>
-    </div></div>`).join('')}</div>`;
+      <div class="news-stocks">${newsEffects(n).map(e => `<span class="news-chip ${e.d > 0 ? 'up' : 'down'}">${esc(stockName(e.s))} ${e.d > 0 ? '▲' : '▼'}${e.p ? ' ' + Math.abs(e.p) + '%' : ''}</span>`).join('')}</div>
+    </div></div>`;
+  }).join('')}</div>`;
 }
 function renderGameShop(){
   const g = state.game, m = g.market, p = g.player || {};
   const daily = (p.daily && p.daily.date === todayStr()) ? p.daily : {};
-  const hint = g.hint && m && g.hint.tick === m.tick ? g.hint : null;
+  const lr = g.lottoResult && Date.now() - g.lottoResult.at < 60000 ? g.lottoResult : null;
   return `
-  ${hint ? `
-  <div class="banner hint-banner">
-    ${icon(hint.type === 'hintUp' ? 'chart' : 'notice')}
-    <span><b>${hint.type === 'hintUp' ? '상승 힌트' : '하락 경고'}</b> · ${esc(stockName(hint.stock))}이(가) ${hint.until} 변동에서 ${hint.type === 'hintUp' ? '오를' : '떨어질'} 가능성이 가장 높아요. (확실하진 않아요!)</span>
-  </div>` : ''}
+  ${lr ? `<div class="lotto-result ${lr.tier}"><div class="lotto-label">${esc(lr.label)}</div><div class="lotto-amount">${lr.amount ? '+' + fmtWon(lr.amount) : '다음 기회에…'}</div></div>` : ''}
   <p class="text-3 small" style="margin:0 0 10px;">지금은 게임 아이템만 팔아요. 실물 상점은 나중에 열릴 예정이에요.</p>
   <div class="list">${GAME_ITEMS.map(it => {
     const owned = (p.items || {})[it.id] || 0, bought = daily[it.id] || 0;
@@ -3985,10 +4378,11 @@ function renderGameShop(){
     <div class="list-item"><div class="list-item-body">
       <div class="row-head"><span class="row-title" style="margin:0;">${esc(it.name)}</span><span class="badge">${fmtWon(it.price)}</span></div>
       <div class="row-sub">${esc(it.desc)}</div>
-      <div class="row-sub" style="margin-top:4px;">보유 ${owned}개 · 오늘 구매 ${bought}/${it.dailyLimit}</div>
+      ${it.id === 'lotto' ? `<div class="lotto-table">${LOTTO_PRIZES.map(pz => `<span>${esc(pz.label)} ${pz.amount ? fmtWon(pz.amount) : ''} <b>${(pz.p * 100).toFixed(1).replace(/\.0$/, '')}%</b></span>`).join('')}</div>` : ''}
+      <div class="row-sub" style="margin-top:4px;">${it.instant ? '' : '보유 ' + owned + '장 · '}오늘 구매 ${bought}/${it.dailyLimit}</div>
       <div class="item-actions">
-        <button type="button" class="btn btn-primary btn-sm" data-act="gameBuyItem" data-item="${it.id}" ${bought >= it.dailyLimit ? 'disabled' : ''}>구매</button>
-        <button type="button" class="btn btn-ghost btn-sm" data-act="gameUseItem" data-item="${it.id}" ${owned ? '' : 'disabled'}>사용</button>
+        <button type="button" class="btn btn-primary btn-sm" data-act="gameBuyItem" data-item="${it.id}" ${bought >= it.dailyLimit ? 'disabled' : ''}>${it.instant ? '사서 바로 긁기' : '구매'}</button>
+        ${it.instant ? '' : '<span class="text-3 small">사용은 <b>내 주식</b> 탭에서 종목별로 해요</span>'}
       </div>
     </div></div>`;
   }).join('')}</div>`;
@@ -4001,8 +4395,9 @@ function renderGameRank(){
   return `
   <div class="list">${g.ranking.map((r,i) => {
     const u = state.users[r.id];
-    return `<div class="list-item rank-row ${r.id === state.currentUser ? 'me' : ''}">
-      <span class="rank-no">${i+1}</span>
+    const medal = ['gold','silver','bronze'][i] || '';
+    return `<div class="list-item rank-row ${medal} ${r.id === state.currentUser ? 'me' : ''}">
+      <span class="rank-no">${medal ? ['🥇','🥈','🥉'][i] : i+1}</span>
       <span class="rank-name">${esc(u ? u.displayName : r.id)}</span>
       <span class="rank-total">${fmtWon(r.total)}</span>
     </div>`;
@@ -4012,8 +4407,14 @@ function renderGameRank(){
 function describeLog(x){
   if(x.type === 'buy')  return esc(stockName(x.stock)) + ' ' + x.qty + '주 매수 · ' + fmtWon(x.price * x.qty);
   if(x.type === 'sell') return esc(stockName(x.stock)) + ' ' + x.qty + '주 매도 · ' + fmtWon(x.price * x.qty);
-  if(x.type === 'item'){ const it = GAME_ITEMS.find(i => i.id === x.item); return esc(it ? it.name : x.item) + ' 구매 · ' + fmtWon(x.price); }
-  if(x.type === 'use'){ const it = GAME_ITEMS.find(i => i.id === x.item); return esc(it ? it.name : x.item) + ' 사용'; }
+  const itemName = id => { const it = GAME_ITEMS.find(i => i.id === id) || LEGACY_ITEMS[id]; return esc(it ? it.name : id); };
+  if(x.type === 'item') return itemName(x.item) + ' 구매 · ' + fmtWon(x.price);
+  if(x.type === 'use') return itemName(x.item) + ' 사용';
+  if(x.type === 'orderSet') return esc(stockName(x.stock)) + ' ' + (x.kind === 'stop' ? '손절' : '익절') + ' 예약 · ' + fmtWon(x.trigger) + (x.kind === 'stop' ? ' 이하 ' : ' 이상 ') + x.qty + '주';
+  if(x.type === 'orderCancel') return esc(stockName(x.stock)) + ' 자동 매도 예약 취소';
+  if(x.type === 'auto') return '⚡ 자동 ' + (x.kind === 'stop' ? '손절' : '익절') + ' · ' + esc(stockName(x.stock)) + ' ' + x.qty + '주 · ' + fmtWon(x.price * x.qty);
+  if(x.type === 'refund') return '힌트 아이템 환불 · ' + fmtWon(x.amount);
+  if(x.type === 'lotto') return '🎟️ 로또 · ' + (x.prize ? fmtWon(x.prize) + ' 당첨' : '꽝') + ' (구매 ' + fmtWon(x.price) + ')';
   if(x.type === 'start') return '게임 시작 · ' + fmtWon(x.amount);
   if(x.type === 'allowance') return '오늘의 지원금 · ' + fmtWon(x.amount);
   return esc(x.type);
@@ -4039,7 +4440,12 @@ function renderGameView(){
   const head = `
   <div class="view-header">
     <h2>${icon('chart')} 주식게임</h2>
-    <span class="market-pill ${st.open ? 'open' : 'closed'}">${st.open ? '거래 가능' : st.period + '교시 수업 중 · ' + st.reopen + ' 재개'}</span>
+    <span class="market-pill ${!st.open ? 'closed' : st.night ? 'night' : 'open'}">${
+      !st.open ? st.period + '교시 수업 중 · 매도만 가능'
+      : st.night ? '밤 시세 휴식 · 07:00 재개'
+      : st.dayKind === 'holiday' ? '휴일 · 거래 가능'
+      : st.dayKind === 'weekend' ? '주말 · 거래 가능'
+      : '거래 가능'}</span>
   </div>`;
   if(!g.marketLoaded || !g.playerLoaded || !g.market || !g.market.prices){
     return head + `<div class="empty-state">${icon('chart')}<p>시장 정보를 불러오는 중이에요…</p></div>`;
