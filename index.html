@@ -676,6 +676,9 @@ html[data-layout="pc"] .split-cols{ grid-template-columns: 1fr 1fr !important; g
 .news-body{ line-height:1.6; }
 .news-analysis{ margin-top:10px; padding:10px 12px; border-radius:12px; background: var(--surface-2); }
 .analysis-head{ font-size:12.5px; font-weight:800; margin-bottom:6px; }
+.analysis-line{ display:flex; justify-content:space-between; gap:12px; font-size:13px; padding:4px 0; border-bottom:1px dashed var(--border); }
+.analysis-line > span:first-child{ color: var(--text-3); flex:none; }
+.analysis-line > span:last-child{ text-align:right; }
 .analysis-row{ display:flex; justify-content:space-between; gap:8px; font-size:13px; padding:3px 0; }
 .analysis-row.up span{ color:#e5484d; font-weight:700; } .analysis-row.down span{ color:#3b82f6; font-weight:700; }
 .news-live{ background: rgba(232,137,58,.16); color:#d06f1f; }
@@ -3766,7 +3769,7 @@ const GAME_ITEMS = [
   { id:'autoOrder', name:'자동 손절·익절 예약권', price:30000, dailyLimit:3,
     desc:'가진 주식에 "이 가격 아래로 떨어지면 팔기(손절)" 또는 "이 가격 위로 오르면 팔기(익절)"를 걸어둘 수 있어요. 수업 중이나 밤에도 작동해요.' },
   { id:'newsSummary', name:'뉴스 요약', price:20000, dailyLimit:5, useIn:'뉴스',
-    desc:'뉴스 기사 하나를 골라 쓰면, 어떤 종목에 호재·악재인지, 얼마나 센지, 같이 움직일 종목과 이야기가 이어질지까지 풀어서 알려줘요.' },
+    desc:'뉴스 기사 하나를 골라 쓰면, 그 기사가 어느 종목 이야기인지, 덩달아 흔들릴 종목, 소식의 크기, 연재 정보를 알려줘요. 좋은 소식인지 나쁜 소식인지는 직접 판단해야 해요!' },
   { id:'lotto', name:'로또', price:30000, dailyLimit:3, instant:true,
     desc:'사자마자 바로 긁어서 결과가 나와요. 운이 좋으면 최대 100만원!' }
 ];
@@ -4120,7 +4123,11 @@ function advanceMarket(m, target, extFlow){
     });
     prices = next;
   }
-  return { tick: target, prices, prev, history, trend, news, flow, arcs };
+  // de-duplicate by id (heals feeds hit by the double-publish bug) and keep the "already published"
+  // marks — dropping them is what let the 22:25 test story fire again after every price step
+  const seenIds = new Set();
+  news = news.filter(n => n && !seenIds.has(n.id) && seenIds.add(n.id));
+  return { tick: target, prices, prev, history, trend, news, flow, arcs, published: Object.assign({}, m.published || {}) };
 }
 /* ---- game control: open / shutdown / test mode ----
    open: everyone plays. shutdown (open:false): prices and news stop entirely. test (open:false,
@@ -4153,7 +4160,8 @@ async function ensureMarketCurrent(){
 
 /* ---- scheduled one-off news (published by whoever has the game open after the time) ---- */
 const SCHEDULED_NEWS = [
-  { id:'sched-20261006-2225', at: new Date(2026, 9, 6, 22, 25).getTime(), until: new Date(2026, 9, 7, 1, 0).getTime() }
+  // add one-off stories here: { id:'sched-YYYYMMDD-HHMM', at: new Date(y, m-1, d, h, mi).getTime(), until: … }
+  // (the 2026-10-06 22:25 test story has already been published and is retired)
 ];
 async function publishScheduledNews(){
   if(!marketRunning()) return;
@@ -4163,6 +4171,7 @@ async function publishScheduledNews(){
     if(m && (m.published || {})[x.id]) continue;
     await withTimeout(gameRef('market').transaction(cur => {
       if(!cur || !cur.prices || (cur.published || {})[x.id]) return undefined;
+      if((cur.news || []).some(n => n && n.id === x.id)) return undefined; // second guard: never publish the same story twice
       const ev = makeNewsEvent(cur.tick, cur.arcs || {});
       const prices = Object.assign({}, cur.prices), history = {}, trend = Object.assign({}, cur.trend || {});
       GAME_STOCKS.forEach(s => { history[s.id] = ((cur.history || {})[s.id] || [prices[s.id]]).slice(); });
@@ -4707,23 +4716,37 @@ function strengthLabel(stockId, pct){
   return rel >= 6 ? '강함' : rel >= 3 ? '보통' : '약함';
 }
 function renderNewsAnalysis(n, active){
+  // What the summary tells you: WHICH stocks the article is about, which others may get dragged
+  // along, and how big the story is. What it never tells you: up or down. That's still your call.
   const fx = newsEffects(n);
-  if(!fx.length || !fx.some(e => e.p)) return '';
-  const main = fx[0];
-  const parts = fx.map((e, i) => {
-    const rel = i === 0 ? '' : (STOCK_LINKS[main.s] && STOCK_LINKS[main.s][e.s] !== undefined ? (STOCK_LINKS[main.s][e.s] < 0 ? '경쟁 관계 · ' : '협력 관계 · ') : '');
-    return `<div class="analysis-row ${e.d > 0 ? 'up' : 'down'}"><b>${esc(stockName(e.s))}</b><span>${rel}${e.d > 0 ? '▲ 호재' : '▼ 악재'} · ${strengthLabel(e.s, e.p)}</span></div>`;
-  }).join('');
+  if(!fx.length) return '';
+  const node = STORY_NODES[n.node] || {};
+  let about, also = [];
+  if(node.stock){
+    const main = stockInfo(node.stock);
+    about = `<b>${esc(main.name)}</b> <span class="text-3">(${esc(main.sector)} 업종)</span>`;
+    also = fx.filter(e => e.s !== node.stock).map(e => stockName(e.s));
+  } else if(fx.length >= GAME_STOCKS.length){
+    about = '<b>학교 전체</b> <span class="text-3">(모든 종목이 영향을 받을 수 있어요)</span>';
+  } else {
+    about = fx.map(e => '<b>' + esc(stockName(e.s)) + '</b>').join(', ') + ' <span class="text-3">(종목마다 받는 영향이 다를 수 있어요)</span>';
+  }
+  const mainFx = node.stock ? fx.find(e => e.s === node.stock) : fx.reduce((a, e) => Math.abs(e.p) > Math.abs(a.p) ? e : a, fx[0]);
+  const lvl = mainFx && mainFx.p ? strengthLabel(mainFx.s, mainFx.p) : '보통';
+  const size = lvl === '강함' ? '큰 소식' : lvl === '보통' ? '보통 소식' : '작은 소식';
   return `
   <div class="news-analysis">
     <div class="analysis-head">🔍 뉴스 요약</div>
-    ${parts}
-    <p class="text-3 small">${active ? '영향은 앞으로 몇 시간 더 이어질 전망이에요. (보통 3시간, 가끔 예상과 다르게 움직여요)' : '이 뉴스의 영향은 이미 끝났어요.'}
-    ${n.more ? ' 📚 이 이야기는 아직 끝나지 않았어요. 다음 편이 좋은 쪽일지 나쁜 쪽일지는 아무도 몰라요.' : (n.arc ? ' 📕 이 이야기는 여기서 마무리됐어요.' : '')}</p>
+    <div class="analysis-line"><span>이 기사의 주인공</span><span>${about}</span></div>
+    ${also.length ? `<div class="analysis-line"><span>덩달아 흔들릴 수 있는 종목</span><span>${also.map(esc).join(', ')}</span></div>` : ''}
+    <div class="analysis-line"><span>소식의 크기</span><span><b>${size}</b></span></div>
+    ${n.arc ? `<div class="analysis-line"><span>연재</span><span>${esc(ARC_NAMES[n.arc] || '')} ${n.part}편 · ${n.more ? '다음 편이 남아 있어요' : '여기서 마무리'}</span></div>` : ''}
+    <p class="text-3 small">${active ? '영향은 몇 시간 더 이어질 수 있어요. ' : '이 소식의 영향은 이미 끝났어요. '}좋은 소식인지 나쁜 소식인지는 기사를 읽고 직접 판단해보세요!</p>
   </div>`;
 }
 function renderGameNews(){
-  const g = state.game, m = g.market, p = g.player || {}, list = (m.news || []).slice().reverse();
+  const g = state.game, m = g.market, p = g.player || {};
+  const once = new Set(), list = (m.news || []).filter(n => n && !once.has(n.id) && once.add(n.id)).reverse();
   const tickets = (p.items || {}).newsSummary || 0, unlocked = p.summaries || {};
   const intro = `<p class="text-3 small" style="margin:0 0 10px;">학교 소식이 아침, 쉬는 시간, 저녁에 가끔 들어와요. 어떤 종목에 좋은 소식인지는 직접 추리해보세요. 뉴스가 나오면 관련 종목이 바로 움직이고, 몇 시간 동안 흐름이 이어질 수 있어요.</p>`;
   if(!list.length) return intro + `<div class="empty-state">${icon('notice')}<p>아직 들어온 뉴스가 없어요.</p></div>`;
